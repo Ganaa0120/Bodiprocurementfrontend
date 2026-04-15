@@ -21,6 +21,12 @@ import { HeroCard, Alert } from "./_components/HeroCard";
 import { FInput, FSelect, RadioGroup } from "./_components/FormFields";
 import { Section, DocUpload } from "./_components/Section";
 import { OwnersSection, FinalOwnersSection } from "./_components/OwnersSection";
+import {
+  validateMongolianForm,
+  isMongolian,
+  validateOwnersMongolian,
+} from "@/utils/mongolianValidation";
+import { UB_DUUREG, AIMAG_SUM } from "@/constants/addressData";
 
 function buildForm(u: any) {
   return {
@@ -71,6 +77,10 @@ export default function CompanyProfilePage() {
   const [finalOwnerSnap, setFinalOwnerSnap] = useState<any[]>([
     { ...BLANK_FINAL },
   ]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [ownerFieldErrors, setOwnerFieldErrors] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     fetch(`${API}/api/persons/activity-directions`)
@@ -91,12 +101,10 @@ export default function CompanyProfilePage() {
         if (d.success && (d.organization || d.user)) {
           const u = d.organization || d.user;
           setProfile(u);
-
           const f = buildForm(u);
           setForm(f);
           setSnapshot(f);
           setSelDirs(u.activity_directions || []);
-
           const lo = u.beneficial_owners?.length
             ? u.beneficial_owners
             : [{ ...BLANK_OWNER }];
@@ -107,7 +115,6 @@ export default function CompanyProfilePage() {
           setOwnerSnap(lo);
           setFinalOwners(lf);
           setFinalOwnerSnap(lf);
-
           const p: Record<string, string> = {};
           if (u.company_logo_url) p.company_logo = u.company_logo_url;
           if (u.doc_state_registry_url)
@@ -120,8 +127,6 @@ export default function CompanyProfilePage() {
           if (u.doc_company_intro_url)
             p.doc_company_intro = u.doc_company_intro_url;
           setPreviews(p);
-
-          // ✅ Шинэ хэрэглэгч бол шууд edit mode
           const isNewUser = !u.aimag_niislel && !u.address && !u.bank_name;
           setEditing(isNewUser);
         }
@@ -183,6 +188,7 @@ export default function CompanyProfilePage() {
     setFinalOwnerSnap(finalOwners.map((o) => ({ ...o })));
     setEditing(true);
     setError("");
+    setFieldErrors({});
   };
 
   const cancelEdit = () => {
@@ -191,9 +197,37 @@ export default function CompanyProfilePage() {
     setFinalOwners(finalOwnerSnap.map((o) => ({ ...o })));
     setEditing(false);
     setError("");
+    setFieldErrors({});
   };
 
   const handleSave = async () => {
+    if (
+      form.company_name !== snapshot.company_name &&
+      !isMongolian(form.company_name)
+    ) {
+      setFieldErrors((p) => ({ ...p, company_name: "Монгол үсгээр бичнэ үү" }));
+      setError("Байгууллагын нэр монгол үсгээр бичнэ үү");
+      return;
+    }
+    const errs = validateMongolianForm(form, [
+      "sum_duureg",
+      ...(form.aimag_niislel !== "Улаанбаатар" ? ["bag_horoo" as const] : []),
+    ]);
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setError(Object.values(errs)[0]);
+      return;
+    }
+
+    // ✅ Owner field-level errors
+    const ownerErrs = validateOwnersMongolian(owners);
+    if (Object.keys(ownerErrs).length > 0) {
+      setOwnerFieldErrors(ownerErrs);
+      return;
+    }
+    setOwnerFieldErrors({});
+    setFieldErrors({});
+
     setSaving(true);
     setError("");
     const token = localStorage.getItem("token");
@@ -213,14 +247,11 @@ export default function CompanyProfilePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Алдаа гарлаа");
       const updated = data.organization || data.user;
-
       setProfile((p: any) => ({ ...p, ...updated }));
-
       const f = buildForm(updated);
       setForm(f);
       setSnapshot(f);
       setSelDirs(updated.activity_directions || []);
-
       const lo = updated.beneficial_owners?.length
         ? updated.beneficial_owners
         : [{ ...BLANK_OWNER }];
@@ -231,7 +262,6 @@ export default function CompanyProfilePage() {
       setOwnerSnap(lo);
       setFinalOwners(lf);
       setFinalOwnerSnap(lf);
-
       const p: Record<string, string> = { ...previews };
       if (updated.company_logo_url) p.company_logo = updated.company_logo_url;
       if (updated.doc_state_registry_url)
@@ -244,7 +274,6 @@ export default function CompanyProfilePage() {
       if (updated.doc_company_intro_url)
         p.doc_company_intro = updated.doc_company_intro_url;
       setPreviews(p);
-
       localStorage.setItem(
         "user",
         JSON.stringify({
@@ -367,7 +396,6 @@ export default function CompanyProfilePage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            {/* ✅ Шинэ хэрэглэгч бол Болих товч харуулахгүй */}
             {!isNewUser && (
               <button
                 onClick={cancelEdit}
@@ -533,7 +561,15 @@ export default function CompanyProfilePage() {
             label="Байгууллагын нэр *"
             value={form.company_name}
             editing={editing}
-            onChange={(v: string) => F("company_name", v)}
+            onChange={(v: string) => {
+              F("company_name", v);
+              setFieldErrors((p) => ({
+                ...p,
+                company_name:
+                  v && !isMongolian(v) ? "Монгол үсгээр бичнэ үү" : "",
+              }));
+            }}
+            fieldError={fieldErrors.company_name}
           />
           <FInput
             label="Байгууллагын нэр англи"
@@ -606,7 +642,16 @@ export default function CompanyProfilePage() {
             label="Утас"
             value={form.phone}
             editing={editing}
-            onChange={(v: string) => F("phone", v)}
+            onChange={(v: string) => {
+              const digits = v.replace(/\D/g, "").slice(0, 8);
+              F("phone", digits);
+              setFieldErrors((p) => ({
+                ...p,
+                phone:
+                  digits && digits.length < 8 ? "8 оронтой тоо оруулна уу" : "",
+              }));
+            }}
+            fieldError={fieldErrors.phone}
           />
           <RadioGroup
             label="НӨАТ төлөгч"
@@ -645,26 +690,80 @@ export default function CompanyProfilePage() {
             label="Аймаг / Нийслэл"
             value={form.aimag_niislel}
             editing={editing}
-            onChange={(v: string) => F("aimag_niislel", v)}
+            onChange={(v: string) => {
+              F("aimag_niislel", v);
+              F("sum_duureg", "");
+              F("bag_horoo", "");
+              setFieldErrors((p) => ({ ...p, sum_duureg: "", bag_horoo: "" }));
+            }}
             options={AIMAG}
             placeholder="Сонгох"
           />
-          <FInput
-            label="Сум / Дүүрэг"
-            value={form.sum_duureg}
-            editing={editing}
-            onChange={(v: string) => F("sum_duureg", v)}
-          />
+
+          {form.aimag_niislel === "Улаанбаатар" ? (
+            <FSelect
+              label="Дүүрэг"
+              value={form.sum_duureg}
+              editing={editing}
+              onChange={(v: string) => {
+                F("sum_duureg", v);
+                F("bag_horoo", "");
+              }}
+              options={Object.keys(UB_DUUREG)}
+              placeholder="Дүүрэг сонгох"
+            />
+          ) : (
+            <FSelect
+              label="Сум"
+              value={form.sum_duureg}
+              editing={editing}
+              onChange={(v: string) => {
+                F("sum_duureg", v);
+                F("bag_horoo", "");
+              }}
+              options={
+                form.aimag_niislel && AIMAG_SUM[form.aimag_niislel]
+                  ? AIMAG_SUM[form.aimag_niislel]
+                  : []
+              }
+              placeholder={
+                form.aimag_niislel ? "Сум сонгох" : "Эхлээд аймаг сонгоно уу"
+              }
+            />
+          )}
         </div>
+
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 14 }}
         >
-          <FInput
-            label="Баг / Хороо"
-            value={form.bag_horoo}
-            editing={editing}
-            onChange={(v: string) => F("bag_horoo", v)}
-          />
+          {form.aimag_niislel === "Улаанбаатар" &&
+          form.sum_duureg &&
+          UB_DUUREG[form.sum_duureg] ? (
+            <FSelect
+              label="Хороо"
+              value={form.bag_horoo}
+              editing={editing}
+              onChange={(v: string) => F("bag_horoo", v)}
+              options={UB_DUUREG[form.sum_duureg]}
+              placeholder="Хороо сонгох"
+            />
+          ) : (
+            <FInput
+              label="Баг / Хороо"
+              value={form.bag_horoo}
+              editing={editing}
+              onChange={(v: string) => {
+                F("bag_horoo", v);
+                setFieldErrors((p) => ({
+                  ...p,
+                  bag_horoo:
+                    v && !isMongolian(v) ? "Монгол үсгээр бичнэ үү" : "",
+                }));
+              }}
+              fieldError={fieldErrors.bag_horoo}
+            />
+          )}
+
           <FInput
             label="Дэлгэрэнгүй хаяг"
             value={form.address}
@@ -763,11 +862,12 @@ export default function CompanyProfilePage() {
       </Section>
 
       {/* 4 & 5. Эзэмшигч / Эцсийн өмчлөгч */}
-      <OwnersSection owners={owners} setOwners={setOwners} editing={editing} />
-      <FinalOwnersSection
-        finalOwners={finalOwners}
-        setFinalOwners={setFinalOwners}
+      <OwnersSection
+        owners={owners}
+        setOwners={setOwners}
         editing={editing}
+        fieldErrors={ownerFieldErrors}
+        setFieldErrors={setOwnerFieldErrors}
       />
 
       {/* 6. Баримт бичиг */}
@@ -823,7 +923,7 @@ export default function CompanyProfilePage() {
         </div>
       </Section>
 
-      {/* 7. Банкны мэдээлэл*/}
+      {/* 7. Банкны мэдээлэл */}
       <Section icon={CreditCard} title="САНХҮҮГИЙН МЭДЭЭЛЭЛ">
         <div
           style={{
