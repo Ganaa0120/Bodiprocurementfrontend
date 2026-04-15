@@ -19,11 +19,23 @@ import { cn } from "@/lib/utils";
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const NAV = [
-  { href:"/dashboard/company",               label:"Хянах самбар",         icon:LayoutDashboard },
-  { href:"/dashboard/company/announcements", label:"Зарлалууд",            icon:Megaphone       },
-  { href:"/dashboard/company/applications",  label:"Миний хүсэлтүүд",      icon:FileText        },
-  { href:"/dashboard/company/notifications", label:"Мэдэгдэл",             icon:Bell            },
-  { href:"/dashboard/company/profile",       label:"Байгууллагын мэдээлэл",icon:User            },
+  { href: "/dashboard/company", label: "Хянах самбар", icon: LayoutDashboard },
+  {
+    href: "/dashboard/company/announcements",
+    label: "Зарлалууд",
+    icon: Megaphone,
+  },
+  {
+    href: "/dashboard/company/applications",
+    label: "Миний хүсэлтүүд",
+    icon: FileText,
+  },
+  { href: "/dashboard/company/notifications", label: "Мэдэгдэл", icon: Bell },
+  {
+    href: "/dashboard/company/profile",
+    label: "Байгууллагын мэдээлэл",
+    icon: User,
+  },
 ];
 
 export default function CompanyLayout({
@@ -92,6 +104,7 @@ export default function CompanyLayout({
   };
 
   const s = user?.status;
+  const isNew = s === "new";
   const isActive = s === "active" || s === "approved";
   const isReturned = s === "returned";
 
@@ -105,14 +118,15 @@ export default function CompanyLayout({
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        * { box-sizing:border-box; font-family:'Inter',sans-serif; }
-        ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:99px}
-        .nav-link { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500;color:#64748b;transition:all .15s;margin-bottom:2px; }
-        .nav-link:hover { background:#f1f5f9;color:#1e293b; }
-        .nav-link.active { background:linear-gradient(135deg,#6366f1,#818cf8);color:white;box-shadow:0 4px 12px rgba(99,102,241,0.3); }
-        @media(max-width:1024px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}}
-      `}</style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { box-sizing:border-box; font-family:'Inter',sans-serif; }
+  ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:99px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .nav-link { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500;color:#64748b;transition:all .15s;margin-bottom:2px; }
+  .nav-link:hover { background:#f1f5f9;color:#1e293b; }
+  .nav-link.active { background:linear-gradient(135deg,#6366f1,#818cf8);color:white;box-shadow:0 4px 12px rgba(99,102,241,0.3); }
+  @media(max-width:1024px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}}
+`}</style>
 
       {open && (
         <div
@@ -275,7 +289,9 @@ export default function CompanyLayout({
               ? "Баталгаажсан"
               : isReturned
                 ? "Буцаагдсан"
-                : "Хянагдаж байна"}
+                : isNew
+                  ? "Бүртгэл үүсгэх"
+                  : "Хянагдаж байна"}
           </span>
 
           {/* ✅ Буцаасан шалтгаан sidebar-д харуулна */}

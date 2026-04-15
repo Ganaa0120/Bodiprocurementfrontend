@@ -1,17 +1,20 @@
 "use client";
-import { Pencil, X, Check, Upload, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { Pencil, Upload, AlertCircle, CheckCircle } from "lucide-react";
 
 export function HeroCard({ profile, previews, editing, onFile, startEdit, pct, isNewUser }: any) {
   const initials   = (profile?.company_name || "?")[0].toUpperCase();
   const s          = profile?.status;
+  const isNew      = s === "new";
   const isActive   = s === "active" || s === "approved";
   const isReturned = s === "returned";
 
-  const badge = isActive
-    ? { label:"Баталгаажсан",   bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", dot:"#10b981" }
+  const badge = isNew
+    ? { label:"Бүртгэл үүсгэх",  bg:"#f0f9ff", color:"#0369a1", border:"#bae6fd", dot:"#0ea5e9" }
+    : isActive
+    ? { label:"Баталгаажсан",     bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", dot:"#10b981" }
     : isReturned
-    ? { label:"Буцаагдсан",     bg:"#fef2f2", color:"#dc2626", border:"#fecaca", dot:"#ef4444" }
-    : { label:"Хянагдаж байна", bg:"#fffbeb", color:"#d97706", border:"#fde68a", dot:"#f59e0b" };
+    ? { label:"Буцаагдсан",       bg:"#fef2f2", color:"#dc2626", border:"#fecaca", dot:"#ef4444" }
+    : { label:"Хянагдаж байна",   bg:"#fffbeb", color:"#d97706", border:"#fde68a", dot:"#f59e0b" };
 
   return (
     <div style={{ background:"white", border:"1px solid #f1f5f9", borderRadius:20,
@@ -48,7 +51,8 @@ export function HeroCard({ profile, previews, editing, onFile, startEdit, pct, i
           <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:99,
             background:badge.bg, color:badge.color, border:`1px solid ${badge.border}`,
             display:"inline-flex", alignItems:"center", gap:5 }}>
-            <span style={{ width:5, height:5, borderRadius:"50%", background:badge.dot, flexShrink:0 }}/>
+            <span style={{ width:5, height:5, borderRadius:"50%", background:badge.dot,
+              flexShrink:0, animation: isNew || s === "pending" ? "pulse 1.5s infinite" : "none" }}/>
             {badge.label}
           </span>
         </div>
@@ -87,7 +91,6 @@ export function HeroCard({ profile, previews, editing, onFile, startEdit, pct, i
           </svg>
         </div>
 
-        {/* ✅ Шинэ хэрэглэгч биш + edit mode биш үед л Засварлах товч харуулна */}
         {!editing && !isNewUser && (
           <button onClick={startEdit}
             style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px",
@@ -99,7 +102,6 @@ export function HeroCard({ profile, previews, editing, onFile, startEdit, pct, i
           </button>
         )}
 
-        {/* Edit mode-д байгааг заах */}
         {editing && !isNewUser && (
           <div style={{ fontSize:11, color:"#f59e0b", fontWeight:600,
             padding:"5px 10px", borderRadius:8, background:"#fffbeb",
@@ -109,6 +111,8 @@ export function HeroCard({ profile, previews, editing, onFile, startEdit, pct, i
           </div>
         )}
       </div>
+
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
     </div>
   );
 }

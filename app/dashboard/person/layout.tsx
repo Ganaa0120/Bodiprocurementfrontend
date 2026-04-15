@@ -20,36 +20,12 @@ import { cn } from "@/lib/utils";
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const STATUS_CFG = {
-  active: {
-    label: "Баталгаажсан",
-    dot: "#10b981",
-    bg: "#ecfdf5",
-    color: "#059669",
-  },
-  approved: {
-    label: "Баталгаажсан",
-    dot: "#10b981",
-    bg: "#ecfdf5",
-    color: "#059669",
-  },
-  pending: {
-    label: "Хянагдаж байна",
-    dot: "#f59e0b",
-    bg: "#fffbeb",
-    color: "#d97706",
-  },
-  returned: {
-    label: "Буцаагдсан",
-    dot: "#ef4444",
-    bg: "#fef2f2",
-    color: "#dc2626",
-  },
-  rejected: {
-    label: "Татгалзсан",
-    dot: "#ef4444",
-    bg: "#fef2f2",
-    color: "#dc2626",
-  },
+  new:      { label:"Бүртгэл үүсгэх",  dot:"#0ea5e9", bg:"#f0f9ff", color:"#0369a1" },
+  pending:  { label:"Хянагдаж байна",   dot:"#f59e0b", bg:"#fffbeb", color:"#d97706" },
+  active:   { label:"Баталгаажсан",     dot:"#10b981", bg:"#ecfdf5", color:"#059669" },
+  approved: { label:"Баталгаажсан",     dot:"#10b981", bg:"#ecfdf5", color:"#059669" },
+  returned: { label:"Буцаагдсан",       dot:"#ef4444", bg:"#fef2f2", color:"#dc2626" },
+  rejected: { label:"Татгалзсан",       dot:"#ef4444", bg:"#fef2f2", color:"#dc2626" },
 };
 
 export default function PersonLayout({

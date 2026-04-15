@@ -51,9 +51,11 @@ const AIMAG = [
 ];
 
 const PERSON_STATUS = {
-  active: { label: "✓ Баталгаажсан", bg: "#dcfce7", color: "#166534" },
-  pending: { label: "Хянагдаж байна", bg: "#fffbeb", color: "#92400e" },
-  returned: { label: "Буцаагдсан", bg: "#fef2f2", color: "#991b1b" },
+  new:      { label: "Бүртгэл үүсгэх",  bg: "#f0f9ff", color: "#0369a1" },
+  pending:  { label: "Хянагдаж байна",   bg: "#fffbeb", color: "#92400e" },
+  active:   { label: "✓ Баталгаажсан",   bg: "#dcfce7", color: "#166534" },
+  approved: { label: "✓ Баталгаажсан",   bg: "#dcfce7", color: "#166534" },
+  returned: { label: "Буцаагдсан",        bg: "#fef2f2", color: "#991b1b" },
 };
 
 const BLANK = {

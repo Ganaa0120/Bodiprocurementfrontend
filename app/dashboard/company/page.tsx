@@ -50,13 +50,8 @@ export default function CompanyDashboard() {
     if (u) setUser(JSON.parse(u));
     fetchApps();
     refreshStatus();
-
-    // ✅ 30 секунд тутамд статус шинэчлэх
     const interval = setInterval(refreshStatus, 30_000);
-
-    // ✅ Tab-руу буцаж орох үед шууд шинэчлэх
     window.addEventListener("focus", refreshStatus);
-
     return () => {
       clearInterval(interval);
       window.removeEventListener("focus", refreshStatus);
@@ -85,8 +80,11 @@ export default function CompanyDashboard() {
     finally { setLoading(false); }
   };
 
-  const isActive  = user?.status === "active" || user?.status === "approved";
-  const isReturned = user?.status === "returned";
+  // ✅ status variables нэг газарт тодорхойлно
+  const s          = user?.status;
+  const isNew      = s === "new";
+  const isActive   = s === "active" || s === "approved";
+  const isReturned = s === "returned";
 
   const STAT_CARDS = [
     { label:"Нийт хүсэлт",   value:stats.total,    icon:FileText,   color:"#6366f1", bg:"#eef2ff" },
@@ -103,7 +101,10 @@ export default function CompanyDashboard() {
 
   return (
     <div style={{ maxWidth:960,margin:"0 auto",display:"flex",flexDirection:"column",gap:20 }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+      `}</style>
 
       {/* ── Header ── */}
       <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",
@@ -111,7 +112,7 @@ export default function CompanyDashboard() {
         <div>
           <p style={{ fontSize:11,color:"#94a3b8",margin:"0 0 4px",fontWeight:500,
             letterSpacing:"0.1em",textTransform:"uppercase" }}>
-            Байгааллагын хянах самбар
+            Байгууллагын хянах самбар
           </p>
           <h1 style={{ fontSize:22,fontWeight:700,color:"#0f172a",margin:0 }}>
             {user?.company_name || "Байгааллага"} 👋
@@ -122,14 +123,17 @@ export default function CompanyDashboard() {
             </p>
           )}
         </div>
+
+        {/* ✅ Status badge */}
         <span style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 14px",
           borderRadius:99,fontSize:12,fontWeight:500,
-          background: isActive ? "#ecfdf5" : isReturned ? "#fef2f2" : "#fffbeb",
-          color:      isActive ? "#059669" : isReturned ? "#dc2626" : "#d97706",
-          border:`1px solid ${isActive ? "#a7f3d0" : isReturned ? "#fecaca" : "#fde68a"}` }}>
+          background: isActive ? "#ecfdf5" : isReturned ? "#fef2f2" : isNew ? "#f0f9ff" : "#fffbeb",
+          color:      isActive ? "#059669" : isReturned ? "#dc2626" : isNew ? "#0369a1" : "#d97706",
+          border:`1px solid ${isActive?"#a7f3d0":isReturned?"#fecaca":isNew?"#bae6fd":"#fde68a"}` }}>
           <span style={{ width:6,height:6,borderRadius:"50%",
-            background: isActive ? "#10b981" : isReturned ? "#ef4444" : "#f59e0b" }}/>
-          {isActive ? "Баталгаажсан" : isReturned ? "Буцаагдсан" : "Хянагдаж байна"}
+            background: isActive?"#10b981":isReturned?"#ef4444":isNew?"#0ea5e9":"#f59e0b",
+            animation: isNew || s==="pending" ? "pulse 1.5s infinite" : "none" }}/>
+          {isActive?"Баталгаажсан":isReturned?"Буцаагдсан":isNew?"Бүртгэл үүсгэх":"Хянагдаж байна"}
         </span>
       </div>
 
@@ -137,8 +141,7 @@ export default function CompanyDashboard() {
       {isReturned && (
         <Link href="/dashboard/company/profile" style={{ textDecoration:"none" }}>
           <div style={{ background:"white",border:"1px solid #fecaca",borderRadius:14,
-            padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",
-            cursor:"pointer" }}
+            padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer" }}
             onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="#fef2f2"}
             onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="white"}>
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>
@@ -156,12 +159,31 @@ export default function CompanyDashboard() {
         </Link>
       )}
 
+      {/* ── New user banner ── */}
+      {isNew && (
+        <Link href="/dashboard/company/profile" style={{ textDecoration:"none" }}>
+          <div style={{ background:"white",border:"1px solid #bae6fd",borderRadius:14,
+            padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer" }}
+            onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="#f0f9ff"}
+            onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="white"}>
+            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+              <div style={{ width:38,height:38,borderRadius:10,background:"#f0f9ff",
+                border:"1px solid #bae6fd",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18 }}>📝</div>
+              <div>
+                <p style={{ fontSize:13,fontWeight:600,color:"#0369a1",margin:0 }}>Байгааллагын мэдээлэл бөглөнө үү</p>
+                <p style={{ fontSize:12,color:"#0ea5e9",margin:"1px 0 0" }}>Бүртгэлээ дуусгаж баталгаажуулалт авна уу</p>
+              </div>
+            </div>
+            <ArrowRight size={16} style={{ color:"#0369a1",flexShrink:0 }}/>
+          </div>
+        </Link>
+      )}
+
       {/* ── Pending banner ── */}
-      {user?.status === "pending" && (
+      {s === "pending" && (
         <Link href="/dashboard/company/profile" style={{ textDecoration:"none" }}>
           <div style={{ background:"white",border:"1px solid #fde68a",borderRadius:14,
-            padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",
-            cursor:"pointer" }}
+            padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer" }}
             onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="#fffbeb"}
             onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="white"}>
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>
@@ -199,7 +221,6 @@ export default function CompanyDashboard() {
 
       {/* ── Content grid ── */}
       <div style={{ display:"grid",gridTemplateColumns:"200px 1fr",gap:14 }}>
-
         {/* Progress */}
         <div style={{ background:"white",border:"1px solid #f1f5f9",borderRadius:14,
           padding:18,boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
@@ -242,7 +263,6 @@ export default function CompanyDashboard() {
               Бүгд <ChevronRight size={13}/>
             </Link>
           </div>
-
           {loading ? (
             <div style={{ display:"flex",justifyContent:"center",padding:40 }}>
               <div style={{ width:20,height:20,border:"2px solid #e2e8f0",
