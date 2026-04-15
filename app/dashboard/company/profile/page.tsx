@@ -823,7 +823,7 @@ export default function CompanyProfilePage() {
         </div>
       </Section>
 
-      {/* 7. Банкны мэдээлэл */}
+      {/* 7. Банкны мэдээлэл*/}
       <Section icon={CreditCard} title="САНХҮҮГИЙН МЭДЭЭЛЭЛ">
         <div
           style={{
