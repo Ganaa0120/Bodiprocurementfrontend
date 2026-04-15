@@ -12,12 +12,142 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 type Tab  = "organization" | "individual";
 type Step = "form" | "otp" | "consent" | "done";
 
+// ── Password strength checker ─────────────────────────────────────
+function checkPassword(pw: string) {
+  return {
+    length:  pw.length >= 8,
+    upper:   /[A-Z]/.test(pw),
+    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw),
+  };
+}
+
+function isValidPassword(pw: string) {
+  const c = checkPassword(pw);
+  return c.length && c.upper && c.special;
+}
+
+// ── Shared UI ─────────────────────────────────────────────────────
+function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("relative z-10 rounded-2xl p-8", className)} style={{
+      background:"rgba(255,255,255,0.72)", border:"1px solid rgba(255,255,255,0.85)",
+      backdropFilter:"blur(28px)",
+      boxShadow:"0 8px 32px rgba(99,102,241,.10),0 2px 8px rgba(0,0,0,.06),0 0 0 1px rgba(255,255,255,.9) inset",
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function AccentLine() {
+  return <div className="absolute -top-px left-1/2 -translate-x-1/2 h-px w-3/4 rounded-full"
+    style={{ background:"linear-gradient(90deg,transparent,#818cf8,#60a5fa,transparent)" }}/>;
+}
+
+function BottomAccent() {
+  return <div className="absolute -bottom-px left-1/2 -translate-x-1/2 h-px w-1/2 rounded-full"
+    style={{ background:"linear-gradient(90deg,transparent,#60a5fa,transparent)" }}/>;
+}
+
+function SubmitBtn({ loading, label }: { loading: boolean; label: string }) {
+  return (
+    <button type="submit" disabled={loading}
+      className="w-full h-11 rounded-xl font-semibold text-white text-sm transition-all hover:shadow-lg hover:shadow-indigo-200 disabled:opacity-70"
+      style={{ background:"linear-gradient(135deg,#6366f1 0%,#818cf8 50%,#60a5fa 100%)", boxShadow:"0 4px 15px rgba(99,102,241,.30)" }}>
+      {loading
+        ? <span className="flex items-center justify-center gap-2"><Loader2 size={14} className="animate-spin"/>Илгээж байна...</span>
+        : `${label} →`}
+    </button>
+  );
+}
+
+function Field({ label, id, type = "text", placeholder, value, onChange, error }: {
+  label: string; id: string; type?: string; placeholder: string;
+  value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; error?: string;
+}) {
+  return (
+    <div className="flex flex-col space-y-1 w-full">
+      <label htmlFor={id} className="text-neutral-600 text-sm font-medium">{label}</label>
+      <input id={id} type={type} placeholder={placeholder} value={value} onChange={onChange}
+        className={cn("w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all bg-white/70",
+          "border focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]",
+          error ? "border-red-300" : "border-indigo-100")}
+        style={{ color:"#1a2336" }}/>
+      {error && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11}/>{error}</p>}
+    </div>
+  );
+}
+
+function PasswordField({ label, id, value, onChange, error }: {
+  label: string; id: string;
+  value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; error?: string;
+}) {
+  const [show, setShow] = useState(false);
+  const checks = checkPassword(value);
+  const rules = [
+    { key: "length"  as const, label: "Хамгийн багадаа 8 тэмдэгт" },
+    { key: "upper"   as const, label: "Том үсэг (A-Z) орсон байх" },
+    { key: "special" as const, label: "Тусгай тэмдэгт (!@#$ гэх мэт)" },
+  ];
+
+  return (
+    <div className="flex flex-col space-y-1 w-full">
+      <label htmlFor={id} className="text-neutral-600 text-sm font-medium">{label}</label>
+      <div className="relative">
+        <input id={id} type={show ? "text" : "password"}
+          placeholder="••••••••" value={value} onChange={onChange}
+          className={cn("w-full rounded-xl px-3.5 py-2.5 pr-10 text-sm outline-none transition-all bg-white/70",
+            "border focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]",
+            error ? "border-red-300" : "border-indigo-100")}
+          style={{ color:"#1a2336" }}/>
+        <button type="button" onClick={() => setShow(s => !s)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors">
+          {show ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          )}
+        </button>
+      </div>
+      {/* Strength rules */}
+      {value.length > 0 && (
+        <div className="space-y-1 pt-1">
+          {rules.map(r => (
+            <div key={r.key} className="flex items-center gap-2">
+              <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 transition-all",
+                checks[r.key] ? "bg-emerald-500" : "bg-neutral-200")}>
+                {checks[r.key] && (
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                    <path d="M5 13l4 4L19 7"/>
+                  </svg>
+                )}
+              </div>
+              <span className={cn("text-xs transition-colors",
+                checks[r.key] ? "text-emerald-600" : "text-neutral-400")}>
+                {r.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {error && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11}/>{error}</p>}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────
 export default function SignupFormDemo() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("organization");
   const [step,      setStep]      = useState<Step>("form");
 
-  // ── Org ──────────────────────────────────────────────────────────
   const [orgRegnum,    setOrgRegnum]    = useState("");
   const [orgName,      setOrgName]      = useState("");
   const [orgEmail,     setOrgEmail]     = useState("");
@@ -25,28 +155,24 @@ export default function SignupFormDemo() {
   const [orgPassword2, setOrgPassword2] = useState("");
   const [orgErrors,    setOrgErrors]    = useState<Record<string,string>>({});
 
-  // ── Individual ───────────────────────────────────────────────────
   const [perRegister,  setPerRegister]  = useState("");
   const [perEmail,     setPerEmail]     = useState("");
   const [perPassword,  setPerPassword]  = useState("");
   const [perPassword2, setPerPassword2] = useState("");
   const [perErrors,    setPerErrors]    = useState<Record<string,string>>({});
 
-  // ── OTP ──────────────────────────────────────────────────────────
-  const [otp,     setOtp]     = useState("");
-  const [otpError,setOtpError]= useState("");
-  const [timer,   setTimer]   = useState(0);
-  const [expired, setExpired] = useState(false);
+  const [otp,      setOtp]      = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [timer,    setTimer]    = useState(0);
+  const [expired,  setExpired]  = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Consent ──────────────────────────────────────────────────────
   const [check1,  setCheck1]  = useState(false);
   const [check2,  setCheck2]  = useState(false);
   const [loading, setLoading] = useState(false);
 
   const currentEmail = activeTab === "organization" ? orgEmail : perEmail;
 
-  // ── Timer ────────────────────────────────────────────────────────
   useEffect(() => {
     if (timer <= 0) return;
     timerRef.current = setTimeout(() => {
@@ -58,18 +184,14 @@ export default function SignupFormDemo() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [timer]);
 
-  // ── Individual register input handler ────────────────────────────
-  // Эхний 2 тэмдэгт: зөвхөн монгол үсэг, дараа нь зөвхөн тоо
   const handlePerRegisterChange = (v: string) => {
     const upper = v.toUpperCase();
     let result = "";
     for (let i = 0; i < upper.length && result.length < 10; i++) {
       const ch = upper[i];
       if (result.length < 2) {
-        // Монгол үсэг шалгах
         if (/[А-ЯӨҮЁ]/.test(ch)) result += ch;
       } else {
-        // Зөвхөн тоо
         if (/\d/.test(ch)) result += ch;
       }
     }
@@ -77,7 +199,6 @@ export default function SignupFormDemo() {
     setPerErrors(p => ({ ...p, register: "" }));
   };
 
-  // ── Send OTP → backend ───────────────────────────────────────────
   const sendOtp = async (): Promise<boolean> => {
     setLoading(true);
     try {
@@ -98,7 +219,6 @@ export default function SignupFormDemo() {
     }
   };
 
-  // ── Validate org ─────────────────────────────────────────────────
   const handleOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: Record<string,string> = {};
@@ -108,8 +228,8 @@ export default function SignupFormDemo() {
       errs.name = "Байгууллагын нэр шаардлагатай";
     if (!orgEmail.trim() || !/\S+@\S+\.\S+/.test(orgEmail))
       errs.email = "И-мэйл буруу байна";
-    if (orgPassword.length < 6)
-      errs.password = "Хамгийн багадаа 6 тэмдэгт";
+    if (!isValidPassword(orgPassword))
+      errs.password = "Нууц үг шаардлага хангахгүй байна";
     if (orgPassword !== orgPassword2)
       errs.password2 = "Нууц үг таарахгүй байна";
     setOrgErrors(errs);
@@ -118,7 +238,6 @@ export default function SignupFormDemo() {
     if (ok) setStep("otp");
   };
 
-  // ── Validate individual ──────────────────────────────────────────
   const handlePerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: Record<string,string> = {};
@@ -126,8 +245,8 @@ export default function SignupFormDemo() {
       errs.register = "2 монгол үсэг + 8 тоо (АБ12345678)";
     if (!perEmail.trim() || !/\S+@\S+\.\S+/.test(perEmail))
       errs.email = "И-мэйл буруу байна";
-    if (perPassword.length < 6)
-      errs.password = "Хамгийн багадаа 6 тэмдэгт";
+    if (!isValidPassword(perPassword))
+      errs.password = "Нууц үг шаардлага хангахгүй байна";
     if (perPassword !== perPassword2)
       errs.password2 = "Нууц үг таарахгүй байна";
     setPerErrors(errs);
@@ -136,7 +255,6 @@ export default function SignupFormDemo() {
     if (ok) setStep("otp");
   };
 
-  // ── Verify OTP → backend ─────────────────────────────────────────
   const verifyOtp = async () => {
     if (expired) { setOtpError("Кодны хугацаа дууссан. Дахин илгээнэ үү."); return; }
     if (otp.length !== 6) { setOtpError("6 оронтой код оруулна уу"); return; }
@@ -160,7 +278,6 @@ export default function SignupFormDemo() {
 
   const resendOtp = async () => { setOtp(""); setOtpError(""); await sendOtp(); };
 
-  // ── Final submit → backend ───────────────────────────────────────
   const finalSubmit = async () => {
     if (!check1 || !check2) return;
     setLoading(true); setOtpError("");
@@ -182,7 +299,7 @@ export default function SignupFormDemo() {
         if (data.organization)
           localStorage.setItem("user", JSON.stringify({ ...data.organization, role:"company" }));
         setStep("done");
-        setTimeout(() => router.push("/dashboard/company"), 1800);
+        setTimeout(() => router.push("/dashboard/company/profile?edit=true"), 1800);
       } else {
         const res = await fetch(`${API}/api/persons/register`, {
           method: "POST",
@@ -199,7 +316,7 @@ export default function SignupFormDemo() {
         if (data.user)
           localStorage.setItem("user", JSON.stringify({ ...data.user, role:"individual" }));
         setStep("done");
-        setTimeout(() => router.push("/dashboard/person"), 1800);
+        setTimeout(() => router.push("/dashboard/person/profile?edit=true"), 1800);
       }
     } catch (err: any) {
       setOtpError(err.message || "Серверийн алдаа гарлаа");
@@ -250,59 +367,41 @@ export default function SignupFormDemo() {
           {/* ── ORG FORM ── */}
           {activeTab === "organization" && (
             <form className="space-y-4" onSubmit={handleOrgSubmit}>
-              {/* Регистрийн дугаар — 7 тоо */}
               <div className="flex flex-col space-y-1">
                 <label className="text-neutral-600 text-sm font-medium">
                   Байгааллагын регистрийн дугаар *
                 </label>
-                <div className="relative">
-                  <input
-                    value={orgRegnum}
-                    onChange={e => {
-                      setOrgRegnum(e.target.value.replace(/\D/g,"").slice(0,7));
-                      setOrgErrors(p=>({...p,regnum:""}));
-                    }}
-                    placeholder="1234567"
-                    maxLength={7}
-                    inputMode="numeric"
-                    className={cn("w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all bg-white/70 border font-mono tracking-widest text-center text-base",
-                      "focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]",
-                      orgErrors.regnum ? "border-red-300" : "border-indigo-100")}
-                    style={{ color:"#1a2336" }}/>
-                </div>
-                {/* Dot progress */}
+                <input
+                  value={orgRegnum}
+                  onChange={e => { setOrgRegnum(e.target.value.replace(/\D/g,"").slice(0,7)); setOrgErrors(p=>({...p,regnum:""})); }}
+                  placeholder="1234567" maxLength={7} inputMode="numeric"
+                  className={cn("w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all bg-white/70 border font-mono tracking-widest text-center text-base",
+                    "focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]",
+                    orgErrors.regnum ? "border-red-300" : "border-indigo-100")}
+                  style={{ color:"#1a2336" }}/>
                 <div className="flex gap-1 pt-1">
                   {Array.from({length:7},(_,i)=>(
                     <div key={i} className={cn("flex-1 h-0.5 rounded-full transition-all duration-300",
                       orgRegnum[i] ? "bg-indigo-400" : "bg-indigo-100")}/>
                   ))}
                 </div>
-                {orgErrors.regnum && <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle size={11}/>{orgErrors.regnum}</p>}
+                {orgErrors.regnum && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11}/>{orgErrors.regnum}</p>}
               </div>
 
-              {/* Байгууллагын нэр */}
               <Field label="Байгууллагын нэр *" id="org-name" type="text"
                 placeholder="Бодь Трейд ХХК"
                 value={orgName} onChange={e=>{setOrgName(e.target.value);setOrgErrors(p=>({...p,name:""}));}}
                 error={orgErrors.name}/>
-
-              {/* И-мэйл */}
               <Field label="Байгааллагын и-мэйл *" id="org-email" type="email"
                 placeholder="info@company.mn"
                 value={orgEmail} onChange={e=>{setOrgEmail(e.target.value);setOrgErrors(p=>({...p,email:""}));}}
                 error={orgErrors.email}/>
-
-              {/* Нууц үг */}
-              <Field label="Нууц үг *" id="org-pw" type="password"
-                placeholder="••••••••"
+              <PasswordField label="Нууц үг *" id="org-pw"
                 value={orgPassword} onChange={e=>{setOrgPassword(e.target.value);setOrgErrors(p=>({...p,password:""}));}}
                 error={orgErrors.password}/>
-              <Field label="Нууц үг давтах *" id="org-pw2" type="password"
-                placeholder="••••••••"
+              <PasswordField label="Нууц үг давтах *" id="org-pw2"
                 value={orgPassword2} onChange={e=>{setOrgPassword2(e.target.value);setOrgErrors(p=>({...p,password2:""}));}}
                 error={orgErrors.password2}/>
-
               <SubmitBtn loading={loading} label="Байгааллагаар бүртгүүлэх"/>
             </form>
           )}
@@ -310,48 +409,36 @@ export default function SignupFormDemo() {
           {/* ── INDIVIDUAL FORM ── */}
           {activeTab === "individual" && (
             <form className="space-y-4" onSubmit={handlePerSubmit}>
-              {/* Регистрийн дугаар — 2 монгол үсэг + 8 тоо */}
               <div className="flex flex-col space-y-1">
-                <label className="text-neutral-600 text-sm font-medium">
-                  Регистрийн дугаар *
-                </label>
-                <div className="relative">
-                  <input
-                    value={perRegister}
-                    onChange={e => handlePerRegisterChange(e.target.value)}
-                    placeholder="АБ12345678"
-                    maxLength={10}
-                    className={cn("w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all bg-white/70 border font-mono tracking-widest text-center text-base",
-                      "focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]",
-                      perErrors.register ? "border-red-300" : "border-indigo-100")}
-                    style={{ color:"#1a2336" }}/>
-                </div>
-                {/* Dot progress — эхний 2 нь үсэг, үлдсэн 8 нь тоо */}
+                <label className="text-neutral-600 text-sm font-medium">Регистрийн дугаар *</label>
+                <input
+                  value={perRegister}
+                  onChange={e => handlePerRegisterChange(e.target.value)}
+                  placeholder="АБ12345678" maxLength={10}
+                  className={cn("w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all bg-white/70 border font-mono tracking-widest text-center text-base",
+                    "focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]",
+                    perErrors.register ? "border-red-300" : "border-indigo-100")}
+                  style={{ color:"#1a2336" }}/>
                 <div className="flex gap-1 pt-1">
                   {Array.from({length:10},(_,i)=>(
                     <div key={i} className={cn("flex-1 h-0.5 rounded-full transition-all duration-300",
-                      perRegister[i]
-                        ? i < 2 ? "bg-purple-400" : "bg-indigo-400"
-                        : "bg-indigo-100")}/>
+                      perRegister[i] ? i < 2 ? "bg-purple-400" : "bg-indigo-400" : "bg-indigo-100")}/>
                   ))}
                 </div>
                 <p className="text-[11px] text-neutral-400">
                   <span className="text-purple-500 font-semibold">АБ</span> — монгол үсэг + <span className="text-indigo-500 font-semibold">12345678</span> — 8 тоо
                 </p>
-                {perErrors.register && <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle size={11}/>{perErrors.register}</p>}
+                {perErrors.register && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11}/>{perErrors.register}</p>}
               </div>
 
               <Field label="И-мэйл хаяг *" id="per-email" type="email"
                 placeholder="example@mail.mn"
                 value={perEmail} onChange={e=>{setPerEmail(e.target.value);setPerErrors(p=>({...p,email:""}));}}
                 error={perErrors.email}/>
-              <Field label="Нууц үг *" id="per-pw" type="password"
-                placeholder="••••••••"
+              <PasswordField label="Нууц үг *" id="per-pw"
                 value={perPassword} onChange={e=>{setPerPassword(e.target.value);setPerErrors(p=>({...p,password:""}));}}
                 error={perErrors.password}/>
-              <Field label="Нууц үг давтах *" id="per-pw2" type="password"
-                placeholder="••••••••"
+              <PasswordField label="Нууц үг давтах *" id="per-pw2"
                 value={perPassword2} onChange={e=>{setPerPassword2(e.target.value);setPerErrors(p=>({...p,password2:""}));}}
                 error={perErrors.password2}/>
               <SubmitBtn loading={loading} label="Хувь хүнээр бүртгүүлэх"/>
@@ -430,7 +517,8 @@ export default function SignupFormDemo() {
               className={cn("w-full h-11 rounded-xl font-semibold text-white text-sm transition-all relative overflow-hidden",
                 canVerify ? "hover:shadow-lg hover:shadow-indigo-200" : "cursor-not-allowed opacity-40")}
               style={{ background:"linear-gradient(135deg,#6366f1,#60a5fa)", boxShadow:canVerify?"0 4px 15px rgba(99,102,241,.3)":"none" }}>
-              {loading ? <span className="flex items-center justify-center gap-2"><Loader2 size={14} className="animate-spin"/> Шалгаж байна...</span>
+              {loading
+                ? <span className="flex items-center justify-center gap-2"><Loader2 size={14} className="animate-spin"/> Шалгаж байна...</span>
                 : expired ? "⏰ Хугацаа дууссан" : "Баталгаажуулах →"}
             </button>
 
@@ -507,55 +595,6 @@ export default function SignupFormDemo() {
           <style>{`@keyframes grow{from{width:0%}to{width:100%}}`}</style>
         </GlassCard>
       )}
-    </div>
-  );
-}
-
-// ── Shared UI ─────────────────────────────────────────────────────
-function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn("relative z-10 rounded-2xl p-8", className)} style={{
-      background:"rgba(255,255,255,0.72)", border:"1px solid rgba(255,255,255,0.85)",
-      backdropFilter:"blur(28px)",
-      boxShadow:"0 8px 32px rgba(99,102,241,.10),0 2px 8px rgba(0,0,0,.06),0 0 0 1px rgba(255,255,255,.9) inset",
-    }}>
-      {children}
-    </div>
-  );
-}
-function AccentLine() {
-  return <div className="absolute -top-px left-1/2 -translate-x-1/2 h-px w-3/4 rounded-full"
-    style={{ background:"linear-gradient(90deg,transparent,#818cf8,#60a5fa,transparent)" }}/>;
-}
-function BottomAccent() {
-  return <div className="absolute -bottom-px left-1/2 -translate-x-1/2 h-px w-1/2 rounded-full"
-    style={{ background:"linear-gradient(90deg,transparent,#60a5fa,transparent)" }}/>;
-}
-function SubmitBtn({ loading, label }: { loading: boolean; label: string }) {
-  return (
-    <button type="submit" disabled={loading}
-      className="w-full h-11 rounded-xl font-semibold text-white text-sm transition-all hover:shadow-lg hover:shadow-indigo-200 disabled:opacity-70"
-      style={{ background:"linear-gradient(135deg,#6366f1 0%,#818cf8 50%,#60a5fa 100%)", boxShadow:"0 4px 15px rgba(99,102,241,.30)" }}>
-      {loading ? <span className="flex items-center justify-center gap-2">
-        <Loader2 size={14} className="animate-spin"/>Илгээж байна...</span>
-        : `${label} →`}
-    </button>
-  );
-}
-function Field({ label, id, type="text", placeholder, value, onChange, error }: {
-  label: string; id: string; type?: string; placeholder: string;
-  value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; error?: string;
-}) {
-  return (
-    <div className="flex flex-col space-y-1 w-full">
-      <label htmlFor={id} className="text-neutral-600 text-sm font-medium">{label}</label>
-      <input id={id} type={type} placeholder={placeholder} value={value} onChange={onChange}
-        className={cn("w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all bg-white/70",
-          "border focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]",
-          error ? "border-red-300" : "border-indigo-100")}
-        style={{ color:"#1a2336" }}/>
-      {error && <p className="text-xs text-red-500 flex items-center gap-1">
-        <AlertCircle size={11}/>{error}</p>}
     </div>
   );
 }

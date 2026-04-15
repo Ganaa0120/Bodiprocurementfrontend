@@ -243,7 +243,7 @@ export default function PersonDashboard() {
               </div>
             </div>
             <Link href="/dashboard/person/profile" style={{ textDecoration:"none" }}>
-              <span style={{ fontSize:11,fontWeight:700,padding:"6px 14px",borderRadius:99,
+              <span style={{ fontSize:11,fontWeight:700,padding:"8px 14px",borderRadius:99,
                 background:"rgba(245,158,11,0.2)",color:"#fde68a",
                 border:"1px solid rgba(245,158,11,0.3)",whiteSpace:"nowrap" as const }}>
                 Бөглөх →

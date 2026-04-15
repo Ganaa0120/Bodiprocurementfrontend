@@ -255,8 +255,6 @@ export default function PersonProfilePage() {
   const [files,      setFiles]      = useState<Record<string,File>>({});
   const [form,       setForm]       = useState<any>(BLANK);
   const [snapshot,   setSnapshot]   = useState<any>(BLANK);
-  const [anns,       setAnns]       = useState<any[]>([]);
-  const [annsLoad,   setAnnsLoad]   = useState(false);
 
   useEffect(() => {
     fetch(`${API}/api/activity-directions`)
@@ -273,7 +271,7 @@ export default function PersonProfilePage() {
         if (d.success && (d.person || d.user)) {
           const u = d.person || d.user;
           setProfile(u);
-          setForm({
+          const f = {
             family_name:          u.family_name           || "",
             last_name:            u.last_name             || "",
             first_name:           u.first_name            || "",
@@ -290,25 +288,9 @@ export default function PersonProfilePage() {
             activity_start_date:  u.activity_start_date?.slice(0,10) || "",
             is_vat_payer:         u.is_vat_payer          || false,
             notification_type:    u.notification_type     || "email",
-          });
-          setSnapshot({
-            family_name:          u.family_name           || "",
-            last_name:            u.last_name             || "",
-            first_name:           u.first_name            || "",
-            birth_date:           u.birth_date?.slice(0,10) || "",
-            gender:               u.gender                || "",
-            phone:                u.phone                 || "",
-            aimag_niislel:        u.aimag_niislel         || "",
-            sum_duureg:           u.sum_duureg            || "",
-            bag_horoo:            u.bag_horoo             || "",
-            toot:                 u.toot                  || "",
-            address_different:    u.address_different     || false,
-            orshisuugaa_hayag:    u.orshisuugaa_hayag     || "",
-            activity_description: u.activity_description  || "",
-            activity_start_date:  u.activity_start_date?.slice(0,10) || "",
-            is_vat_payer:         u.is_vat_payer          || false,
-            notification_type:    u.notification_type     || "email",
-          });
+          };
+          setForm(f);
+          setSnapshot(f);
           const sdirs = Array.isArray(u.activity_directions) ? u.activity_directions : [];
           setSelDirs(sdirs); setSelDirSnap(sdirs);
           const p: Record<string,string> = {};
@@ -317,17 +299,12 @@ export default function PersonProfilePage() {
           if (u.id_card_back_url)   p.id_card_back   = u.id_card_back_url;
           if (u.activity_intro_url) p.activity_intro = u.activity_intro_url;
           setPreviews(p);
+
+          // ✅ Шинэ хэрэглэгч бол шууд edit mode
+          const isNewUser = !u.first_name && !u.last_name;
+          setEditing(isNewUser);
         }
       }).catch(() => {}).finally(() => setLoading(false));
-
-    setAnnsLoad(true);
-    fetch(`${API}/api/announcements?limit=20&status=published`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(d => { if (d.success) setAnns(d.announcements ?? []); })
-      .catch(() => {})
-      .finally(() => setAnnsLoad(false));
   }, []);
 
   const F = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
@@ -354,6 +331,19 @@ export default function PersonProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Алдаа гарлаа");
+
+      // ✅ Profile шинэчлэх
+      const u = data.person || data.user;
+      if (u) {
+        setProfile(u);
+        const p: Record<string,string> = { ...previews };
+        if (u.profile_photo_url)  p.profile_photo  = u.profile_photo_url;
+        if (u.id_card_front_url)  p.id_card_front  = u.id_card_front_url;
+        if (u.id_card_back_url)   p.id_card_back   = u.id_card_back_url;
+        if (u.activity_intro_url) p.activity_intro = u.activity_intro_url;
+        setPreviews(p);
+      }
+
       setSaved(true); setEditing(false); setFiles({});
       setSnapshot({ ...form }); setSelDirSnap([...selDirs]);
       setTimeout(() => setSaved(false), 3000);
@@ -365,8 +355,7 @@ export default function PersonProfilePage() {
     setSelDirs(p => p.includes(id) ? p.filter(d => d !== id) : [...p, id]);
 
   const pct = calcPct(form, selDirs, previews);
-
-  // ✅ Status config
+  const isNewUser = !profile?.first_name && !profile?.last_name;
   const statusKey = (profile?.status ?? "pending") as keyof typeof PERSON_STATUS;
   const sc = PERSON_STATUS[statusKey] ?? PERSON_STATUS.pending;
 
@@ -379,18 +368,6 @@ export default function PersonProfilePage() {
 
   const initials = [(form.last_name||"")[0], (form.first_name||"")[0]]
     .filter(Boolean).join("").toUpperCase() || "?";
-
-  const ANN_TYPE: Record<string,{label:string;color:string;emoji:string}> = {
-    open:     { label:"Нээлттэй",    color:"#3b82f6", emoji:"🌐" },
-    targeted: { label:"Хаалттай",    color:"#a78bfa", emoji:"🔒" },
-    rfq:      { label:"Үнийн санал", color:"#f59e0b", emoji:"📊" },
-  };
-  const ANN_STATUS: Record<string,{label:string;color:string;bg:string}> = {
-    published: { label:"Нийтлэгдсэн", color:"#059669", bg:"#dcfce7" },
-    draft:     { label:"Ноорог",       color:"#92400e", bg:"#fffbeb" },
-    closed:    { label:"Хаагдсан",     color:"#b45309", bg:"#fef3c7" },
-    cancelled: { label:"Цуцлагдсан",   color:"#991b1b", bg:"#fee2e2" },
-  };
 
   return (
     <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 16px 40px",
@@ -421,15 +398,27 @@ export default function PersonProfilePage() {
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div style={{ width:7, height:7, borderRadius:"50%", background:"#f59e0b",
               animation:"pulse 1.5s infinite" }}/>
-            <span style={{ fontSize:13, fontWeight:600, color:"#0f172a" }}>Засварлаж байна</span>
+            <div>
+              <span style={{ fontSize:13, fontWeight:600, color:"#0f172a" }}>
+                {isNewUser ? "Мэдээлэл бөглөх" : "Засварлаж байна"}
+              </span>
+              {isNewUser && (
+                <span style={{ fontSize:11, color:"#94a3b8", marginLeft:8 }}>
+                  · Доорх талбаруудыг бөглөөд хадгална уу
+                </span>
+              )}
+            </div>
           </div>
           <div className="save-bar-btns" style={{ display:"flex", gap:8 }}>
-            <button onClick={cancelEdit} disabled={saving}
-              style={{ display:"flex", alignItems:"center", gap:5, padding:"8px 16px",
-                borderRadius:9, border:"1px solid #e2e8f0", background:"white",
-                color:"#64748b", fontSize:13, fontWeight:500, cursor:"pointer" }}>
-              <X size={13}/> Болих
-            </button>
+            {/* ✅ Шинэ хэрэглэгч бол Болих товч харуулахгүй */}
+            {!isNewUser && (
+              <button onClick={cancelEdit} disabled={saving}
+                style={{ display:"flex", alignItems:"center", gap:5, padding:"8px 16px",
+                  borderRadius:9, border:"1px solid #e2e8f0", background:"white",
+                  color:"#64748b", fontSize:13, fontWeight:500, cursor:"pointer" }}>
+                <X size={13}/> Болих
+              </button>
+            )}
             <button onClick={handleSave} disabled={saving}
               style={{ display:"flex", alignItems:"center", gap:5, padding:"8px 20px",
                 borderRadius:9, border:"none",
@@ -498,7 +487,6 @@ export default function PersonProfilePage() {
               <h2 style={{ fontSize:18, fontWeight:700, color:"#0f172a", margin:0 }}>
                 {[form.last_name, form.first_name].filter(Boolean).join(" ") || "Нэр оруулаагүй"}
               </h2>
-              {/* ✅ Status badge */}
               <span style={{ fontSize:11, fontWeight:600, padding:"3px 10px",
                 borderRadius:99, background:sc.bg, color:sc.color }}>
                 {sc.label}
@@ -527,7 +515,8 @@ export default function PersonProfilePage() {
               </div>
               <Ring pct={pct}/>
             </div>
-            {!editing ? (
+            {/* ✅ Засварлах товч — зөвхөн хуучин хэрэглэгч, edit mode биш үед */}
+            {!editing && !isNewUser && (
               <button onClick={startEdit}
                 style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px",
                   borderRadius:10, border:"1px solid #e2e8f0", background:"white",
@@ -536,7 +525,8 @@ export default function PersonProfilePage() {
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor="#e2e8f0"; (e.currentTarget as HTMLElement).style.color="#0f172a"; }}>
                 <Pencil size={13}/> Засварлах
               </button>
-            ) : (
+            )}
+            {editing && !isNewUser && (
               <div style={{ fontSize:11, color:"#f59e0b", fontWeight:600,
                 padding:"5px 10px", borderRadius:8, background:"#fffbeb",
                 border:"1px solid #fde68a", display:"flex", alignItems:"center", gap:5 }}>
@@ -559,9 +549,9 @@ export default function PersonProfilePage() {
                 Анкетаа бүрэн бөглөнө үү
               </div>
               <div style={{ fontSize:11, color:"#64748b" }}>
-                {!form.gender         && "Хүйс · "}
-                {!form.birth_date     && "Төрсөн огноо · "}
-                {selDirs.length === 0 && "Нийлүүлэх чиглэл · "}
+                {!form.gender            && "Хүйс · "}
+                {!form.birth_date        && "Төрсөн огноо · "}
+                {selDirs.length === 0    && "Нийлүүлэх чиглэл · "}
                 {!previews.profile_photo && "Профайл зураг · "}
                 {!previews.id_card_front && "Иргэний үнэмлэх"}
               </div>
@@ -569,70 +559,44 @@ export default function PersonProfilePage() {
           </div>
         )}
 
-        {/* ✅ Returned warning + шалтгаан */}
-        {/* {profile?.status === "returned" && (
-          <div style={{ marginTop:16, padding:"12px 14px", borderRadius:10,
-            background:"#fef2f2", border:"1px solid #fecaca",
-            display:"flex", alignItems:"flex-start", gap:10 }}>
-            <div style={{ fontSize:18, flexShrink:0 }}>⚠️</div>
-            <div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#dc2626", marginBottom:3 }}>
-                Бүртгэл буцаагдсан байна
-              </div>
-              {profile?.return_reason && (
-                <div style={{ fontSize:12, color:"#7f1d1d", lineHeight:1.6 }}>
-                  {profile.return_reason}
+        {/* Returned warning */}
+        {profile?.status === "returned" && (
+          <div style={{ marginTop:16, borderRadius:14,
+            border:"1.5px solid #fecaca", overflow:"hidden" }}>
+            <div style={{ padding:"12px 16px",
+              background:"linear-gradient(135deg,#fef2f2,#fff5f5)",
+              display:"flex", alignItems:"center", gap:10,
+              borderBottom: profile?.return_reason ? "1px solid #fecaca" : "none" }}>
+              <div style={{ fontSize:20 }}>⚠️</div>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:"#dc2626" }}>
+                  Бүртгэл буцаагдсан байна
                 </div>
-              )}
-              <div style={{ fontSize:11, color:"#ef4444", marginTop:4 }}>
-                Мэдээллээ засаад хадгална уу
+                <div style={{ fontSize:11, color:"#ef4444", marginTop:1 }}>
+                  Доорх шалтгааныг уншаад мэдээллээ засна уу
+                </div>
               </div>
             </div>
+            {profile?.return_reason && (
+              <div style={{ padding:"14px 16px", background:"#fff5f5" }}>
+                <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em",
+                  textTransform:"uppercase" as const, color:"#dc2626", marginBottom:8 }}>
+                  Буцаасан шалтгаан
+                </div>
+                <div style={{ fontSize:13, color:"#7f1d1d", lineHeight:1.7,
+                  background:"white", borderRadius:10, padding:"10px 14px",
+                  border:"1px solid #fecaca", whiteSpace:"pre-wrap" as const }}>
+                  {profile.return_reason}
+                </div>
+                <div style={{ fontSize:11, color:"#b91c1c", marginTop:10,
+                  display:"flex", alignItems:"center", gap:5 }}>
+                  <span>→</span>
+                  <span>Мэдээллээ засаад <strong>"Хадгалах"</strong> товчийг дарна уу</span>
+                </div>
+              </div>
+            )}
           </div>
-        )} */}
-        {/* ✅ Returned warning + шалтгаан — Hero Card дотор */}
-{profile?.status === "returned" && (
-  <div style={{ marginTop:16, borderRadius:14,
-    border:"1.5px solid #fecaca", overflow:"hidden" }}>
-
-    {/* Header */}
-    <div style={{ padding:"12px 16px",
-      background:"linear-gradient(135deg,#fef2f2,#fff5f5)",
-      display:"flex", alignItems:"center", gap:10,
-      borderBottom: profile?.return_reason ? "1px solid #fecaca" : "none" }}>
-      <div style={{ fontSize:20 }}>⚠️</div>
-      <div>
-        <div style={{ fontSize:13, fontWeight:700, color:"#dc2626" }}>
-          Бүртгэл буцаагдсан байна
-        </div>
-        <div style={{ fontSize:11, color:"#ef4444", marginTop:1 }}>
-          Доорх шалтгааныг уншаад мэдээллээ засна уу
-        </div>
-      </div>
-    </div>
-
-    {/* Шалтгаан */}
-    {profile?.return_reason && (
-      <div style={{ padding:"14px 16px", background:"#fff5f5" }}>
-        <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em",
-          textTransform:"uppercase" as const, color:"#dc2626",
-          marginBottom:8 }}>
-          Буцаасан шалтгаан
-        </div>
-        <div style={{ fontSize:13, color:"#7f1d1d", lineHeight:1.7,
-          background:"white", borderRadius:10, padding:"10px 14px",
-          border:"1px solid #fecaca", whiteSpace:"pre-wrap" as const }}>
-          {profile.return_reason}
-        </div>
-        <div style={{ fontSize:11, color:"#b91c1c", marginTop:10,
-          display:"flex", alignItems:"center", gap:5 }}>
-          <span>→</span>
-          <span>Мэдээллээ засаад <strong>"Хадгалах"</strong> товчийг дарна уу</span>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+        )}
       </Card>
 
       {/* ── 1. Үндсэн мэдээлэл ───────────────────────────────── */}
@@ -657,7 +621,7 @@ export default function PersonProfilePage() {
         </div>
         <div className="profile-grid2"
           style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-          <FInput label="Утас" value={form.phone}
+          <FInput label="Утасны дугаар" value={form.phone}
             onChange={(v:string) => F("phone",v)} editing={editing}/>
           <FRadio label="НӨАТ төлөгч эсэх" value={form.is_vat_payer}
             onChange={(v:any) => F("is_vat_payer", v === "true" || v === true)} editing={editing}
@@ -786,17 +750,6 @@ export default function PersonProfilePage() {
             {value:"none",  label:"Мэдэгдэл авахгүй"},
           ]}/>
       </Card>
-
-      {!editing && (
-        <div style={{ textAlign:"center" as const, padding:"4px 0" }}>
-          <button onClick={startEdit}
-            style={{ padding:"10px 24px", borderRadius:10, border:"1px solid #e2e8f0",
-              background:"white", color:"#6366f1", fontSize:13, fontWeight:600,
-              cursor:"pointer", display:"inline-flex", alignItems:"center", gap:7 }}>
-            <Pencil size={13}/> Мэдээлэл засах
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -31,7 +31,7 @@ export function OwnersSection({ owners, setOwners, editing }: any) {
     setOwners((p: any[]) => p.map((o,i) => i===idx ? {...o,[key]:val} : o));
 
   return (
-    <Section icon={User} title="Эзэмшигчийн мэдээлэл">
+    <Section icon={User} title="ЭЗЭМШИГЧИЙН МЭДЭЭЛЭЛ">
       <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
         {owners.map((owner: any, idx: number) => (
           <OwnerCard key={idx} idx={idx} label="эзэмшигч" editing={editing}
@@ -72,7 +72,7 @@ export function FinalOwnersSection({ finalOwners, setFinalOwners, editing }: any
     setFinalOwners((p: any[]) => p.map((o,i) => i===idx ? {...o,[key]:val} : o));
 
   return (
-    <Section icon={User} title="Эцсийн өмчлөгчийн мэдээлэл">
+    <Section icon={User} title="ЭЦСИЙН ӨМЧЛӨГЧИЙН МЭДЭЭЛЭЛ">
       <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
         {finalOwners.map((fo: any, idx: number) => (
           <OwnerCard key={idx} idx={idx} label="өмчлөгч" editing={editing}
