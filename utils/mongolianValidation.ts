@@ -29,7 +29,7 @@ export function validateOwnersMongolian(owners: any[]): Record<string, string> {
   const errs: Record<string, string> = {};
   for (let i = 0; i < owners.length; i++) {
     const o = owners[i];
-    for (const key of ["family_name", "last_name", "first_name"]) {
+    for (const key of ["last_name", "first_name"]) {
       if (o[key] && !isMongolian(o[key])) {
         errs[`owner_${i}_${key}`] = "Монгол үсгээр бичнэ үү";
       }

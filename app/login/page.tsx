@@ -485,7 +485,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="relative w-full py-3.5 rounded-xl text-[14px] font-semibold text-white overflow-hidden transition-all duration-300 disabled:opacity-60"
+                  className="relative w-full py-3.5 rounded-xl text-[14px] font-semibold text-white overflow-hidden transition-all duration-300 disabled:opacity-60 cursor-pointer"
                   style={{
                     background:
                       "linear-gradient(135deg,#0a4d8c 0%,#0C72BA 50%,#1590e0 100%)",
@@ -532,7 +532,7 @@ export default function LoginPage() {
                   type="button"
                   disabled={isLoading}
                   onClick={handleInnerUser}
-                  className="relative w-full py-3.5 rounded-xl text-[14px] font-medium transition-all duration-300 disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="relative w-full py-3.5 rounded-xl text-[14px] font-medium transition-all duration-300 disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
                   style={{
                     background: "rgba(12,114,186,0.05)",
                     border: "1.5px solid rgba(12,114,186,0.18)",
@@ -595,12 +595,29 @@ export default function LoginPage() {
               </p>
               <a
                 href="/register"
-                className="text-[12px] font-medium transition-colors duration-200"
-                style={{ color: "rgba(12,114,186,0.5)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#0C72BA")}
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "rgba(12,114,186,0.5)")
-                }
+                className="text-[12px] font-semibold transition-all duration-200"
+                style={{
+                  color: "#0C72BA",
+                  padding: "6px 14px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(12,114,186,0.3)",
+                  background: "rgba(12,114,186,0.06)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background =
+                    "rgba(12,114,186,0.12)";
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "#0C72BA";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background =
+                    "rgba(12,114,186,0.06)";
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "rgba(12,114,186,0.3)";
+                }}
               >
                 Бүртгүүлэх →
               </a>

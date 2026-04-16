@@ -23,48 +23,62 @@ function OwnerCard({ owner, idx, editing, label, onRemove, canRemove, fieldError
         )}
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, marginBottom:14 }}>
-        {/* Ургийн овог */}
-        <div>
-          <FInput label="Ургийн овог" value={owner.family_name} editing={editing}
-            onChange={(v:string) => onUpdate(idx, "family_name", v)}/>
-          {fieldErrors?.[`owner_${idx}_family_name`] && (
-            <span style={{ fontSize:11, color:"#ef4444", marginTop:4, display:"block" }}>
-              ✕ {fieldErrors[`owner_${idx}_family_name`]}
-            </span>
-          )}
+      {idx === 0 ? (
+        // ✅ Эхний эзэмшигч — бүх талбар
+        <>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, marginBottom:14 }}>
+            <div>
+              <FInput label="Овог" value={owner.last_name} editing={editing}
+                onChange={(v:string) => onUpdate(idx, "last_name", v)}/>
+              {fieldErrors?.[`owner_${idx}_last_name`] && (
+                <span style={{ fontSize:11, color:"#ef4444", marginTop:4, display:"block" }}>
+                  ✕ {fieldErrors[`owner_${idx}_last_name`]}
+                </span>
+              )}
+            </div>
+            <div>
+              <FInput label="Нэр" value={owner.first_name} editing={editing}
+                onChange={(v:string) => onUpdate(idx, "first_name", v)}/>
+              {fieldErrors?.[`owner_${idx}_first_name`] && (
+                <span style={{ fontSize:11, color:"#ef4444", marginTop:4, display:"block" }}>
+                  ✕ {fieldErrors[`owner_${idx}_first_name`]}
+                </span>
+              )}
+            </div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
+            <RadioGroup label="Хүйс" value={owner.gender} editing={editing}
+              onChange={(v:string) => onUpdate(idx, "gender", v)}
+              options={[{value:"male",label:"Эрэгтэй"},{value:"female",label:"Эмэгтэй"}]}/>
+            <FInput label="Албан тушаал" value={owner.position} editing={editing}
+              onChange={(v:string) => onUpdate(idx, "position", v)}/>
+            <FInput label="Утас" value={owner.phone} editing={editing}
+              onChange={(v:string) => onUpdate(idx, "phone", v)}/>
+          </div>
+        </>
+      ) : (
+        // ✅ Дараагийн эзэмшигчид — зөвхөн Овог, Нэр
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+          <div>
+            <FInput label="Овог" value={owner.last_name} editing={editing}
+              onChange={(v:string) => onUpdate(idx, "last_name", v)}/>
+            {fieldErrors?.[`owner_${idx}_last_name`] && (
+              <span style={{ fontSize:11, color:"#ef4444", marginTop:4, display:"block" }}>
+                ✕ {fieldErrors[`owner_${idx}_last_name`]}
+              </span>
+            )}
+          </div>
+          <div>
+            <FInput label="Нэр" value={owner.first_name} editing={editing}
+              onChange={(v:string) => onUpdate(idx, "first_name", v)}/>
+            {fieldErrors?.[`owner_${idx}_first_name`] && (
+              <span style={{ fontSize:11, color:"#ef4444", marginTop:4, display:"block" }}>
+                ✕ {fieldErrors[`owner_${idx}_first_name`]}
+              </span>
+            )}
+          </div>
         </div>
-        {/* Овог */}
-        <div>
-          <FInput label="Овог" value={owner.last_name} editing={editing}
-            onChange={(v:string) => onUpdate(idx, "last_name", v)}/>
-          {fieldErrors?.[`owner_${idx}_last_name`] && (
-            <span style={{ fontSize:11, color:"#ef4444", marginTop:4, display:"block" }}>
-              ✕ {fieldErrors[`owner_${idx}_last_name`]}
-            </span>
-          )}
-        </div>
-        {/* Нэр */}
-        <div>
-          <FInput label="Нэр" value={owner.first_name} editing={editing}
-            onChange={(v:string) => onUpdate(idx, "first_name", v)}/>
-          {fieldErrors?.[`owner_${idx}_first_name`] && (
-            <span style={{ fontSize:11, color:"#ef4444", marginTop:4, display:"block" }}>
-              ✕ {fieldErrors[`owner_${idx}_first_name`]}
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
-        <RadioGroup label="Хүйс" value={owner.gender} editing={editing}
-          onChange={(v:string) => onUpdate(idx, "gender", v)}
-          options={[{value:"male",label:"Эрэгтэй"},{value:"female",label:"Эмэгтэй"}]}/>
-        <FInput label="Албан тушаал" value={owner.position} editing={editing}
-          onChange={(v:string) => onUpdate(idx, "position", v)}/>
-        <FInput label="Утас" value={owner.phone} editing={editing}
-          onChange={(v:string) => onUpdate(idx, "phone", v)}/>
-      </div>
+      )}
     </div>
   );
 }
@@ -150,46 +164,6 @@ export function ExecutiveDirectorsSection({ directors, setDirectors, editing }: 
     </Section>
   );
 }
-
-// export function FinalOwnersSection({ finalOwners, setFinalOwners, editing }: any) {
-//   const update = (idx: number, key: string, val: string) =>
-//     setFinalOwners((p: any[]) => p.map((o,i) => i===idx ? {...o,[key]:val} : o));
-
-//   return (
-//     <Section icon={User} title="ӨМЧЛӨГЧИЙН МЭДЭЭЛЭЛ">
-//       <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-//         {finalOwners.map((fo: any, idx: number) => (
-//           <div key={idx} style={{ padding:16, borderRadius:12,
-//             background: idx%2===0 ? "#f8fafc" : "#f1f5f9", border:"1px solid #e2e8f0" }}>
-//             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-//               <span style={{ fontSize:11, fontWeight:700, color:"#6366f1",
-//                 letterSpacing:"0.06em", textTransform:"uppercase" as const }}>
-//                 {idx+1}-р өмчлөгч
-//               </span>
-//               {finalOwners.length > 1 && editing && (
-//                 <button type="button"
-//                   onClick={() => setFinalOwners((p: any[]) => p.filter((_,i) => i!==idx))}
-//                   style={{ fontSize:11, color:"#ef4444", background:"rgba(239,68,68,0.08)",
-//                     border:"1px solid rgba(239,68,68,0.2)", borderRadius:8, padding:"3px 10px", cursor:"pointer" }}>
-//                   Устгах
-//                 </button>
-//               )}
-//             </div>
-//             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-//               <FInput label="Овог" value={fo.last_name} editing={editing}
-//                 onChange={(v:string) => update(idx, "last_name", v)}/>
-//               <FInput label="Нэр"  value={fo.first_name} editing={editing}
-//                 onChange={(v:string) => update(idx, "first_name", v)}/>
-//             </div>
-//           </div>
-//         ))}
-//         {editing && (
-//           <AddBtn onClick={() => setFinalOwners((p: any[]) => [...p, {...BLANK_FINAL}])} label="Өмчлөгч нэмэх"/>
-//         )}
-//       </div>
-//     </Section>
-//   );
-// }
 
 function AddBtn({ onClick, label }: { onClick: () => void; label: string }) {
   return (
