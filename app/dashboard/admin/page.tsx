@@ -40,6 +40,7 @@ import {
   Unlock,
 } from "lucide-react";
 import { IndividualsTab } from "./_components/individuals/IndividualsTab";
+import { SpecialPermissionsTab } from "./_components/SpecialPermissionsTab";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -52,6 +53,7 @@ type NavId =
   | "individuals"
   | "categories"
   | "directions"
+  | "special_permissions"
   | "announcements";
 type ModalMode = "create" | "edit" | null;
 
@@ -1585,6 +1587,7 @@ export default function AdminDashboard() {
   const canNav = (id: NavId) => {
     if (!me) return false;
     if (me.role === "super_admin") return true;
+    if (id === "special_permissions") return false; // ✅ super admin only
     return (
       myPerms.includes(`${id}.view`) ||
       (id === "dashboard" && myPerms.includes("dashboard.view"))
@@ -1615,6 +1618,11 @@ export default function AdminDashboard() {
       id: "directions" as NavId,
       icon: Activity,
       label: "Үйл ажиллагааны чиглэл",
+    },
+    {
+      id: "special_permissions" as NavId,
+      icon: FileText,
+      label: "Тусгай зөвшөөрөл",
     },
     { id: "announcements" as NavId, icon: FileText, label: "Зарлалууд" },
   ].filter((n) => canNav(n.id));
@@ -1723,10 +1731,12 @@ export default function AdminDashboard() {
     if (nav === "dashboard") fetchRecent();
   }, [nav, fetchRecent]);
 
-   useEffect(() => {
+  useEffect(() => {
     fetch(`${API}/api/activity-directions`)
-      .then(r => r.json())
-      .then(d => { if (d.success) setDirs(d.directions); })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setDirs(d.directions);
+      })
       .catch(() => {});
   }, []);
 
@@ -3042,6 +3052,12 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
+            )}
+            {nav === "special_permissions" && canNav("special_permissions") && (
+              <SpecialPermissionsTab
+                isSuperAdmin={me.role === "super_admin"}
+                showToast={showToast}
+              />
             )}
           </main>
         </div>

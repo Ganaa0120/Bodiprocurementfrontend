@@ -24,4 +24,12 @@ export const BLANK_OWNER = {
   gender:"", position:"", phone:"", email:"",
 };
 
+export const BLANK_EXEC = {
+  position: "Гүйцэтгэх захирал",
+  last_name: "",
+  first_name: "",
+  phone: "",
+  email: "",
+};
+
 export const BLANK_FINAL = { last_name:"", first_name:"" };
