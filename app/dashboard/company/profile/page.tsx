@@ -832,10 +832,10 @@ export default function CompanyProfilePage() {
           </label>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {[
-              { value:"all", icon:"🔔", label:"Бүх үйл ажиллагааны чиглэлээр",
+              { value:"all", icon:"🔔", label:"Бүх үйл ажиллагааны чиглэлээр хүлээн авах",
                 desc:"Системд нийтлэгдсэн бүх зарын мэдэгдлийг хүлээн авна" },
-              { value:"selected_dirs", icon:"🎯", label:"Зөвхөн сонгосон чиглэлээрээ",
-                desc:"Миний үйл ажиллагааны чиглэлтэй холбоотой зарын мэдэгдлийг л хүлээн авна" },
+              { value:"selected_dirs", icon:"🎯", label:"Сонгосон үйл ажиллагааны чиглэлээр хүлээн авах",
+                desc:"Үйл ажиллагааны чиглэлтээс сонгосон зарын мэдэгдлийг л хүлээн авна" },
             ].map(opt=>{
               const isOn = form.notification_preference===opt.value;
               return (
