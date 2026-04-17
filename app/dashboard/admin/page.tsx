@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { CompaniesTab } from "./_components/CompaniesTab";
 import { NotificationsTab } from "./_components/NotificationsTab";
 import { CategoriesTab } from "./_components/Categoriestab";
@@ -42,9 +42,6 @@ import {
 import { IndividualsTab } from "./_components/individuals/IndividualsTab";
 import { SpecialPermissionsTab } from "./_components/SpecialPermissionsTab";
 
-// ─────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────
 type NavId =
   | "dashboard"
   | "notifications"
@@ -103,6 +100,20 @@ type Person = {
   return_reason?: string;
 };
 
+// Real stats type
+type DashStats = {
+  total_companies: number;
+  total_persons: number;
+  pending_companies: number;
+  pending_persons: number;
+  active_companies: number;
+  active_persons: number;
+  returned_companies: number;
+  returned_persons: number;
+  new_this_month: number;
+  monthly: { month: string; companies: number; persons: number }[];
+};
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 const tok = () =>
   localStorage.getItem("super_admin_token") ||
@@ -111,9 +122,6 @@ const tok = () =>
 const authH = () => ({ Authorization: `Bearer ${tok()}` });
 const jsonH = () => ({ "Content-Type": "application/json", ...authH() });
 
-// ─────────────────────────────────────────────────────────────
-// Permission config — nav цэс бүрийн дэд эрхүүд
-// ─────────────────────────────────────────────────────────────
 type SubPerm = { id: string; label: string; desc: string };
 type NavPerm = {
   id: NavId;
@@ -128,24 +136,14 @@ const NAV_PERMS: NavPerm[] = [
     id: "dashboard",
     label: "Хянах самбар",
     icon: "📊",
-    subs: [
-      {
-        id: "dashboard.view",
-        label: "Харах",
-        desc: "Статистик, графикуудыг харах",
-      },
-    ],
+    subs: [{ id: "dashboard.view", label: "Харах", desc: "Статистик харах" }],
   },
   {
     id: "notifications",
     label: "Мэдэгдэл",
     icon: "🔔",
     subs: [
-      {
-        id: "notifications.view",
-        label: "Харах",
-        desc: "Мэдэгдлийн жагсаалт харах",
-      },
+      { id: "notifications.view", label: "Харах", desc: "Мэдэгдэл харах" },
       { id: "notifications.send", label: "Илгээх", desc: "Мэдэгдэл илгээх" },
     ],
   },
@@ -154,22 +152,10 @@ const NAV_PERMS: NavPerm[] = [
     label: "Компаниуд",
     icon: "🏢",
     subs: [
-      {
-        id: "companies.view",
-        label: "Харах",
-        desc: "Компанийн жагсаалт харах",
-      },
-      {
-        id: "companies.edit_status",
-        label: "Статус солих",
-        desc: "Компанийн статусыг өөрчлөх",
-      },
-      {
-        id: "companies.edit",
-        label: "Засах",
-        desc: "Компанийн мэдээлэл засах",
-      },
-      { id: "companies.delete", label: "Устгах", desc: "Компани устгах" },
+      { id: "companies.view", label: "Харах", desc: "Компани харах" },
+      { id: "companies.edit_status", label: "Статус", desc: "Статус солих" },
+      { id: "companies.edit", label: "Засах", desc: "Засах" },
+      { id: "companies.delete", label: "Устгах", desc: "Устгах" },
     ],
   },
   {
@@ -177,22 +163,10 @@ const NAV_PERMS: NavPerm[] = [
     label: "Хувь хүн",
     icon: "👤",
     subs: [
-      {
-        id: "individuals.view",
-        label: "Харах",
-        desc: "Хувь хүний жагсаалт харах",
-      },
-      {
-        id: "individuals.edit_status",
-        label: "Статус солих",
-        desc: "Хувь хүний статусыг өөрчлөх",
-      },
-      {
-        id: "individuals.edit",
-        label: "Засах",
-        desc: "Хувь хүний мэдээлэл засах",
-      },
-      { id: "individuals.delete", label: "Устгах", desc: "Хувь хүн устгах" },
+      { id: "individuals.view", label: "Харах", desc: "Харах" },
+      { id: "individuals.edit_status", label: "Статус", desc: "Статус солих" },
+      { id: "individuals.edit", label: "Засах", desc: "Засах" },
+      { id: "individuals.delete", label: "Устгах", desc: "Устгах" },
     ],
   },
   {
@@ -200,16 +174,8 @@ const NAV_PERMS: NavPerm[] = [
     label: "Ангилалууд",
     icon: "📁",
     subs: [
-      {
-        id: "categories.view",
-        label: "Харах",
-        desc: "Категорийн жагсаалт харах",
-      },
-      {
-        id: "categories.manage",
-        label: "Засварлах",
-        desc: "Нэмэх, засах, устгах (super admin)",
-      },
+      { id: "categories.view", label: "Харах", desc: "Харах" },
+      { id: "categories.manage", label: "Засварлах", desc: "Засах" },
     ],
   },
   {
@@ -217,16 +183,8 @@ const NAV_PERMS: NavPerm[] = [
     label: "Үйл ажиллагааны чиглэл",
     icon: "🎯",
     subs: [
-      {
-        id: "directions.view",
-        label: "Харах",
-        desc: "Чиглэлийн жагсаалт харах",
-      },
-      {
-        id: "directions.manage",
-        label: "Засварлах",
-        desc: "Нэмэх, засах, устгах (super admin)",
-      },
+      { id: "directions.view", label: "Харах", desc: "Харах" },
+      { id: "directions.manage", label: "Засварлах", desc: "Засах" },
     ],
   },
   {
@@ -234,23 +192,11 @@ const NAV_PERMS: NavPerm[] = [
     label: "Зарлалууд",
     icon: "📢",
     subs: [
-      {
-        id: "announcements.view",
-        label: "Харах",
-        desc: "Зарлалын жагсаалт харах",
-      },
-      {
-        id: "announcements.create",
-        label: "Үүсгэх",
-        desc: "Шинэ зарлал үүсгэх",
-      },
-      { id: "announcements.edit", label: "Засах", desc: "Зарлал засах" },
-      {
-        id: "announcements.publish",
-        label: "Нийтлэх",
-        desc: "Зарлалын статус өөрчлөх",
-      },
-      { id: "announcements.delete", label: "Устгах", desc: "Зарлал устгах" },
+      { id: "announcements.view", label: "Харах", desc: "Харах" },
+      { id: "announcements.create", label: "Үүсгэх", desc: "Үүсгэх" },
+      { id: "announcements.edit", label: "Засах", desc: "Засах" },
+      { id: "announcements.publish", label: "Нийтлэх", desc: "Нийтлэх" },
+      { id: "announcements.delete", label: "Устгах", desc: "Устгах" },
     ],
   },
   {
@@ -259,25 +205,13 @@ const NAV_PERMS: NavPerm[] = [
     icon: "🛡️",
     superAdminOnly: true,
     subs: [
-      { id: "admins.view", label: "Харах", desc: "Adminы жагсаалт харах" },
-      { id: "admins.manage", label: "Удирдах", desc: "Нэмэх, засах, устгах" },
+      { id: "admins.view", label: "Харах", desc: "Харах" },
+      { id: "admins.manage", label: "Удирдах", desc: "Удирдах" },
     ],
   },
 ];
 
-// Нэг nav-н бүх subs-ын default "view" sub
-const navDefaultPerms = (id: NavId) =>
-  NAV_PERMS.find((n) => n.id === id)
-    ?.subs.slice(0, 1)
-    .map((s) => s.id) ?? [];
-
-// Super admin-н бүх эрх
 const ALL_PERMS = NAV_PERMS.flatMap((n) => n.subs.map((s) => s.id));
-
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
-// Хуучин ["companies"] → шинэ ["companies.view","companies.edit_status",...] болгох mapping
 const OLD_FORMAT_MAP: Record<string, string[]> = {
   dashboard: ["dashboard.view"],
   notifications: ["notifications.view", "notifications.send"],
@@ -306,24 +240,20 @@ const OLD_FORMAT_MAP: Record<string, string[]> = {
 };
 
 function parsePerms(raw: any): string[] {
-  if (!raw) return ["dashboard", "dashboard.view"];
+  if (!raw) return ["dashboard.view"];
   let arr: string[] = [];
   if (Array.isArray(raw)) arr = raw;
   else {
     try {
       arr = JSON.parse(raw);
     } catch {
-      arr = ["dashboard", "dashboard.view"];
+      arr = ["dashboard.view"];
     }
   }
   if (arr.length === 0) return ["dashboard.view"];
-
-  // Хуучин nav-ID формат → шинэ sub-perm формат болгоно
-  const isOldFormat = arr.every((p: string) => !p.includes("."));
-  if (isOldFormat) {
+  const isOld = arr.every((p: string) => !p.includes("."));
+  if (isOld)
     return [...new Set(arr.flatMap((id: string) => OLD_FORMAT_MAP[id] ?? []))];
-  }
-  // Шинэ формат: bare nav ID-г хасна ("dashboard" → зөвхөн "dashboard.view")
   return arr.filter((p: string) => p.includes("."));
 }
 
@@ -355,7 +285,6 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
       bg: "rgba(148,163,184,0.1)",
     },
   };
-
 function Badge({ status }: { status: string }) {
   const c = STATUS_CFG[status] ?? STATUS_CFG.pending;
   return (
@@ -404,146 +333,221 @@ function Th({ h }: { h: string }) {
   );
 }
 
-const MONTHLY = [
-  { m: "1-р", i: 28, c: 12 },
-  { m: "2-р", i: 35, c: 18 },
-  { m: "3-р", i: 42, c: 22 },
-  { m: "4-р", i: 38, c: 25 },
-  { m: "5-р", i: 55, c: 30 },
-  { m: "6-р", i: 60, c: 35 },
-  { m: "7-р", i: 48, c: 28 },
-  { m: "8-р", i: 70, c: 42 },
-  { m: "9-р", i: 65, c: 38 },
-  { m: "10-р", i: 80, c: 50 },
-  { m: "11-р", i: 90, c: 58 },
-  { m: "12-р", i: 95, c: 62 },
-];
-function BarChart() {
-  const mx = Math.max(...MONTHLY.map((d) => d.i + d.c));
+// ── Beautiful Area Chart ─────────────────────────────────────
+function AreaChart({
+  data,
+}: {
+  data: { month: string; companies: number; persons: number }[];
+}) {
+  if (!data || data.length === 0)
+    return (
+      <div
+        style={{
+          height: 160,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "rgba(255,255,255,0.2)",
+          fontSize: 12,
+        }}
+      >
+        Мэдээлэл байхгүй
+      </div>
+    );
   const W = 580,
-    H = 148,
-    PL = 6,
-    PB = 20,
-    PT = 6,
-    PR = 6,
-    cW = W - PL - PR,
-    cH = H - PT - PB,
-    bW = cW / MONTHLY.length;
+    H = 160,
+    PL = 32,
+    PB = 28,
+    PT = 12,
+    PR = 16;
+  const cW = W - PL - PR,
+    cH = H - PT - PB;
+  const maxC = Math.max(...data.map((d) => d.companies), 1);
+  const maxP = Math.max(...data.map((d) => d.persons), 1);
+  const mx = Math.max(maxC, maxP, 1);
+  const n = data.length;
+  const xStep = cW / (n - 1 || 1);
+
+  const compPoints = data.map((d, i) => ({
+    x: PL + i * xStep,
+    y: PT + cH - (d.companies / mx) * cH,
+  }));
+  const persPoints = data.map((d, i) => ({
+    x: PL + i * xStep,
+    y: PT + cH - (d.persons / mx) * cH,
+  }));
+
+  const pathLine = (pts: { x: number; y: number }[]) =>
+    pts
+      .map((p, i) =>
+        i === 0
+          ? `M${p.x.toFixed(1)},${p.y.toFixed(1)}`
+          : `L${p.x.toFixed(1)},${p.y.toFixed(1)}`,
+      )
+      .join(" ");
+  const pathArea = (pts: { x: number; y: number }[]) =>
+    `${pathLine(pts)} L${pts[pts.length - 1].x.toFixed(1)},${(PT + cH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PT + cH).toFixed(1)} Z`;
+
+  // Grid lines
+  const gridVals = [0, Math.round(mx / 3), Math.round((mx * 2) / 3), mx];
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }}>
       <defs>
-        <linearGradient id="gi" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.7" />
+        <linearGradient id="gc2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
         </linearGradient>
-        <linearGradient id="gc" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#10b981" />
-          <stop offset="100%" stopColor="#059669" stopOpacity="0.7" />
+        <linearGradient id="gp2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {[0, 30, 60, 90].map((v) => (
-        <line
-          key={v}
-          x1={PL}
-          x2={W - PR}
-          y1={PT + cH - (v / mx) * cH}
-          y2={PT + cH - (v / mx) * cH}
-          stroke="rgba(255,255,255,0.05)"
-          strokeWidth="1"
-        />
-      ))}
-      {MONTHLY.map((d, i) => {
-        const x = PL + i * bW,
-          iH = (d.i / mx) * cH,
-          c2 = (d.c / mx) * cH,
-          g = 2,
-          bw = (bW - g * 3) / 2;
+
+      {/* Grid */}
+      {gridVals.map((v, i) => {
+        const y = PT + cH - (v / mx) * cH;
         return (
           <g key={i}>
-            <rect
-              x={x + g}
-              y={PT + cH - iH}
-              width={bw}
-              height={iH}
-              rx="2"
-              fill="url(#gi)"
-            />
-            <rect
-              x={x + g * 2 + bw}
-              y={PT + cH - c2}
-              width={bw}
-              height={c2}
-              rx="2"
-              fill="url(#gc)"
+            <line
+              x1={PL}
+              x2={W - PR}
+              y1={y}
+              y2={y}
+              stroke="rgba(255,255,255,0.05)"
+              strokeWidth="1"
             />
             <text
-              x={x + bW / 2}
-              y={H - 4}
-              textAnchor="middle"
-              fontSize="7.5"
-              fill="rgba(255,255,255,0.22)"
+              x={PL - 4}
+              y={y + 4}
+              textAnchor="end"
+              fontSize="8"
+              fill="rgba(255,255,255,0.2)"
             >
-              {d.m}
+              {v}
             </text>
           </g>
         );
       })}
+
+      {/* Areas */}
+      <path d={pathArea(compPoints)} fill="url(#gc2)" />
+      <path d={pathArea(persPoints)} fill="url(#gp2)" />
+
+      {/* Lines */}
+      <path
+        d={pathLine(compPoints)}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={pathLine(persPoints)}
+        fill="none"
+        stroke="#22d3ee"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Dots */}
+      {compPoints.map((p, i) => (
+        <circle
+          key={`c${i}`}
+          cx={p.x}
+          cy={p.y}
+          r="3"
+          fill="#6366f1"
+          stroke="#0b1022"
+          strokeWidth="1.5"
+        />
+      ))}
+      {persPoints.map((p, i) => (
+        <circle
+          key={`p${i}`}
+          cx={p.x}
+          cy={p.y}
+          r="3"
+          fill="#22d3ee"
+          stroke="#0b1022"
+          strokeWidth="1.5"
+        />
+      ))}
+
+      {/* X labels */}
+      {data.map((d, i) => (
+        <text
+          key={i}
+          x={PL + i * xStep}
+          y={H - 4}
+          textAnchor="middle"
+          fontSize="8"
+          fill="rgba(255,255,255,0.25)"
+        >
+          {d.month}
+        </text>
+      ))}
     </svg>
   );
 }
-function Donut() {
-  const data = [
-    { v: 892, c: "#10b981" },
-    { v: 248, c: "#f59e0b" },
-    { v: 144, c: "#ef4444" },
-  ];
-  const tot = data.reduce((s, d) => s + d.v, 0);
-  let a = -90;
-  const R = 42,
-    cx = 55,
-    cy = 55;
+
+// ── Ring Chart ───────────────────────────────────────────────
+function RingChart({
+  data,
+}: {
+  data: { label: string; value: number; color: string }[];
+}) {
+  const tot = data.reduce((s, d) => s + d.value, 0) || 1;
+  const R = 38,
+    r = 24,
+    cx = 50,
+    cy = 50;
+  let angle = -90;
   const arcs = data.map((d) => {
-    const deg = (d.v / tot) * 360,
-      r1 = (a * Math.PI) / 180,
-      r2 = ((a + deg) * Math.PI) / 180;
+    const deg = (d.value / tot) * 360;
+    const r1 = (angle * Math.PI) / 180,
+      r2 = ((angle + deg) * Math.PI) / 180;
     const x1 = cx + R * Math.cos(r1),
-      y1 = cy + R * Math.sin(r1),
-      x2 = cx + R * Math.cos(r2),
+      y1 = cy + R * Math.sin(r1);
+    const x2 = cx + R * Math.cos(r2),
       y2 = cy + R * Math.sin(r2);
-    const path = `M${cx} ${cy} L${x1} ${y1} A${R} ${R} 0 ${deg > 180 ? 1 : 0} 1 ${x2} ${y2}Z`;
-    a += deg;
+    const large = deg > 180 ? 1 : 0;
+    const path = `M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}Z`;
+    angle += deg;
     return { ...d, path };
   });
   return (
     <svg
-      viewBox="0 0 110 110"
-      style={{ width: 110, height: 110, flexShrink: 0 }}
+      viewBox="0 0 100 100"
+      style={{ width: 100, height: 100, flexShrink: 0 }}
     >
       {arcs.map((a, i) => (
         <path
           key={i}
           d={a.path}
-          fill={a.c}
+          fill={a.color}
           stroke="#0b1022"
           strokeWidth="1.5"
         />
       ))}
-      <circle cx={cx} cy={cy} r={26} fill="#0b1022" />
+      <circle cx={cx} cy={cy} r={r} fill="#0b1022" />
       <text
         x={cx}
-        y={cy - 4}
+        y={cy - 3}
         textAnchor="middle"
-        fontSize="13"
+        fontSize="11"
         fontWeight="800"
-        fill="rgba(255,255,255,0.88)"
+        fill="rgba(255,255,255,0.85)"
       >
         {tot}
       </text>
       <text
         x={cx}
-        y={cy + 9}
+        y={cy + 8}
         textAnchor="middle"
-        fontSize="7"
+        fontSize="6"
         fill="rgba(255,255,255,0.3)"
       >
         нийт
@@ -552,9 +556,26 @@ function Donut() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Admin Modal with Permissions
-// ─────────────────────────────────────────────────────────────
+// ── Animated Counter ─────────────────────────────────────────
+function Counter({ target }: { target: number }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const dur = 800;
+    const startTime = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(elapsed / dur, 1);
+      const ease = 1 - Math.pow(1 - pct, 3);
+      setVal(Math.round(start + ease * (target - start)));
+      if (pct < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target]);
+  return <span>{val.toLocaleString()}</span>;
+}
+
+// ── Permission Row ───────────────────────────────────────────
 function PermRow({
   nav,
   perms,
@@ -573,21 +594,19 @@ function PermRow({
   const visible = perms.includes(`${nav.id}.view`);
   const locked = nav.id === "dashboard";
   const subCount = nav.subs.filter((s) => perms.includes(s.id)).length;
-
   return (
     <div
       style={{
         borderRadius: 11,
         overflow: "hidden",
         border: visible
-          ? "1px solid rgba(59,130,246,0.25)"
+          ? "1px solid rgba(99,102,241,0.25)"
           : "1px solid rgba(255,255,255,0.07)",
         background: visible
-          ? "rgba(59,130,246,0.04)"
+          ? "rgba(99,102,241,0.04)"
           : "rgba(255,255,255,0.02)",
       }}
     >
-      {/* Nav row */}
       <div
         style={{
           display: "flex",
@@ -606,9 +625,9 @@ function PermRow({
             borderRadius: 6,
             flexShrink: 0,
             cursor: locked ? "default" : "pointer",
-            background: visible ? "#3b82f6" : "rgba(255,255,255,0.05)",
+            background: visible ? "#6366f1" : "rgba(255,255,255,0.05)",
             border: visible
-              ? "1px solid #3b82f6"
+              ? "1px solid #6366f1"
               : "1px solid rgba(255,255,255,0.12)",
             display: "flex",
             alignItems: "center",
@@ -617,9 +636,7 @@ function PermRow({
         >
           {visible && <CheckCircle2 size={13} color="white" />}
         </button>
-
         <span style={{ fontSize: 16, flexShrink: 0 }}>{nav.icon}</span>
-
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
@@ -656,11 +673,10 @@ function PermRow({
                 marginTop: 1,
               }}
             >
-              {subCount} / {nav.subs.length} эрх
+              {subCount}/{nav.subs.length} эрх
             </div>
           )}
         </div>
-
         {nav.subs.length > 1 && (
           <button
             type="button"
@@ -684,8 +700,6 @@ function PermRow({
           </button>
         )}
       </div>
-
-      {/* Sub perms */}
       {expanded && nav.subs.length > 1 && (
         <div
           style={{
@@ -709,26 +723,26 @@ function PermRow({
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}
           >
             {nav.subs.map((sub) => {
-              const isViewSub = sub.id === `${nav.id}.view`;
+              const isView = sub.id === `${nav.id}.view`;
               const checked = perms.includes(sub.id);
               return (
                 <div
                   key={sub.id}
-                  onClick={() => !isViewSub && onToggleSub(sub.id)}
+                  onClick={() => !isView && onToggleSub(sub.id)}
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
                     gap: 8,
                     padding: "7px 9px",
                     borderRadius: 8,
-                    cursor: isViewSub ? "default" : "pointer",
+                    cursor: isView ? "default" : "pointer",
                     background: checked
-                      ? "rgba(59,130,246,0.08)"
+                      ? "rgba(99,102,241,0.08)"
                       : "rgba(255,255,255,0.02)",
                     border: checked
-                      ? "1px solid rgba(59,130,246,0.2)"
+                      ? "1px solid rgba(99,102,241,0.2)"
                       : "1px solid rgba(255,255,255,0.05)",
-                    opacity: isViewSub ? 0.6 : 1,
+                    opacity: isView ? 0.6 : 1,
                   }}
                 >
                   <div
@@ -739,10 +753,10 @@ function PermRow({
                       flexShrink: 0,
                       marginTop: 1,
                       background: checked
-                        ? "#3b82f6"
+                        ? "#6366f1"
                         : "rgba(255,255,255,0.06)",
                       border: checked
-                        ? "1px solid #3b82f6"
+                        ? "1px solid #6366f1"
                         : "1px solid rgba(255,255,255,0.15)",
                       display: "flex",
                       alignItems: "center",
@@ -784,6 +798,7 @@ function PermRow({
   );
 }
 
+// ── Admin Modal ──────────────────────────────────────────────
 function AdminModal({
   mode,
   admin,
@@ -805,18 +820,14 @@ function AdminModal({
     role: admin?.role ?? "admin",
     status: admin?.status ?? "active",
   });
-
-  // perms — хадгалагдсан permissions-г parse хийж эхлэнэ
   const [perms, setPerms] = React.useState<string[]>(() =>
     admin?.permissions ? parsePerms(admin.permissions) : ["dashboard.view"],
   );
-
   const [showPw, setShowPw] = React.useState(false);
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
 
-  // Edit mode-д admin өөрчлөгдвөл perms refresh
   React.useEffect(() => {
     setPerms(parsePerms(admin?.permissions));
     setForm({
@@ -832,46 +843,32 @@ function AdminModal({
   }, [admin?.id]);
 
   const isSA = form.role === "super_admin";
-
-  // Нэг nav-ийн view sub toggle → nav бүхлээр on/off
   const toggleNav = (nav: NavPerm) => {
     const viewSub = `${nav.id}.view`;
     setPerms((prev) => {
       const has = prev.includes(viewSub);
       if (has) {
-        // Бүх sub-г хасна
-        const subIds = new Set(nav.subs.map((s) => s.id));
-        return prev.filter((p) => !subIds.has(p));
-      } else {
-        // view sub нэмнэ (зөвхөн view, user өөрөө нэмэлт sub-г сонгоно)
-        return [...prev, viewSub];
+        const subs = new Set(nav.subs.map((s) => s.id));
+        return prev.filter((p) => !subs.has(p));
       }
+      return [...prev, viewSub];
     });
   };
-
-  // Нэг sub-perm toggle
-  const toggleSub = (subId: string) => {
+  const toggleSub = (subId: string) =>
     setPerms((prev) =>
       prev.includes(subId) ? prev.filter((p) => p !== subId) : [...prev, subId],
     );
-  };
-
   const handleRoleChange = (role: string) => {
     setForm((f) => ({ ...f, role }));
     if (role === "super_admin") setPerms([...ALL_PERMS]);
     else
       setPerms((prev) =>
-        prev.length === ALL_PERMS.length
-          ? ["dashboard", "dashboard.view"]
-          : prev,
+        prev.length === ALL_PERMS.length ? ["dashboard.view"] : prev,
       );
   };
-
   const selectAll = () =>
     setPerms((prev) =>
-      prev.length >= ALL_PERMS.length
-        ? ["dashboard", "dashboard.view"]
-        : [...ALL_PERMS],
+      prev.length >= ALL_PERMS.length ? ["dashboard.view"] : [...ALL_PERMS],
     );
 
   const submit = async (e: React.FormEvent) => {
@@ -945,10 +942,9 @@ function AdminModal({
     marginBottom: 5,
   };
   const fo = (e: any) =>
-    ((e.target as HTMLElement).style.borderColor = "rgba(59,130,246,0.4)");
+    ((e.target as HTMLElement).style.borderColor = "rgba(99,102,241,0.4)");
   const bl = (e: any) =>
     ((e.target as HTMLElement).style.borderColor = "rgba(255,255,255,0.08)");
-
   const visibleNavs = NAV_PERMS.filter((n) => !n.superAdminOnly || isSA);
 
   return (
@@ -980,7 +976,6 @@ function AdminModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -1026,7 +1021,6 @@ function AdminModal({
             <X size={16} />
           </button>
         </div>
-
         {error && (
           <div
             style={{
@@ -1049,12 +1043,10 @@ function AdminModal({
             </span>
           </div>
         )}
-
         <form
           onSubmit={submit}
           style={{ display: "flex", flexDirection: "column", gap: 14 }}
         >
-          {/* Нэр */}
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
           >
@@ -1087,7 +1079,6 @@ function AdminModal({
               />
             </div>
           </div>
-
           <div>
             <label style={lbl}>Компанийн нэр</label>
             <input
@@ -1101,7 +1092,6 @@ function AdminModal({
               onBlur={bl}
             />
           </div>
-
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
           >
@@ -1134,7 +1124,6 @@ function AdminModal({
               />
             </div>
           </div>
-
           {mode === "create" && (
             <div>
               <label style={lbl}>Нууц үг *</label>
@@ -1171,7 +1160,6 @@ function AdminModal({
               </div>
             </div>
           )}
-
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
           >
@@ -1200,8 +1188,6 @@ function AdminModal({
               </select>
             </div>
           </div>
-
-          {/* ── Permissions ── */}
           <div
             style={{
               borderTop: "1px solid rgba(255,255,255,0.07)",
@@ -1227,7 +1213,7 @@ function AdminModal({
                     gap: 6,
                   }}
                 >
-                  <Lock size={13} style={{ color: "#60a5fa" }} />
+                  <Lock size={13} style={{ color: "#818cf8" }} />
                   Цэсний эрх тохиргоо
                 </div>
                 <div
@@ -1239,7 +1225,7 @@ function AdminModal({
                 >
                   {isSA
                     ? "Супер админ бүх эрхтэй"
-                    : `${visibleNavs.filter((n) => perms.includes(`${n.id}.view`)).length} / ${visibleNavs.length} цэс идэвхтэй`}
+                    : `${visibleNavs.filter((n) => perms.includes(`${n.id}.view`)).length}/${visibleNavs.length} цэс идэвхтэй`}
                 </div>
               </div>
               {!isSA && (
@@ -1248,11 +1234,11 @@ function AdminModal({
                   onClick={selectAll}
                   style={{
                     fontSize: 11,
-                    background: "rgba(59,130,246,0.08)",
-                    border: "1px solid rgba(59,130,246,0.2)",
+                    background: "rgba(99,102,241,0.08)",
+                    border: "1px solid rgba(99,102,241,0.2)",
                     borderRadius: 8,
                     padding: "5px 12px",
-                    color: "#60a5fa",
+                    color: "#818cf8",
                     cursor: "pointer",
                     fontFamily: "inherit",
                   }}
@@ -1263,17 +1249,16 @@ function AdminModal({
                 </button>
               )}
             </div>
-
             {isSA ? (
               <div
                 style={{
                   padding: "12px 16px",
                   borderRadius: 12,
-                  background: "rgba(59,130,246,0.06)",
-                  border: "1px solid rgba(59,130,246,0.18)",
+                  background: "rgba(99,102,241,0.06)",
+                  border: "1px solid rgba(99,102,241,0.18)",
                 }}
               >
-                <div style={{ fontSize: 12, color: "rgba(96,165,250,0.85)" }}>
+                <div style={{ fontSize: 12, color: "rgba(129,140,248,0.85)" }}>
                   ✓ Супер Админ бүх цэс болон функцийг автоматаар авна
                 </div>
               </div>
@@ -1295,8 +1280,6 @@ function AdminModal({
               </div>
             )}
           </div>
-
-          {/* Buttons */}
           <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
             <button
               type="button"
@@ -1322,7 +1305,7 @@ function AdminModal({
                 flex: 2,
                 height: 44,
                 borderRadius: 10,
-                background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
+                background: "linear-gradient(135deg,#4f46e5,#6366f1)",
                 border: "none",
                 color: "white",
                 fontSize: 13,
@@ -1358,9 +1341,6 @@ function AdminModal({
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Delete Modal
-// ─────────────────────────────────────────────────────────────
 function DeleteModal({
   admin,
   onClose,
@@ -1474,7 +1454,7 @@ function DeleteModal({
               />
             ) : (
               <Trash2 size={13} />
-            )}
+            )}{" "}
             Устгах
           </button>
         </div>
@@ -1513,11 +1493,124 @@ export default function AdminDashboard() {
 
   const [companies, setCompanies] = useState<any[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
-
   const [dirs, setDirs] = useState<{ id: number; label: string }[]>([]);
-
   const [recentPersons, setRecentPersons] = useState<Person[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
+
+  // ✅ Real stats state
+  const [stats, setStats] = useState<DashStats>({
+    total_companies: 0,
+    total_persons: 0,
+    pending_companies: 0,
+    pending_persons: 0,
+    active_companies: 0,
+    active_persons: 0,
+    returned_companies: 0,
+    returned_persons: 0,
+    new_this_month: 0,
+    monthly: [],
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  // ✅ Fetch real stats from multiple endpoints
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const [cAll, cPend, cActive, pAll, pPend, pActive] =
+        await Promise.allSettled([
+          fetch(`${API}/api/organizations?limit=1`, { headers: authH() }).then(
+            (r) => r.json(),
+          ),
+          fetch(`${API}/api/organizations?status=pending&limit=1`, {
+            headers: authH(),
+          }).then((r) => r.json()),
+          fetch(`${API}/api/organizations?status=active&limit=1`, {
+            headers: authH(),
+          }).then((r) => r.json()),
+          fetch(`${API}/api/persons?limit=1`, { headers: authH() }).then((r) =>
+            r.json(),
+          ),
+          fetch(`${API}/api/persons?status=pending&limit=1`, {
+            headers: authH(),
+          }).then((r) => r.json()),
+          fetch(`${API}/api/persons?status=active&limit=1`, {
+            headers: authH(),
+          }).then((r) => r.json()),
+        ]);
+
+      const cAllD = cAll.status === "fulfilled" ? cAll.value : null;
+      const cPendD = cPend.status === "fulfilled" ? cPend.value : null;
+      const cActD = cActive.status === "fulfilled" ? cActive.value : null;
+      const pAllD = pAll.status === "fulfilled" ? pAll.value : null;
+      const pPendD = pPend.status === "fulfilled" ? pPend.value : null;
+      const pActD = pActive.status === "fulfilled" ? pActive.value : null;
+
+      const totalC = cAllD?.total ?? cAllD?.organizations?.length ?? 0;
+      const totalP = pAllD?.total ?? pAllD?.persons?.length ?? 0;
+      const pendC = cPendD?.total ?? cPendD?.organizations?.length ?? 0;
+      const pendP = pPendD?.total ?? pPendD?.persons?.length ?? 0;
+      const actC = cActD?.total ?? cActD?.organizations?.length ?? 0;
+      const actP = pActD?.total ?? pActD?.persons?.length ?? 0;
+
+      // Build monthly data from recent companies + persons
+      const [cRecent, pRecent] = await Promise.allSettled([
+        fetch(`${API}/api/organizations?limit=200&sort=created_at`, {
+          headers: authH(),
+        }).then((r) => r.json()),
+        fetch(`${API}/api/persons?limit=200&sort=created_at`, {
+          headers: authH(),
+        }).then((r) => r.json()),
+      ]);
+
+      const cList =
+        cRecent.status === "fulfilled"
+          ? (cRecent.value.organizations ?? [])
+          : [];
+      const pList =
+        pRecent.status === "fulfilled" ? (pRecent.value.persons ?? []) : [];
+
+      // Group by month (last 6 months)
+      const months: { month: string; companies: number; persons: number }[] =
+        [];
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const label = `${d.getMonth() + 1}-р`;
+        const y = d.getFullYear(),
+          m = d.getMonth();
+        const cCount = cList.filter((c: any) => {
+          const dt = new Date(c.created_at);
+          return dt.getFullYear() === y && dt.getMonth() === m;
+        }).length;
+        const pCount = pList.filter((p: any) => {
+          const dt = new Date(p.created_at);
+          return dt.getFullYear() === y && dt.getMonth() === m;
+        }).length;
+        months.push({ month: label, companies: cCount, persons: pCount });
+      }
+
+      const thisMonth = months[months.length - 1];
+      const newThisMonth =
+        (thisMonth?.companies ?? 0) + (thisMonth?.persons ?? 0);
+
+      setStats({
+        total_companies: totalC,
+        total_persons: totalP,
+        pending_companies: pendC,
+        pending_persons: pendP,
+        active_companies: actC,
+        active_persons: actP,
+        returned_companies: 0,
+        returned_persons: 0,
+        new_this_month: newThisMonth,
+        monthly: months,
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const data =
@@ -1526,29 +1619,29 @@ export default function AdminDashboard() {
       router.replace("/login");
       return;
     }
+
     try {
       const parsed = JSON.parse(data);
-
-      // Super admin биш бол mini-admin dashboard руу шилжүүлнэ
       if (parsed.role !== "super_admin") {
         router.replace("/dashboard/mini-admin");
         return;
       }
-
       setMe(parsed);
+
       const p =
         parsed.role === "super_admin"
           ? ALL_PERMS
           : parsePerms(parsed.permissions);
       setMyPerms(p);
-    } catch {}
+    } catch (e) {
+      console.error("Failed to parse user data", e);
+    }
 
-    // Mount-д notification unread count татна
-    const t =
-      localStorage.getItem("super_admin_token") ||
-      localStorage.getItem("token") ||
-      "";
-    const adminData = (() => {
+    // Unread notifications
+    const t = tok();
+    if (!t) return;
+
+    const adminData = () => {
       try {
         return JSON.parse(
           localStorage.getItem("super_admin_user") ||
@@ -1558,17 +1651,21 @@ export default function AdminDashboard() {
       } catch {
         return {};
       }
-    })();
-    const aId = adminData?.id ?? "guest";
-    const readSet = new Set(
-      (() => {
-        try {
-          return JSON.parse(localStorage.getItem(`notif_read_${aId}`) || "[]");
-        } catch {
-          return [];
-        }
-      })(),
-    );
+    };
+
+    const aId = adminData()?.id ?? "guest";
+
+    // Read set-ийг зөв авч байна
+    let readSet: Set<string | number> = new Set();
+    try {
+      const readArray = JSON.parse(
+        localStorage.getItem(`notif_read_${aId}`) || "[]",
+      );
+      readSet = new Set(readArray);
+    } catch (e) {
+      readSet = new Set();
+    }
+
     fetch(`${API}/api/notifications?limit=100&_t=${Date.now()}`, {
       headers: { Authorization: `Bearer ${t}` },
     })
@@ -1582,12 +1679,12 @@ export default function AdminDashboard() {
         }
       })
       .catch(() => {});
-  }, [router]);
+  }, [router]); // ← энд төгсгөлийн таслал зөв байна
 
   const canNav = (id: NavId) => {
     if (!me) return false;
     if (me.role === "super_admin") return true;
-    if (id === "special_permissions") return false; // ✅ super admin only
+    if (id === "special_permissions") return false;
     return (
       myPerms.includes(`${id}.view`) ||
       (id === "dashboard" && myPerms.includes("dashboard.view"))
@@ -1595,13 +1692,11 @@ export default function AdminDashboard() {
   };
   const can = (perm: string) =>
     me?.role === "super_admin" || myPerms.includes(perm);
-
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // NAV items filtered by permissions
   const NAV_ITEMS = [
     { id: "dashboard" as NavId, icon: BarChart3, label: "Хянах самбар" },
     {
@@ -1627,7 +1722,6 @@ export default function AdminDashboard() {
     { id: "announcements" as NavId, icon: FileText, label: "Зарлалууд" },
   ].filter((n) => canNav(n.id));
 
-  // Ensure nav is valid after permissions load
   useEffect(() => {
     if (me && !canNav(nav)) {
       const first = NAV_ITEMS[0]?.id;
@@ -1728,9 +1822,11 @@ export default function AdminDashboard() {
     if (nav === "companies") fetchCompanies();
   }, [nav, fetchCompanies]);
   useEffect(() => {
-    if (nav === "dashboard") fetchRecent();
-  }, [nav, fetchRecent]);
-
+    if (nav === "dashboard") {
+      fetchRecent();
+      fetchStats();
+    }
+  }, [nav, fetchRecent, fetchStats]);
   useEffect(() => {
     fetch(`${API}/api/activity-directions`)
       .then((r) => r.json())
@@ -1799,33 +1895,54 @@ export default function AdminDashboard() {
       .includes(search.toLowerCase()),
   );
 
+  const ringData = [
+    {
+      label: "Идэвхтэй",
+      value: stats.active_companies + stats.active_persons,
+      color: "#10b981",
+    },
+    {
+      label: "Хүлээгдэж",
+      value: stats.pending_companies + stats.pending_persons,
+      color: "#6366f1",
+    },
+    {
+      label: "Буцаагдсан",
+      value: stats.returned_companies + stats.returned_persons,
+      color: "#f43f5e",
+    },
+  ];
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
         *,*::before,*::after{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;}
-        body{margin:0;background:#080c18;}
-        ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:99px}
-        .ni{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin:1px 8px;cursor:pointer;border:none;font-size:13px;font-weight:500;color:rgba(255,255,255,0.38);background:transparent;transition:all .18s;text-align:left;width:calc(100% - 16px);}
-        .ni:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.72);}
-        .ni.on{background:rgba(59,130,246,0.14);color:#60a5fa;border-left:2px solid #3b82f6;font-weight:600;}
-        .card{background:#0f1629;border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;}
-        .sc{background:#0f1629;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;position:relative;overflow:hidden;transition:all .2s;}
-        .sc:hover{border-color:rgba(59,130,246,0.2);transform:translateY(-2px);}
+        body{margin:0;background:#060b17;}
+        ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:99px}
+        .ni{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin:1px 8px;cursor:pointer;border:none;font-size:13px;font-weight:500;color:rgba(255,255,255,0.35);background:transparent;transition:all .18s;text-align:left;width:calc(100% - 16px);}
+        .ni:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);}
+        .ni.on{background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));color:#a5b4fc;border-left:2px solid #6366f1;font-weight:600;}
+        .card{background:rgba(15,20,40,0.8);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;backdrop-filter:blur(12px);}
+        .sc{background:rgba(15,20,40,0.7);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px;position:relative;overflow:hidden;transition:all .25s;cursor:default;}
+        .sc:hover{border-color:rgba(99,102,241,0.25);transform:translateY(-3px);box-shadow:0 12px 40px rgba(99,102,241,0.08);}
         .tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background .15s;}
         .tr:hover{background:rgba(255,255,255,0.025);}
         .tr:last-child{border:none;}
-        .gi{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 14px 8px 36px;font-size:13px;color:rgba(255,255,255,0.72);outline:none;transition:all .2s;font-family:inherit;}
+        .gi{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 14px 8px 36px;font-size:13px;color:rgba(255,255,255,0.72);outline:none;transition:all .2s;font-family:inherit;}
         .gi::placeholder{color:rgba(255,255,255,0.18);}
-        .gi:focus{border-color:rgba(59,130,246,0.4);background:rgba(59,130,246,0.05);}
-        .page-in{animation:pi .3s ease both;}
-        @keyframes pi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .gi:focus{border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.05);}
+        .page-in{animation:pi .35s ease both;}
+        @keyframes pi{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         .badge{min-width:17px;height:17px;border-radius:99px;background:#ef4444;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;}
-        .sec-lbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.18);padding:10px 14px 4px;}
+        .sec-lbl{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.15);padding:10px 20px 4px;}
         @keyframes spin{to{transform:rotate(360deg)}}
         .icon-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:6px 7px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
         .icon-btn:hover{background:rgba(255,255,255,0.08);}
         select option{background:#1a2035;color:rgba(255,255,255,0.82);}
+        @keyframes shimmer{0%{opacity:0.5}50%{opacity:1}100%{opacity:0.5}}
+        .shimmer{animation:shimmer 1.5s ease infinite;}
+        @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(99,102,241,0.15)}50%{box-shadow:0 0 40px rgba(99,102,241,0.3)}}
       `}</style>
 
       {/* Toast */}
@@ -1848,14 +1965,14 @@ export default function AdminDashboard() {
               ? "rgba(16,185,129,0.95)"
               : "rgba(239,68,68,0.95)",
             color: "white",
+            backdropFilter: "blur(8px)",
           }}
         >
-          {toast.ok ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+          {toast.ok ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}{" "}
           {toast.msg}
         </div>
       )}
 
-      {/* Modals */}
       {(modalMode === "create" || modalMode === "edit") && (
         <AdminModal
           mode={modalMode}
@@ -1884,25 +2001,25 @@ export default function AdminDashboard() {
       )}
 
       <div
-        style={{ display: "flex", minHeight: "100vh", background: "#080c18" }}
+        style={{ display: "flex", minHeight: "100vh", background: "#060b17" }}
       >
         {/* ── Sidebar ── */}
         <aside
-          className={`sidebar ${open ? "open" : ""}`}
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             bottom: 0,
             width: 240,
-            background: "#0b1022",
+            background: "rgba(8,12,28,0.95)",
             borderRight: "1px solid rgba(255,255,255,0.05)",
             display: "flex",
             flexDirection: "column",
             zIndex: 50,
-            transition: "transform .3s",
+            backdropFilter: "blur(20px)",
           }}
         >
+          {/* Logo */}
           <div
             style={{
               padding: "20px 18px 14px",
@@ -1929,7 +2046,7 @@ export default function AdminDashboard() {
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
+                  background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1937,6 +2054,7 @@ export default function AdminDashboard() {
                   fontSize: 13,
                   fontWeight: 800,
                   flexShrink: 0,
+                  boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
                 }}
               >
                 {ini}
@@ -1957,18 +2075,19 @@ export default function AdminDashboard() {
                 <div
                   style={{
                     fontSize: 10,
-                    color: "rgba(255,255,255,0.28)",
+                    color: "rgba(99,102,241,0.7)",
                     marginTop: 1,
+                    fontWeight: 600,
                   }}
                 >
-                  {me.role === "super_admin" ? "Супер Админ" : "Мини Админ"}
+                  {me.role === "super_admin" ? "✦ Супер Админ" : "Мини Админ"}
                 </div>
               </div>
             </div>
           </div>
 
-          <nav style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
-            <div className="sec-lbl">Үндсэн</div>
+          <nav style={{ flex: 1, overflowY: "auto", padding: "10px 0" }}>
+            <div className="sec-lbl">Үндсэн цэс</div>
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
@@ -2004,7 +2123,7 @@ export default function AdminDashboard() {
             <button
               className="ni"
               onClick={logout}
-              style={{ color: "rgba(239,68,68,0.55)" }}
+              style={{ color: "rgba(239,68,68,0.5)" }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.color = "#ef4444";
                 (e.currentTarget as HTMLElement).style.background =
@@ -2012,7 +2131,7 @@ export default function AdminDashboard() {
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.color =
-                  "rgba(239,68,68,0.55)";
+                  "rgba(239,68,68,0.5)";
                 (e.currentTarget as HTMLElement).style.background =
                   "transparent";
               }}
@@ -2040,10 +2159,10 @@ export default function AdminDashboard() {
               top: 0,
               zIndex: 30,
               height: 56,
-              background: "rgba(8,12,24,0.9)",
-              backdropFilter: "blur(20px)",
+              background: "rgba(6,11,23,0.85)",
+              backdropFilter: "blur(24px)",
               borderBottom: "1px solid rgba(255,255,255,0.05)",
-              padding: "0 24px",
+              padding: "0 28px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -2052,9 +2171,9 @@ export default function AdminDashboard() {
             <div>
               <div
                 style={{
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.85)",
+                  color: "rgba(255,255,255,0.9)",
                 }}
               >
                 {NAV_ITEMS.find((n) => n.id === nav)?.label}
@@ -2062,11 +2181,11 @@ export default function AdminDashboard() {
               <div
                 style={{
                   fontSize: 10,
-                  color: "rgba(255,255,255,0.22)",
+                  color: "rgba(255,255,255,0.2)",
                   marginTop: 1,
                 }}
               >
-                ProcureX удирдлагын систем
+                BODI Group · Нийлүүлэгчийн портал
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2096,7 +2215,7 @@ export default function AdminDashboard() {
                       height: 6,
                       borderRadius: "50%",
                       background: "#ef4444",
-                      border: "1.5px solid #080c18",
+                      border: "1.5px solid #060b17",
                     }}
                   />
                 )}
@@ -2106,7 +2225,7 @@ export default function AdminDashboard() {
                   width: 32,
                   height: 32,
                   borderRadius: 9,
-                  background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
+                  background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -2120,150 +2239,207 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <main style={{ flex: 1, padding: "22px 26px", overflowY: "auto" }}>
-            {/* Dashboard */}
+          <main style={{ flex: 1, padding: "24px 28px", overflowY: "auto" }}>
+            {/* ── DASHBOARD ── */}
             {nav === "dashboard" && canNav("dashboard") && (
               <div
                 className="page-in"
-                style={{ display: "flex", flexDirection: "column", gap: 18 }}
+                style={{ display: "flex", flexDirection: "column", gap: 20 }}
               >
+                {/* Stat Cards */}
                 <div
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(4,1fr)",
-                    gap: 12,
+                    gap: 14,
                   }}
                 >
                   {[
                     {
                       label: "Нийт бүртгэл",
-                      value: "1,284",
-                      delta: "+12%",
+                      value: stats.total_companies + stats.total_persons,
+                      sub: `${stats.total_companies} компани · ${stats.total_persons} хувь хүн`,
+                      color: "#6366f1",
+                      glow: "rgba(99,102,241,0.2)",
                       icon: Users,
-                      color: "#3b82f6",
-                      bg: "rgba(59,130,246,0.12)",
                     },
                     {
-                      label: "Компаниуд",
-                      value: "348",
-                      delta: "+8%",
-                      icon: Building2,
-                      color: "#8b5cf6",
-                      bg: "rgba(139,92,246,0.12)",
-                    },
-                    {
-                      label: "Хүлээгдэж буй",
-                      value: "24",
-                      delta: "+3",
-                      icon: Clock,
+                      label: "Хүлээгдэж байна",
+                      value: stats.pending_companies + stats.pending_persons,
+                      sub: `${stats.pending_companies} компани · ${stats.pending_persons} хувь хүн`,
                       color: "#f59e0b",
-                      bg: "rgba(245,158,11,0.12)",
+                      glow: "rgba(245,158,11,0.15)",
+                      icon: Clock,
                     },
                     {
-                      label: "Энэ сарын өсөлт",
-                      value: "98",
-                      delta: "+18%",
-                      icon: TrendingUp,
+                      label: "Идэвхтэй",
+                      value: stats.active_companies + stats.active_persons,
+                      sub: `${stats.active_companies} компани · ${stats.active_persons} хувь хүн`,
                       color: "#10b981",
-                      bg: "rgba(16,185,129,0.12)",
+                      glow: "rgba(16,185,129,0.15)",
+                      icon: CheckCircle2,
                     },
-                  ].map(({ label, value, delta, icon: Icon, color, bg }, i) => (
+                    {
+                      label: "Энэ сарын шинэ",
+                      value: stats.new_this_month,
+                      sub: "Компани + хувь хүн",
+                      color: "#22d3ee",
+                      glow: "rgba(34,211,238,0.15)",
+                      icon: TrendingUp,
+                    },
+                  ].map(({ label, value, sub, color, glow, icon: Icon }, i) => (
                     <div key={i} className="sc">
+                      {/* Glow bg */}
                       <div
                         style={{
                           position: "absolute",
-                          right: -16,
-                          top: -16,
-                          width: 72,
-                          height: 72,
+                          top: -30,
+                          right: -30,
+                          width: 120,
+                          height: 120,
                           borderRadius: "50%",
                           background: color,
                           opacity: 0.06,
+                          filter: "blur(20px)",
                         }}
                       />
                       <div
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                          marginBottom: 12,
+                          position: "absolute",
+                          inset: 0,
+                          background: `radial-gradient(ellipse at top right, ${glow} 0%, transparent 70%)`,
+                          borderRadius: "inherit",
                         }}
-                      >
+                      />
+
+                      <div style={{ position: "relative" }}>
                         <div
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 9,
-                            background: bg,
                             display: "flex",
+                            justifyContent: "space-between",
                             alignItems: "center",
-                            justifyContent: "center",
+                            marginBottom: 16,
                           }}
                         >
-                          <Icon size={17} style={{ color }} />
+                          <div
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 12,
+                              background: `${color}18`,
+                              border: `1px solid ${color}30`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <Icon size={18} style={{ color }} />
+                          </div>
+                          {statsLoading ? (
+                            <div
+                              style={{
+                                width: 32,
+                                height: 16,
+                                borderRadius: 4,
+                                background: "rgba(255,255,255,0.05)",
+                              }}
+                              className="shimmer"
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 3,
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: color,
+                                background: `${color}15`,
+                                padding: "2px 8px",
+                                borderRadius: 99,
+                              }}
+                            >
+                              <ChevronUp size={10} /> live
+                            </div>
+                          )}
                         </div>
-                        <span
+                        <div
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 2,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: "#10b981",
-                            background: "rgba(16,185,129,0.1)",
-                            padding: "2px 7px",
-                            borderRadius: 99,
+                            fontSize: 28,
+                            fontWeight: 800,
+                            color: "rgba(255,255,255,0.92)",
+                            lineHeight: 1,
+                            letterSpacing: "-0.5px",
                           }}
                         >
-                          <ChevronUp size={10} />
-                          {delta}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 24,
-                          fontWeight: 800,
-                          color: "rgba(255,255,255,0.88)",
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        {value}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "rgba(255,255,255,0.32)",
-                          marginTop: 3,
-                        }}
-                      >
-                        {label}
+                          {statsLoading ? (
+                            <div
+                              style={{
+                                width: 60,
+                                height: 28,
+                                borderRadius: 6,
+                                background: "rgba(255,255,255,0.05)",
+                              }}
+                              className="shimmer"
+                            />
+                          ) : (
+                            <Counter target={value} />
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "rgba(255,255,255,0.7)",
+                            marginTop: 6,
+                          }}
+                        >
+                          {label}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "rgba(255,255,255,0.25)",
+                            marginTop: 3,
+                          }}
+                        >
+                          {sub}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
+                {/* Charts Row */}
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 300px",
+                    gridTemplateColumns: "1fr 320px",
                     gap: 14,
                   }}
                 >
-                  <div className="card" style={{ padding: "18px 18px 10px" }}>
+                  {/* Area Chart */}
+                  <div
+                    className="card"
+                    style={{
+                      padding: "20px 20px 12px",
+                      background: "rgba(12,16,35,0.8)",
+                    }}
+                  >
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 12,
+                        alignItems: "flex-start",
+                        marginBottom: 16,
                       }}
                     >
                       <div>
                         <div
                           style={{
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: 700,
-                            color: "rgba(255,255,255,0.82)",
+                            color: "rgba(255,255,255,0.88)",
                           }}
                         >
                           Бүртгэлийн динамик
@@ -2271,17 +2447,17 @@ export default function AdminDashboard() {
                         <div
                           style={{
                             fontSize: 11,
-                            color: "rgba(255,255,255,0.28)",
-                            marginTop: 1,
+                            color: "rgba(255,255,255,0.25)",
+                            marginTop: 2,
                           }}
                         >
-                          2026 оны сараар
+                          Сүүлийн 6 сар · Бодит өгөгдөл
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 12 }}>
+                      <div style={{ display: "flex", gap: 16 }}>
                         {[
-                          { c: "#3b82f6", l: "Хувь хүн" },
-                          { c: "#10b981", l: "Компани" },
+                          { c: "#6366f1", l: "Компани" },
+                          { c: "#22d3ee", l: "Хувь хүн" },
                         ].map((l) => (
                           <div
                             key={l.l}
@@ -2295,10 +2471,11 @@ export default function AdminDashboard() {
                           >
                             <span
                               style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 2,
+                                width: 24,
+                                height: 2,
+                                borderRadius: 99,
                                 background: l.c,
+                                display: "block",
                               }}
                             />
                             {l.l}
@@ -2306,17 +2483,41 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                     </div>
-                    <div style={{ height: 148 }}>
-                      <BarChart />
+                    <div style={{ height: 160 }}>
+                      {statsLoading ? (
+                        <div
+                          style={{
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Loader2
+                            size={18}
+                            style={{
+                              color: "#6366f1",
+                              animation: "spin 0.8s linear infinite",
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <AreaChart data={stats.monthly} />
+                      )}
                     </div>
                   </div>
 
-                  <div className="card" style={{ padding: 18 }}>
+                  {/* Ring Chart */}
+                  <div
+                    className="card"
+                    style={{ padding: 20, background: "rgba(12,16,35,0.8)" }}
+                  >
                     <div
                       style={{
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: 700,
-                        color: "rgba(255,255,255,0.82)",
+                        color: "rgba(255,255,255,0.88)",
+                        marginBottom: 4,
                       }}
                     >
                       Статус хуваарилалт
@@ -2324,95 +2525,192 @@ export default function AdminDashboard() {
                     <div
                       style={{
                         fontSize: 11,
-                        color: "rgba(255,255,255,0.28)",
-                        marginTop: 1,
-                        marginBottom: 14,
+                        color: "rgba(255,255,255,0.25)",
+                        marginBottom: 16,
                       }}
                     >
-                      Одоогийн байдлаар
+                      Бодит тоон мэдээлэл
                     </div>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 14 }}
-                    >
-                      <Donut />
+                    {statsLoading ? (
                       <div
                         style={{
                           display: "flex",
-                          flexDirection: "column",
-                          gap: 8,
-                          flex: 1,
+                          justifyContent: "center",
+                          padding: 32,
                         }}
                       >
-                        {[
-                          { l: "Зөвшөөрсөн", v: 892, c: "#10b981" },
-                          { l: "Хүлээгдэж", v: 248, c: "#f59e0b" },
-                          { l: "Татгалзсан", v: 144, c: "#ef4444" },
-                        ].map((d) => (
-                          <div key={d.l}>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                marginBottom: 3,
-                              }}
-                            >
-                              <span
-                                style={{
-                                  fontSize: 11,
-                                  color: "rgba(255,255,255,0.4)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: 5,
-                                    height: 5,
-                                    borderRadius: "50%",
-                                    background: d.c,
-                                  }}
-                                />
-                                {d.l}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  color: "rgba(255,255,255,0.65)",
-                                }}
-                              >
-                                {d.v}
-                              </span>
-                            </div>
-                            <div
-                              style={{
-                                height: 3,
-                                borderRadius: 99,
-                                background: "rgba(255,255,255,0.06)",
-                                overflow: "hidden",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  height: "100%",
-                                  borderRadius: 99,
-                                  background: d.c,
-                                  width: `${(d.v / 1284) * 100}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        ))}
+                        <Loader2
+                          size={18}
+                          style={{
+                            color: "#6366f1",
+                            animation: "spin 0.8s linear infinite",
+                          }}
+                        />
                       </div>
-                    </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 16,
+                        }}
+                      >
+                        <RingChart data={ringData} />
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 10,
+                            flex: 1,
+                          }}
+                        >
+                          {ringData.map((d) => {
+                            const tot =
+                              ringData.reduce((s, x) => s + x.value, 0) || 1;
+                            return (
+                              <div key={d.label}>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      color: "rgba(255,255,255,0.45)",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 5,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        width: 6,
+                                        height: 6,
+                                        borderRadius: "50%",
+                                        background: d.color,
+                                        display: "block",
+                                      }}
+                                    />
+                                    {d.label}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      color: "rgba(255,255,255,0.75)",
+                                    }}
+                                  >
+                                    {d.value}
+                                  </span>
+                                </div>
+                                <div
+                                  style={{
+                                    height: 4,
+                                    borderRadius: 99,
+                                    background: "rgba(255,255,255,0.06)",
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      height: "100%",
+                                      borderRadius: 99,
+                                      background: d.color,
+                                      width: `${(d.value / tot) * 100}%`,
+                                      transition: "width .8s ease",
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="card">
+                {/* Quick stats row */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3,1fr)",
+                    gap: 14,
+                  }}
+                >
+                  {[
+                    {
+                      label: "Нийт компани",
+                      value: stats.total_companies,
+                      icon: "🏢",
+                      color: "#8b5cf6",
+                    },
+                    {
+                      label: "Нийт хувь хүн",
+                      value: stats.total_persons,
+                      icon: "👤",
+                      color: "#06b6d4",
+                    },
+                    {
+                      label: "Хүлээгдэж буй",
+                      value: stats.pending_companies + stats.pending_persons,
+                      icon: "⏳",
+                      color: "#f59e0b",
+                    },
+                  ].map(({ label, value, icon, color }, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: "rgba(12,16,35,0.7)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        borderRadius: 14,
+                        padding: "16px 18px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                      }}
+                    >
+                      <div style={{ fontSize: 24 }}>{icon}</div>
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 22,
+                            fontWeight: 800,
+                            color: "rgba(255,255,255,0.9)",
+                            lineHeight: 1,
+                          }}
+                        >
+                          {statsLoading ? (
+                            <span style={{ opacity: 0.3 }}>—</span>
+                          ) : (
+                            <Counter target={value} />
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.35)",
+                            marginTop: 3,
+                          }}
+                        >
+                          {label}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recent table */}
+                <div
+                  className="card"
+                  style={{ background: "rgba(12,16,35,0.8)" }}
+                >
                   <div
                     style={{
-                      padding: "14px 18px",
+                      padding: "16px 20px",
                       borderBottom: "1px solid rgba(255,255,255,0.05)",
                       display: "flex",
                       justifyContent: "space-between",
@@ -2422,9 +2720,9 @@ export default function AdminDashboard() {
                     <div>
                       <div
                         style={{
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: 700,
-                          color: "rgba(255,255,255,0.82)",
+                          color: "rgba(255,255,255,0.88)",
                         }}
                       >
                         Сүүлийн бүртгэлүүд
@@ -2432,53 +2730,65 @@ export default function AdminDashboard() {
                       <div
                         style={{
                           fontSize: 11,
-                          color: "rgba(255,255,255,0.28)",
+                          color: "rgba(255,255,255,0.25)",
                           marginTop: 1,
                         }}
                       >
-                        Persons table-аас
+                        Хувь хүн · Бодит өгөгдөл
                       </div>
                     </div>
-                    <button
-                      onClick={fetchRecent}
-                      style={{
-                        background: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                        borderRadius: 8,
-                        padding: "6px 7px",
-                        cursor: "pointer",
-                        display: "flex",
-                        color: "rgba(255,255,255,0.4)",
-                      }}
-                    >
-                      <RefreshCw
-                        size={12}
-                        style={{
-                          animation: recentLoading
-                            ? "spin 1s linear infinite"
-                            : undefined,
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => {
+                          fetchRecent();
+                          fetchStats();
                         }}
-                      />
-                    </button>
+                        style={{
+                          background: "rgba(99,102,241,0.08)",
+                          border: "1px solid rgba(99,102,241,0.2)",
+                          borderRadius: 8,
+                          padding: "6px 12px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          color: "#818cf8",
+                          fontSize: 12,
+                          fontFamily: "inherit",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <RefreshCw
+                          size={12}
+                          style={{
+                            animation: recentLoading
+                              ? "spin 1s linear infinite"
+                              : undefined,
+                          }}
+                        />
+                        Шинэчлэх
+                      </button>
+                    </div>
                   </div>
                   {recentLoading ? (
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "center",
-                        padding: 32,
-                        gap: 8,
+                        alignItems: "center",
+                        padding: 48,
+                        gap: 10,
                       }}
                     >
                       <Loader2
-                        size={16}
+                        size={18}
                         style={{
-                          color: "#3b82f6",
+                          color: "#6366f1",
                           animation: "spin 0.8s linear infinite",
                         }}
                       />
                       <span
-                        style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}
+                        style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}
                       >
                         Ачаалж байна...
                       </span>
@@ -2490,6 +2800,7 @@ export default function AdminDashboard() {
                       <thead>
                         <tr>
                           <Th h="Нэр" />
+                          <Th h="И-мэйл" />
                           <Th h="Регистр" />
                           <Th h="Статус" />
                           <Th h="Огноо" />
@@ -2501,33 +2812,38 @@ export default function AdminDashboard() {
                             [p.last_name, p.first_name]
                               .filter(Boolean)
                               .join(" ") || p.email;
+                          const colors = [
+                            "#6366f1",
+                            "#8b5cf6",
+                            "#06b6d4",
+                            "#10b981",
+                            "#f59e0b",
+                          ];
+                          const c = colors[i % colors.length];
                           return (
                             <tr key={p.id} className="tr">
-                              <td style={{ padding: "10px 16px" }}>
+                              <td style={{ padding: "12px 16px" }}>
                                 <div
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: 9,
+                                    gap: 10,
                                   }}
                                 >
                                   <div
                                     style={{
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 7,
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 9,
                                       flexShrink: 0,
-                                      background:
-                                        i % 2 === 0
-                                          ? "rgba(59,130,246,0.18)"
-                                          : "rgba(139,92,246,0.18)",
+                                      background: `${c}18`,
+                                      border: `1px solid ${c}25`,
                                       display: "flex",
                                       alignItems: "center",
                                       justifyContent: "center",
-                                      fontSize: 11,
+                                      fontSize: 12,
                                       fontWeight: 700,
-                                      color:
-                                        i % 2 === 0 ? "#60a5fa" : "#a78bfa",
+                                      color: c,
                                     }}
                                   >
                                     {(
@@ -2536,9 +2852,9 @@ export default function AdminDashboard() {
                                   </div>
                                   <span
                                     style={{
-                                      fontSize: 12,
+                                      fontSize: 13,
                                       fontWeight: 600,
-                                      color: "rgba(255,255,255,0.78)",
+                                      color: "rgba(255,255,255,0.8)",
                                     }}
                                   >
                                     {nm}
@@ -2547,22 +2863,31 @@ export default function AdminDashboard() {
                               </td>
                               <td
                                 style={{
-                                  padding: "10px 16px",
+                                  padding: "12px 16px",
+                                  fontSize: 12,
+                                  color: "rgba(255,255,255,0.35)",
+                                }}
+                              >
+                                {p.email}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "12px 16px",
                                   fontSize: 11,
                                   fontFamily: "monospace",
-                                  color: "rgba(255,255,255,0.35)",
+                                  color: "rgba(255,255,255,0.3)",
                                 }}
                               >
                                 {p.register_number || "—"}
                               </td>
-                              <td style={{ padding: "10px 16px" }}>
+                              <td style={{ padding: "12px 16px" }}>
                                 <Badge status={p.status} />
                               </td>
                               <td
                                 style={{
-                                  padding: "10px 16px",
+                                  padding: "12px 16px",
                                   fontSize: 11,
-                                  color: "rgba(255,255,255,0.28)",
+                                  color: "rgba(255,255,255,0.25)",
                                 }}
                               >
                                 {p.created_at
@@ -2577,11 +2902,11 @@ export default function AdminDashboard() {
                         {recentPersons.length === 0 && (
                           <tr>
                             <td
-                              colSpan={4}
+                              colSpan={5}
                               style={{
-                                padding: "28px 16px",
+                                padding: "36px 16px",
                                 textAlign: "center",
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: "rgba(255,255,255,0.2)",
                               }}
                             >
@@ -2624,14 +2949,12 @@ export default function AdminDashboard() {
                 showToast={showToast}
               />
             )}
-
             {nav === "directions" && canNav("directions") && (
               <DirectionsTab
                 isSuperAdmin={me.role === "super_admin"}
                 showToast={showToast}
               />
             )}
-
             {nav === "announcements" && canNav("announcements") && (
               <AnnouncementsTab showToast={showToast} />
             )}
@@ -2726,7 +3049,7 @@ export default function AdminDashboard() {
                         style={{
                           padding: "8px 16px",
                           borderRadius: 9,
-                          background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
+                          background: "linear-gradient(135deg,#4f46e5,#6366f1)",
                           border: "none",
                           color: "white",
                           fontSize: 13,
@@ -2736,6 +3059,7 @@ export default function AdminDashboard() {
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
+                          boxShadow: "0 4px 14px rgba(99,102,241,0.3)",
                         }}
                       >
                         <Plus size={15} /> Шинэ Админ
@@ -2782,7 +3106,7 @@ export default function AdminDashboard() {
                       <Loader2
                         size={18}
                         style={{
-                          color: "#3b82f6",
+                          color: "#6366f1",
                           animation: "spin 0.8s linear infinite",
                         }}
                       />
@@ -2835,6 +3159,13 @@ export default function AdminDashboard() {
                                         (aPerms.includes("dashboard.view") ||
                                           aPerms.includes("dashboard"))),
                                   ).length;
+                            const colors = [
+                              "#6366f1",
+                              "#8b5cf6",
+                              "#06b6d4",
+                              "#10b981",
+                            ];
+                            const c = colors[i % colors.length];
                             return (
                               <tr key={a.id} className="tr">
                                 <td style={{ padding: "12px 16px" }}>
@@ -2851,17 +3182,14 @@ export default function AdminDashboard() {
                                         height: 32,
                                         borderRadius: 9,
                                         flexShrink: 0,
-                                        background:
-                                          i % 2 === 0
-                                            ? "rgba(59,130,246,0.18)"
-                                            : "rgba(139,92,246,0.18)",
+                                        background: `${c}18`,
+                                        border: `1px solid ${c}25`,
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
                                         fontSize: 12,
                                         fontWeight: 700,
-                                        color:
-                                          i % 2 === 0 ? "#60a5fa" : "#a78bfa",
+                                        color: c,
                                       }}
                                     >
                                       {a.first_name?.[0] ??
@@ -2877,30 +3205,18 @@ export default function AdminDashboard() {
                                       >
                                         {a.last_name} {a.first_name}
                                       </div>
-                                      {a.parent_name ? (
+                                      {a.created_at && (
                                         <div
                                           style={{
                                             fontSize: 10,
-                                            color: "rgba(14,165,233,0.65)",
+                                            color: "rgba(255,255,255,0.25)",
                                             marginTop: 1,
                                           }}
                                         >
-                                          ↳ {a.parent_name}
+                                          {new Date(
+                                            a.created_at,
+                                          ).toLocaleDateString("mn-MN")}
                                         </div>
-                                      ) : (
-                                        a.created_at && (
-                                          <div
-                                            style={{
-                                              fontSize: 10,
-                                              color: "rgba(255,255,255,0.25)",
-                                              marginTop: 1,
-                                            }}
-                                          >
-                                            {new Date(
-                                              a.created_at,
-                                            ).toLocaleDateString("mn-MN")}
-                                          </div>
-                                        )
                                       )}
                                     </div>
                                   </div>
@@ -2933,11 +3249,11 @@ export default function AdminDashboard() {
                                       background:
                                         a.role === "super_admin"
                                           ? "rgba(239,68,68,0.12)"
-                                          : "rgba(59,130,246,0.12)",
+                                          : "rgba(99,102,241,0.12)",
                                       color:
                                         a.role === "super_admin"
                                           ? "#f87171"
-                                          : "#60a5fa",
+                                          : "#a5b4fc",
                                     }}
                                   >
                                     {a.role === "super_admin"
@@ -2946,44 +3262,42 @@ export default function AdminDashboard() {
                                   </span>
                                 </td>
                                 <td style={{ padding: "12px 16px" }}>
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 5,
-                                    }}
-                                  >
-                                    {a.role === "super_admin" ? (
+                                  {a.role === "super_admin" ? (
+                                    <span
+                                      style={{
+                                        fontSize: 11,
+                                        color: "rgba(239,68,68,0.7)",
+                                      }}
+                                    >
+                                      Бүгд
+                                    </span>
+                                  ) : (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 5,
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          color: "rgba(165,180,252,0.8)",
+                                        }}
+                                      >
+                                        {navCount}
+                                      </span>
                                       <span
                                         style={{
                                           fontSize: 11,
-                                          color: "rgba(239,68,68,0.7)",
+                                          color: "rgba(148,163,184,0.4)",
                                         }}
                                       >
-                                        Бүгд
+                                        / {NAV_PERMS.length} цэс
                                       </span>
-                                    ) : (
-                                      <>
-                                        <span
-                                          style={{
-                                            fontSize: 12,
-                                            fontWeight: 600,
-                                            color: "rgba(96,165,250,0.8)",
-                                          }}
-                                        >
-                                          {navCount}
-                                        </span>
-                                        <span
-                                          style={{
-                                            fontSize: 11,
-                                            color: "rgba(148,163,184,0.4)",
-                                          }}
-                                        >
-                                          / {NAV_PERMS.length} цэс
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
                                 </td>
                                 <td style={{ padding: "12px 16px" }}>
                                   <button
@@ -3025,7 +3339,7 @@ export default function AdminDashboard() {
                                         <Pencil
                                           size={13}
                                           style={{
-                                            color: "rgba(59,130,246,0.7)",
+                                            color: "rgba(99,102,241,0.7)",
                                           }}
                                         />
                                       </button>
@@ -3053,6 +3367,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
             {nav === "special_permissions" && canNav("special_permissions") && (
               <SpecialPermissionsTab
                 isSuperAdmin={me.role === "super_admin"}
