@@ -1,6 +1,6 @@
 "use client";
 import { Upload, FileText } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 export function Section({ icon:Icon, title, children }: any) {
   return (
@@ -21,8 +21,7 @@ export function Section({ icon:Icon, title, children }: any) {
 
 export function DocUpload({ label, fieldKey, preview, onFile, editing, accept="image/*", required=false }: any) {
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // ✅ accept-ээр file type тодорхойлно — URL-ийн оронд
+  const [fileName, setFileName] = useState<string>("");
   const isDocField = accept.includes("pdf") || accept.includes(".doc");
 
   return (
@@ -31,6 +30,7 @@ export function DocUpload({ label, fieldKey, preview, onFile, editing, accept="i
         textTransform:"uppercase" as const, margin:"0 0 8px" }}>
         {label}{required && <span style={{ color:"#ef4444" }}> *</span>}
       </p>
+
       <div
         onClick={() => editing && inputRef.current?.click()}
         style={{ borderRadius:12, minHeight:80, position:"relative", overflow:"hidden",
@@ -39,11 +39,12 @@ export function DocUpload({ label, fieldKey, preview, onFile, editing, accept="i
           display:"flex", alignItems:"center", justifyContent:"center",
           transition:"all .15s", cursor: editing ? "pointer" : "default",
           flexDirection:"column" as const }}>
+
         {preview ? (
           isDocField ? (
-            <div style={{ textAlign:"center", padding:16 }}>
-              <FileText size={24} style={{ color:"#059669", margin:"0 auto 6px", display:"block" }}/>
-              <p style={{ fontSize:11, color:"#059669", margin:0, fontWeight:600 }}>Файл байна ✓</p>
+            <div style={{ textAlign:"center", padding:"12px 16px" }}>
+              <FileText size={28} style={{ color:"#059669", margin:"0 auto 6px", display:"block" }}/>
+              <p style={{ fontSize:11, color:"#059669", margin:0, fontWeight:700 }}>✓ Байна</p>
               {!preview.startsWith("blob:") && (
                 <a href={preview} target="_blank" rel="noreferrer"
                   onClick={e => e.stopPropagation()}
@@ -63,12 +64,11 @@ export function DocUpload({ label, fieldKey, preview, onFile, editing, accept="i
               {editing ? "Файл оруулах" : "Байхгүй"}
             </p>
             {editing && isDocField && (
-              <p style={{ fontSize:10, color:"#cbd5e1", margin:"3px 0 0" }}>
-                PDF, Word, зураг
-              </p>
+              <p style={{ fontSize:10, color:"#cbd5e1", margin:"3px 0 0" }}>PDF, Word, зураг</p>
             )}
           </div>
         )}
+
         {editing && preview && (
           <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)",
             display:"flex", alignItems:"center", justifyContent:"center",
@@ -79,6 +79,34 @@ export function DocUpload({ label, fieldKey, preview, onFile, editing, accept="i
           </div>
         )}
       </div>
+
+      {/* ✅ Файлын нэр доор харуулна */}
+      {preview && fileName && (
+        <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:5,
+          padding:"4px 8px", borderRadius:8, background:"#f0fdf4",
+          border:"1px solid #bbf7d0" }}>
+          <FileText size={11} style={{ color:"#059669", flexShrink:0 }}/>
+          <span style={{ fontSize:11, color:"#059669", fontWeight:500,
+            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
+            {fileName}
+          </span>
+        </div>
+      )}
+
+      {/* Серверийн файл байвал "Байна" харуулна */}
+      {preview && !fileName && !preview.startsWith("blob:") && (
+        <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:5,
+          padding:"4px 8px", borderRadius:8, background:"#f0fdf4",
+          border:"1px solid #bbf7d0" }}>
+          <FileText size={11} style={{ color:"#059669", flexShrink:0 }}/>
+          <a href={preview} target="_blank" rel="noreferrer"
+            style={{ fontSize:11, color:"#059669", fontWeight:500,
+              textDecoration:"none", overflow:"hidden",
+              textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
+            Файл харах →
+          </a>
+        </div>
+      )}
 
       <input
         ref={inputRef}
@@ -93,6 +121,7 @@ export function DocUpload({ label, fieldKey, preview, onFile, editing, accept="i
             e.target.value = "";
             return;
           }
+          setFileName(file.name);
           onFile(fieldKey, file);
           e.target.value = "";
         }}

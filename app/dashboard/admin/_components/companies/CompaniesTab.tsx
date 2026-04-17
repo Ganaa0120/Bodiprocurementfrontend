@@ -62,13 +62,25 @@ export function CompaniesTab({ data }: { data: any }) {
   const showToast = data.showToast ?? (() => {});
   const canEditStatus = data.canEditStatus !== false;
   const canDelete = data.canDelete !== false;
-  const [dirs, setDirs] = useState<{ id: number; label: string }[]>([]);
+  const [dirs, setDirs] = useState<
+    { id: number; label: string; children: { id: number; label: string }[] }[]
+  >([]);
 
   useEffect(() => {
     fetch(`${API}/api/activity-directions`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) setDirs(d.directions || []);
+        if (d.success) {
+          const normalized = (d.directions || []).map((dir: any) => ({
+            id: dir.id,
+            label: dir.label,
+            children: (dir.children || []).map((c: any) => ({
+              id: c.id,
+              label: c.label,
+            })),
+          }));
+          setDirs(normalized);
+        }
       })
       .catch(() => {});
   }, []);

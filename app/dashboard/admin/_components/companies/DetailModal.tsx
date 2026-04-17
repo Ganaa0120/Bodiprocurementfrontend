@@ -501,7 +501,11 @@ export function DetailModal({
   showToast: (msg: string, ok?: boolean) => void;
   canEditStatus?: boolean;
   canDelete?: boolean;
-  dirs?: { id: number; label: string }[];
+  dirs?: {
+    id: number;
+    label: string;
+    children: { id: number; label: string }[];
+  }[];
 }) {
   const [localStatus, setLocalStatus] = useState(org.status);
   const [returnReason, setReturnReason] = useState(org.return_reason ?? "");
@@ -780,32 +784,107 @@ export function DetailModal({
                     value={supply(org.supply_direction)}
                   />
                   <Row label="Тайлбар" value={org.activity_description} />
+
                   {org.activity_directions?.length > 0 && (
                     <div style={{ padding: "7px 0" }}>
                       <div
-                        style={{ display: "flex", flexWrap: "wrap", gap: 5 }}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
                       >
-                        {org.activity_directions.map((d: any) => {
-                          // ✅ ID байвал label хайна, label байвал шууд харуулна
-                          const label =
-                            dirs.find((x) => x.id === d || x.id === Number(d))
-                              ?.label || String(d);
-                          return (
-                            <span
-                              key={d}
-                              style={{
-                                fontSize: 10,
-                                padding: "2px 8px",
-                                borderRadius: 99,
-                                background: "rgba(59,130,246,0.12)",
-                                color: "#60a5fa",
-                                border: "1px solid rgba(59,130,246,0.2)",
-                              }}
-                            >
-                              {label}
-                            </span>
-                          );
-                        })}
+                        {org.activity_directions.map(
+                          (d: any, index: number) => {
+                            // ✅ Шинэ format: { main_id, sub_ids }
+                            if (d && typeof d === "object" && "main_id" in d) {
+                              const main = dirs.find(
+                                (x: any) =>
+                                  x.id === d.main_id ||
+                                  x.id === Number(d.main_id),
+                              );
+                              return (
+                                <div
+                                  key={`dir-${index}`}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: 6,
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      padding: "3px 9px",
+                                      borderRadius: 99,
+                                      background: "rgba(59,130,246,0.12)",
+                                      color: "#60a5fa",
+                                      border: "1px solid rgba(59,130,246,0.25)",
+                                      whiteSpace: "nowrap" as const,
+                                    }}
+                                  >
+                                    {main?.label ?? `ID:${d.main_id}`}
+                                  </span>
+                                  {d.sub_ids?.map((sid: number) => {
+                                    // sub label-г dirs-аас хайна
+                                    let subLabel = `${sid}`;
+                                    for (const dir of dirs) {
+                                      const sub = dir.children?.find(
+                                        (c: any) => c.id === sid,
+                                      );
+                                      if (sub) {
+                                        subLabel = sub.label;
+                                        break;
+                                      }
+                                    }
+                                    return (
+                                      <span
+                                        key={sid}
+                                        style={{
+                                          fontSize: 10,
+                                          padding: "2px 8px",
+                                          borderRadius: 99,
+                                          background: "rgba(99,102,241,0.08)",
+                                          color: "#818cf8",
+                                          border:
+                                            "1px solid rgba(99,102,241,0.18)",
+                                          whiteSpace: "nowrap" as const,
+                                        }}
+                                      >
+                                        {subLabel}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            }
+                            // ✅ Хуучин format: plain id эсвэл { id, label }
+                            const dirId = typeof d === "object" ? d?.id : d;
+                            const found = dirs.find(
+                              (x: any) =>
+                                x.id === dirId || x.id === Number(dirId),
+                            );
+                            return (
+                              <span
+                                key={`dir-${index}`}
+                                style={{
+                                  fontSize: 11,
+                                  padding: "3px 9px",
+                                  borderRadius: 99,
+                                  background: "rgba(59,130,246,0.12)",
+                                  color: "#60a5fa",
+                                  border: "1px solid rgba(59,130,246,0.25)",
+                                }}
+                              >
+                                {found?.label ??
+                                  (typeof d === "object"
+                                    ? JSON.stringify(d)
+                                    : String(d))}
+                              </span>
+                            );
+                          },
+                        )}
                       </div>
                     </div>
                   )}

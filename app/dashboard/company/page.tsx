@@ -413,7 +413,7 @@ export default function CompanyDashboard() {
                     margin: 0,
                   }}
                 >
-                  Байгааллагын мэдээлэл бөглөнө үү
+                  Байгууллагын мэдээлэл бөглөнө үү
                 </p>
                 <p
                   style={{ fontSize: 12, color: "#0ea5e9", margin: "1px 0 0" }}
@@ -441,51 +441,40 @@ export default function CompanyDashboard() {
               padding: "14px 18px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              cursor: "pointer",
+              gap: 12,
             }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "#fffbeb")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "white")
-            }
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                background: "#fffbeb",
+                border: "1px solid #fde68a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 18,
+              }}
+            >
+              ⏳
+            </div>
+            <div>
+              <p
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: "#fffbeb",
-                  border: "1px solid #fde68a",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#92400e",
+                  margin: 0,
                 }}
               >
-                📋
-              </div>
-              <div>
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#92400e",
-                    margin: 0,
-                  }}
-                >
-                  Бүртгэлээ дуусгана уу
-                </p>
-                <p
-                  style={{ fontSize: 12, color: "#d97706", margin: "1px 0 0" }}
-                >
-                  Байгааллагын мэдээллийг бүрэн бөглөж баталгаажуулна уу
-                </p>
-              </div>
+                Бүртгэл хянагдаж байна
+              </p>
+              <p style={{ fontSize: 12, color: "#d97706", margin: "1px 0 0" }}>
+                Таны мэдээллийг администратор хянаж байна. Удахгүй мэдэгдэл
+                ирнэ.
+              </p>
             </div>
-            <ArrowRight size={16} style={{ color: "#d97706", flexShrink: 0 }} />
           </div>
         </Link>
       )}

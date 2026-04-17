@@ -349,8 +349,11 @@ export default function SignupFormDemo() {
     }
   };
 
+  // handleOrgSubmit-д email/regnum шалгалт нэмнэ
   const handleOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ── Локал validation ──────────────────────────────────────────
     const errs: Record<string, string> = {};
     if (!orgRegnum || orgRegnum.length !== 7)
       errs.regnum = "7 оронтой тоо оруулна уу";
@@ -363,6 +366,36 @@ export default function SignupFormDemo() {
       errs.password2 = "Нууц үг таарахгүй байна";
     setOrgErrors(errs);
     if (Object.keys(errs).length > 0) return;
+
+    // ── Серверт давхар бүртгэл шалгах ────────────────────────────
+    setLoading(true);
+    try {
+      const [emailRes, regnumRes] = await Promise.all([
+        fetch(
+          `${API}/api/organizations/check-email?email=${encodeURIComponent(orgEmail)}`,
+        ).then((r) => r.json()),
+        fetch(
+          `${API}/api/organizations/check-regnum?register_number=${encodeURIComponent(orgRegnum)}`,
+        ).then((r) => r.json()),
+      ]);
+
+      const serverErrs: Record<string, string> = {};
+      if (emailRes.exists)
+        serverErrs.email = "Энэ и-мэйл хаяг бүртгэлтэй байна";
+      if (regnumRes.exists)
+        serverErrs.regnum = "Энэ регистрийн дугаар бүртгэлтэй байна";
+
+      if (Object.keys(serverErrs).length > 0) {
+        setOrgErrors(serverErrs);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Network алдаа бол шалгалтыг алгасаад үргэлжлүүлнэ
+    }
+    setLoading(false);
+
+    // ── OTP илгээнэ ───────────────────────────────────────────────
     const ok = await sendOtp();
     if (ok) setStep("otp");
   };
@@ -730,7 +763,7 @@ export default function SignupFormDemo() {
           )}
           <div className="mt-5 text-center gap-4 flex items-center justify-center">
             <span className="text-[12px] text-neutral-400">
-              Бүртгэлтэй юу? {" "}
+              Бүртгэлтэй юу?{" "}
             </span>
             <a
               href="/login"

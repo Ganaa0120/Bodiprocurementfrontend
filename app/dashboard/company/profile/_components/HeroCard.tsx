@@ -107,7 +107,7 @@ export function HeroCard({ profile, previews, editing, onFile, startEdit, pct, i
             padding:"5px 10px", borderRadius:8, background:"#fffbeb",
             border:"1px solid #fde68a", display:"flex", alignItems:"center", gap:5 }}>
             <div style={{ width:5, height:5, borderRadius:"50%", background:"#f59e0b" }}/>
-            Засварлаж байна
+            Бүртгэл үүсгэх
           </div>
         )}
       </div>
