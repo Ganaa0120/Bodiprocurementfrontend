@@ -1755,7 +1755,7 @@ export default function PersonProfilePage() {
                 setFieldErrors((p) => ({
                   ...p,
                   bag_horoo:
-                    v && !isMongolian(v) ? "Монгол үсгээр бичнэ үү" : "",
+                    v && !isMongolian(v) ? "Крилл үсгээр бичнэ үү" : "",
                 }));
               }}
               fieldError={fieldErrors.bag_horoo}
