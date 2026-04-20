@@ -339,7 +339,7 @@ export default function SignupFormDemo() {
       setOtp("");
       setOtpError("");
       setExpired(false);
-      setTimer(60);
+      setTimer(300);
       return true;
     } catch (err: any) {
       setOtpError(err.message);
@@ -897,7 +897,7 @@ export default function SignupFormDemo() {
                 {expired
                   ? "Хугацаа дууссан"
                   : timer > 0
-                    ? `${timer} секунд`
+                    ? `${Math.floor(timer / 60)}:${String(timer % 60).padStart(2, "0")}`
                     : "Хугацаа дууссан"}
               </div>
               {(timer === 0 || expired) && (
@@ -921,7 +921,7 @@ export default function SignupFormDemo() {
               <div className="h-1 rounded-full bg-indigo-100 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-blue-400 transition-all duration-1000"
-                  style={{ width: `${(timer / 60) * 100}%` }}
+                  style={{ width: `${(timer / 300) * 100}%` }}
                 />
               </div>
             )}
