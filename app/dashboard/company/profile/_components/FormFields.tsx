@@ -1,7 +1,8 @@
 "use client";
 import { fmtDate } from "@/app/dashboard/admin/_components/individuals/utils";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const lbl: React.CSSProperties = {
   fontSize: 11,
@@ -133,43 +134,205 @@ export function FSelect({
   placeholder,
   editing,
 }: any) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    dropUp: false,
+  });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      const dropUp = r.bottom + 240 > window.innerHeight;
+      setCoords({
+        top: dropUp ? r.top - 4 : r.bottom + 4,
+        left: r.left,
+        width: r.width,
+        dropUp,
+      });
+    }
+    setOpen((p) => !p);
+  };
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (
+        btnRef.current &&
+        !btnRef.current.closest("[data-fselect]")?.contains(e.target as Node)
+      )
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const getDisplayLabel = () => {
+    if (!value) return placeholder ?? "Сонгох";
+    if (options.length === 0) return value; // options ачааллаж байна
+    const found = options.find((o: any) => (o.value ?? o) === value);
+    if (!found) return value; // options-д олдохгүй ч value-г харуулна
+    return found?.label ?? found;
+  };
+  const displayLabel = getDisplayLabel();
+
   return (
-    <div>
+    <div data-fselect="true">
       {label && <label style={lbl}>{label}</label>}
-      <div style={{ position: "relative" }}>
-        <select
-          value={value}
-          disabled={!editing}
-          onChange={(e) => onChange(e.target.value)}
+      {editing ? (
+        <>
+          <button
+            ref={btnRef}
+            type="button"
+            onClick={handleOpen}
+            style={{
+              width: "100%",
+              padding: "9px 32px 9px 12px",
+              borderRadius: 10,
+              border: open ? "1.5px solid #6366f1" : "1.5px solid #e2e8f0",
+              background: "white",
+              fontSize: 13,
+              color: value ? "#0f172a" : "#94a3b8",
+              textAlign: "left" as const,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              boxSizing: "border-box" as const,
+            }}
+          >
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap" as const,
+              }}
+            >
+              {displayLabel}
+            </span>
+            <ChevronDown
+              size={13}
+              style={{
+                color: "#94a3b8",
+                flexShrink: 0,
+                transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform .2s",
+              }}
+            />
+          </button>
+
+          {open &&
+            typeof window !== "undefined" &&
+            createPortal(
+              <div
+                style={{
+                  position: "fixed",
+                  top: coords.dropUp ? "auto" : coords.top,
+                  bottom: coords.dropUp
+                    ? window.innerHeight - coords.top
+                    : "auto",
+                  left: coords.left,
+                  width: coords.width,
+                  zIndex: 99999,
+                  background: "white",
+                  borderRadius: 10,
+                  border: "1.5px solid #e2e8f0",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                  maxHeight: 220,
+                  overflowY: "auto",
+                }}
+              >
+                {placeholder && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange("");
+                      setOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "9px 14px",
+                      border: "none",
+                      background: "transparent",
+                      fontSize: 13,
+                      color: "#94a3b8",
+                      textAlign: "left" as const,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      borderBottom: "1px solid #f1f5f9",
+                    }}
+                  >
+                    {placeholder}
+                  </button>
+                )}
+                {options.map((o: any) => {
+                  const v = o.value ?? o;
+                  const l = o.label ?? o;
+                  const isSel = v === value;
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => {
+                        onChange(v);
+                        setOpen(false);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "9px 14px",
+                        border: "none",
+                        background: isSel ? "#eef2ff" : "transparent",
+                        fontSize: 13,
+                        color: isSel ? "#4f46e5" : "#0f172a",
+                        textAlign: "left" as const,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontWeight: isSel ? 600 : 400,
+                        borderBottom: "1px solid #f8fafc",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSel)
+                          (e.currentTarget as HTMLElement).style.background =
+                            "#f8f9ff";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSel)
+                          (e.currentTarget as HTMLElement).style.background =
+                            "transparent";
+                      }}
+                    >
+                      {l}
+                      {isSel && (
+                        <span style={{ fontSize: 12, color: "#6366f1" }}>
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>,
+              document.body,
+            )}
+        </>
+      ) : (
+        <div
           style={{
-            ...base(editing),
-            paddingRight: 28,
-            color: value ? "#0f172a" : "#94a3b8",
-            appearance: "none" as const,
-            cursor: editing ? "pointer" : "default",
+            fontSize: 13,
+            color: value ? "#0f172a" : "#cbd5e1",
+            padding: "10px 0",
+            borderBottom: "1px solid #f1f5f9",
+            fontWeight: value ? 500 : 400,
           }}
         >
-          {placeholder && <option value="">{placeholder}</option>}
-          {options.map((o: any) => (
-            <option key={o.value || o} value={o.value || o}>
-              {o.label || o}
-            </option>
-          ))}
-        </select>
-        {editing && (
-          <ChevronDown
-            size={13}
-            style={{
-              position: "absolute",
-              right: 10,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#94a3b8",
-              pointerEvents: "none",
-            }}
-          />
-        )}
-      </div>
+          {displayLabel}
+        </div>
+      )}
     </div>
   );
 }
