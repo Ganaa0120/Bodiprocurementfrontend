@@ -1137,8 +1137,8 @@ export default function PersonProfilePage() {
             const isOn = form.notification_preference === opt.value;
             return (
               <div key={opt.value} onClick={() => editing && F("notification_preference", opt.value)}
-                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderRadius: 12, cursor: editing ? "pointer" : "default", border: isOn ? "1.5px solid #6366f1" : "1.5px solid #e2e8f0", background: isOn ? "#f8f9ff" : "white", transition: "all .15s" }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, marginTop: 2, border: isOn ? "2px solid #6366f1" : "2px solid #e2e8f0", background: isOn ? "#6366f1" : "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderRadius: 12, cursor: editing ? "pointer" : "default", border: isOn ? "1.5px solid #0072BC" : "1.5px solid #e2e8f0", background: isOn ? "#f8f9ff" : "white", transition: "all .15s" }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, marginTop: 2, border: isOn ? "2px solid #0072BC" : "2px solid #e2e8f0", background: isOn ? "#0072BC" : "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isOn && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "white" }} />}
                 </div>
                 <div style={{ flex: 1 }}>

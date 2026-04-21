@@ -28,9 +28,9 @@ function AddBtn({ onClick, label }: { onClick: () => void; label: string }) {
         gap: 6,
         padding: 12,
         borderRadius: 12,
-        border: "1.5px dashed #c7d2fe",
-        background: "#eef2ff",
-        color: "#6366f1",
+        border: "1.5px dashed #0072BC",
+        background: "#0072BC1A",
+        color: "#0072BC",
         fontSize: 13,
         fontWeight: 600,
         cursor: "pointer",
@@ -96,7 +96,7 @@ function OwnerCard({
           style={{
             fontSize: 11,
             fontWeight: 700,
-            color: "#6366f1",
+            color: "#0072BC",
             letterSpacing: "0.06em",
             textTransform: "uppercase" as const,
           }}
@@ -286,7 +286,7 @@ export function ExecutiveDirectorsSection({
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#6366f1",
+                  color: "#0072BC",
                   letterSpacing: "0.06em",
                   textTransform: "uppercase" as const,
                 }}

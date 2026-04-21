@@ -15,6 +15,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -124,7 +125,11 @@ export default function CompanyLayout({
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .nav-link { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500;color:#64748b;transition:all .15s;margin-bottom:2px; }
   .nav-link:hover { background:#f1f5f9;color:#1e293b; }
-  .nav-link.active { background:linear-gradient(135deg,#6366f1,#818cf8);color:white;box-shadow:0 4px 12px rgba(99,102,241,0.3); }
+  .nav-link.active {
+  background: #0072BC;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0,114,188,0.3);
+}color:white;box-shadow:0 4px 12px rgba(99,102,241,0.3); }
   @media(max-width:1024px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}}
 `}</style>
 
@@ -172,14 +177,14 @@ export default function CompanyLayout({
                 width: 34,
                 height: 34,
                 borderRadius: 10,
-                background: "linear-gradient(135deg,#6366f1,#818cf8)",
+                background: "",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <Building2 size={16} color="white" />
+              <Image src="/images/logosolo.png" alt="Logo" width={48} height={48} />
             </div>
             <div>
               <p
@@ -240,7 +245,7 @@ export default function CompanyLayout({
                   whiteSpace: "nowrap",
                 }}
               >
-                {user?.company_name || "Байгааллага"}
+                {user?.company_name || "Байгууллага"}
               </p>
               <p
                 style={{

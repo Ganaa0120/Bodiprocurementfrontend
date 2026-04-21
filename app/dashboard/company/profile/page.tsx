@@ -1400,6 +1400,11 @@ export default function CompanyProfilePage() {
         @keyframes spin   { to { transform:rotate(360deg) } }
         @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:#f1f5f9; border-radius:99px; }
+  ::-webkit-scrollbar-thumb { background:#0072BC; border-radius:99px; }
+  ::-webkit-scrollbar-thumb:hover { background:#005a96; }
       `}</style>
 
       {/* Submit Modal */}
@@ -1556,7 +1561,7 @@ export default function CompanyProfilePage() {
                 padding: "8px 16px",
                 borderRadius: 10,
                 border: "none",
-                background: "linear-gradient(135deg,#4f46e5,#6366f1)",
+                background: "#0072BC",
                 color: "white",
                 fontSize: 12,
                 fontWeight: 600,
@@ -1708,7 +1713,7 @@ export default function CompanyProfilePage() {
             mono
           />
           <FSelect
-            label="Байгааллагын хэлбэр"
+            label="Байгууллагын хэлбэр"
             value={form.company_type}
             editing={editing}
             onChange={(v: string) => F("company_type", v)}
@@ -2043,9 +2048,9 @@ export default function CompanyProfilePage() {
                   gap: 6,
                   padding: "10px",
                   borderRadius: 10,
-                  border: "1.5px dashed #c7d2fe",
-                  background: "#eef2ff",
-                  color: "#6366f1",
+                  border: "1.5px dashed #0072BC",
+                  background: "#0072BC1A",
+                  color: "#0072BC",
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -2388,8 +2393,8 @@ export default function CompanyProfilePage() {
                 gap: 8,
                 padding: "12px",
                 borderRadius: 12,
-                border: "1.5px dashed #c7d2fe",
-                background: "#eef2ff",
+                border: "1.5px dashed #0072BC",
+                background: "#0072BC1A",
                 cursor: "pointer",
                 transition: "all .15s",
               }}
@@ -2400,8 +2405,8 @@ export default function CompanyProfilePage() {
                 ((e.currentTarget as HTMLElement).style.background = "#eef2ff")
               }
             >
-              <Plus size={14} style={{ color: "#6366f1" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#6366f1" }}>
+              <Plus size={14} style={{ color: "#0072BC" }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#0072BC" }}>
                 Файл нэмэх
               </span>
               <input
@@ -2500,7 +2505,7 @@ export default function CompanyProfilePage() {
               letterSpacing: "0.06em",
               textTransform: "uppercase" as const,
               display: "block",
-              marginBottom: 10,
+              marginBottom: 12,
             }}
           >
             Худалдан авалтын зарын мэдэгдэл хүлээн авах
@@ -2535,9 +2540,9 @@ export default function CompanyProfilePage() {
                     borderRadius: 12,
                     cursor: editing ? "pointer" : "default",
                     border: isOn
-                      ? "1.5px solid #6366f1"
-                      : "1.5px solid #e2e8f0",
-                    background: isOn ? "#f8f9ff" : "white",
+                      ? "1.5px solid #0072BC"
+                      : "1.5px solid #0072BC33",
+                    background: isOn ? "#0072BC1A" : "white",
                     transition: "all .15s",
                   }}
                 >
@@ -2548,8 +2553,8 @@ export default function CompanyProfilePage() {
                       borderRadius: "50%",
                       flexShrink: 0,
                       marginTop: 1,
-                      border: isOn ? "2px solid #6366f1" : "2px solid #e2e8f0",
-                      background: isOn ? "#6366f1" : "white",
+                      border: isOn ? "2px solid #0072BC" : "2px solid #e2e8f0",
+                      background: isOn ? "#0072BC" : "white",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -2580,7 +2585,7 @@ export default function CompanyProfilePage() {
                         style={{
                           fontSize: 13,
                           fontWeight: 600,
-                          color: isOn ? "#4f46e5" : "#0f172a",
+                          color: isOn ? "#0072BC" : "#0f172a",
                         }}
                       >
                         {opt.label}
