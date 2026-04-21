@@ -1513,7 +1513,7 @@ export default function CompanyProfilePage() {
                 padding: isMobile ? "8px 16px" : "8px 20px",
                 borderRadius: 9,
                 border: "none",
-                background: "linear-gradient(135deg,#4f46e5,#6366f1)",
+                background: "#0072BC",
                 color: "white",
                 fontSize: 13,
                 fontWeight: 600,

@@ -58,7 +58,7 @@ function Th({ h }: { h: string }) {
 export function CompaniesTab({ data }: { data: any }) {
   const [search, setSearch] = useState("");
   const [detailOrg, setDetailOrg] = useState<any>(null);
-
+  const [permTypes, setPermTypes] = useState<{ id: number; label: string }[]>([]);
   const showToast = data.showToast ?? (() => {});
   const canEditStatus = data.canEditStatus !== false;
   const canDelete = data.canDelete !== false;
@@ -84,6 +84,13 @@ export function CompaniesTab({ data }: { data: any }) {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+  fetch(`${API}/api/special-permission-types`)
+    .then(r => r.json())
+    .then(d => { if (d.success) setPermTypes(d.types || []); })
+    .catch(() => {});
+}, []);
 
   const openDetail = useCallback(async (c: any) => {
     setTimeout(() => setDetailOrg(c), 0);
@@ -135,18 +142,16 @@ export function CompaniesTab({ data }: { data: any }) {
 
       {detailOrg && (
         <DetailModal
-          org={detailOrg}
-          dirs={dirs}
-          onClose={() => setDetailOrg(null)}
-          onStatusChange={handleStatusChange}
-          onDeleted={(id) => {
-            handleStatusChange(id, "deleted");
-            setDetailOrg(null);
-          }}
-          showToast={showToast}
-          canEditStatus={canEditStatus}
-          canDelete={canDelete}
-        />
+  org={detailOrg}
+  dirs={dirs}
+  permTypes={permTypes}  // ✅ нэмнэ
+  onClose={() => setDetailOrg(null)}
+  onStatusChange={handleStatusChange}
+  onDeleted={(id) => { handleStatusChange(id, "deleted"); setDetailOrg(null); }}
+  showToast={showToast}
+  canEditStatus={canEditStatus}
+  canDelete={canDelete}
+/>
       )}
 
       <div
