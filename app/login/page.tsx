@@ -539,15 +539,6 @@ export default function LoginPage() {
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-1/2 rounded-full"
               style={{ background:"linear-gradient(90deg,transparent,#38bdf8,transparent)" }}/>
           </div>
-
-          <div style={fade(420)} className="mt-5 flex items-center justify-center gap-8">
-            {[{ v:"30+",l:"Жил" },{ v:"14",l:"Компани" },{ v:"3000+",l:"Ажилтан" }].map(s => (
-              <div key={s.l} className="text-center">
-                <div className="text-[15px] font-bold" style={{ color:"#0C72BA" }}>{s.v}</div>
-                <div className="text-[11px] font-medium tracking-widest uppercase" style={{ color:"rgba(15,30,58,0.35)" }}>{s.l}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </main>
     </>

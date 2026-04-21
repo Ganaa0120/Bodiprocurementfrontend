@@ -142,6 +142,7 @@ export function FSelect({
     dropUp: false,
   });
   const btnRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null); // ✅ нэмнэ
 
   const handleOpen = () => {
     if (btnRef.current) {
@@ -159,21 +160,25 @@ export function FSelect({
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
+      // ✅ btnRef болон dropdownRef хоёуланг шалгана
       if (
-        btnRef.current &&
-        !btnRef.current.closest("[data-fselect]")?.contains(e.target as Node)
+        btnRef.current?.contains(e.target as Node) ||
+        dropdownRef.current?.contains(e.target as Node)
       )
-        setOpen(false);
+        return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
   const getDisplayLabel = () => {
-    if (!value) return placeholder ?? "Сонгох";
-    if (options.length === 0) return value; // options ачааллаж байна
-    const found = options.find((o: any) => (o.value ?? o) === value);
-    if (!found) return value; // options-д олдохгүй ч value-г харуулна
+    if (!value && value !== 0) return placeholder ?? "Сонгох";
+    if (options.length === 0) return value;
+    const found = options.find(
+      (o: any) => String(o.value ?? o) === String(value),
+    );
+    if (!found) return value;
     return found?.label ?? found;
   };
   const displayLabel = getDisplayLabel();
@@ -227,7 +232,9 @@ export function FSelect({
           {open &&
             typeof window !== "undefined" &&
             createPortal(
+              // ✅ ref нэмнэ
               <div
+                ref={dropdownRef}
                 style={{
                   position: "fixed",
                   top: coords.dropUp ? "auto" : coords.top,
@@ -271,10 +278,10 @@ export function FSelect({
                 {options.map((o: any) => {
                   const v = o.value ?? o;
                   const l = o.label ?? o;
-                  const isSel = v === value;
+                  const isSel = String(v) === String(value);
                   return (
                     <button
-                      key={v}
+                      key={String(v)}
                       type="button"
                       onClick={() => {
                         onChange(v);

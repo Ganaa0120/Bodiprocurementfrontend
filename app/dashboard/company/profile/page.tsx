@@ -45,7 +45,7 @@ const BLANK_EXEC = {
   email: "",
 };
 const BLANK_PERM = {
-  id: Date.now(),
+  _key: Date.now(),
   type_id: null,
   type_label: "",
   number: "",
@@ -943,21 +943,25 @@ export default function CompanyProfilePage() {
               ? u.executive_directors
               : [{ ...BLANK_EXEC }],
           );
+
+          // ✅ updated → u болгосон
           setSpecPerms(
             u.special_permissions?.length
-              ? u.special_permissions.map((p: any) => ({
+              ? u.special_permissions.map((p: any, i: number) => ({
                   ...p,
-                  id: p.id || Date.now() + Math.random(),
+                  _key: i,
+                  type_label: p.type_label || "", // permTypes useEffect-д нөхнө
                 }))
-              : [{ ...BLANK_PERM, id: Date.now() }],
+              : [{ ...BLANK_PERM }],
           );
           setSpecPermSnap(
             u.special_permissions?.length
-              ? u.special_permissions.map((p: any) => ({
+              ? u.special_permissions.map((p: any, i: number) => ({
                   ...p,
-                  id: p.id || Date.now() + Math.random(),
+                  _key: i,
+                  type_label: p.type_label || "",
                 }))
-              : [{ ...BLANK_PERM, id: Date.now() }],
+              : [{ ...BLANK_PERM }],
           );
 
           const savedUrls = Array.isArray(u.extra_documents)
@@ -1016,6 +1020,7 @@ export default function CompanyProfilePage() {
         })
         .catch(() => {});
     };
+
     const interval = setInterval(refreshStatus, 12 * 60 * 60 * 1000);
     window.addEventListener("focus", refreshStatus);
     window.addEventListener("user-updated", refreshStatus);
@@ -1025,6 +1030,21 @@ export default function CompanyProfilePage() {
       window.removeEventListener("user-updated", refreshStatus);
     };
   }, []);
+
+  // ✅ permTypes ачаалагдсаны дараа type_label-г нөхнө
+  useEffect(() => {
+    if (permTypes.length === 0) return;
+    setSpecPerms((prev) =>
+      prev.map((perm) => ({
+        ...perm,
+        type_label:
+          perm.type_label ||
+          permTypes.find((t: any) => Number(t.id) === Number(perm.type_id))
+            ?.label ||
+          "",
+      })),
+    );
+  }, [permTypes]); // ✅ permTypes өөрчлөгдөхөд л ажиллана
 
   const F = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   const onFile = (field: string, file: File) => {
@@ -1899,9 +1919,9 @@ export default function CompanyProfilePage() {
                     </div>
                   ))}
                 </div>
-                {specPerms.map((perm: any) => (
+                {specPerms.map((perm: any, idx: number) => (
                   <div
-                    key={perm.id}
+                    key={idx}
                     style={{
                       display: "grid",
                       gridTemplateColumns: gPerm,
@@ -1914,30 +1934,33 @@ export default function CompanyProfilePage() {
                       marginTop: 8,
                     }}
                   >
+                    {/* ✅ type_id-г value болгоно */}
                     <FSelect
                       label=""
                       value={
-                        perm.type_label ||
-                        (permTypes.find((t) => t.id === perm.type_id)?.label ??
-                          "")
+                        perm.type_id !== null && perm.type_id !== undefined
+                          ? String(perm.type_id)
+                          : ""
                       }
                       editing={editing}
                       onChange={(v: string) => {
-                        const found = permTypes.find((t) => t.label === v);
+                        const found = permTypes.find(
+                          (t: any) => String(t.id) === v,
+                        );
                         setSpecPerms((p) =>
-                          p.map((x) =>
-                            x.id !== perm.id
+                          p.map((x, i) =>
+                            i !== idx
                               ? x
                               : {
                                   ...x,
-                                  type_label: v,
-                                  type_id: found?.id || null,
+                                  type_id: found ? found.id : null, // ✅ number хэлбэрээр хадгална
+                                  type_label: found ? found.label : "",
                                 },
                           ),
                         );
                       }}
-                      options={permTypes.map((t) => ({
-                        value: t.label,
+                      options={permTypes.map((t: any) => ({
+                        value: String(t.id),
                         label: t.label,
                       }))}
                       placeholder="Төрөл сонгох"
@@ -1945,12 +1968,12 @@ export default function CompanyProfilePage() {
 
                     <FInput
                       label=""
-                      value={perm.number}
+                      value={perm.number || ""}
                       editing={editing}
                       onChange={(v: string) =>
                         setSpecPerms((p) =>
-                          p.map((x) =>
-                            x.id !== perm.id ? x : { ...x, number: v },
+                          p.map((x, i) =>
+                            i !== idx ? x : { ...x, number: v },
                           ),
                         )
                       }
@@ -1960,12 +1983,12 @@ export default function CompanyProfilePage() {
                     <FInput
                       label=""
                       type="date"
-                      value={perm.expiry}
+                      value={perm.expiry || ""}
                       editing={editing}
                       onChange={(v: string) =>
                         setSpecPerms((p) =>
-                          p.map((x) =>
-                            x.id !== perm.id ? x : { ...x, expiry: v },
+                          p.map((x, i) =>
+                            i !== idx ? x : { ...x, expiry: v },
                           ),
                         )
                       }
@@ -1975,7 +1998,7 @@ export default function CompanyProfilePage() {
                       <button
                         type="button"
                         onClick={() =>
-                          setSpecPerms((p) => p.filter((x) => x.id !== perm.id))
+                          setSpecPerms((p) => p.filter((_, i) => i !== idx))
                         }
                         style={{
                           padding: "7px 12px",
@@ -2001,7 +2024,18 @@ export default function CompanyProfilePage() {
             {editing && (
               <button
                 type="button"
-                onClick={() => setSpecPerms((p) => [...p, { ...BLANK_PERM }])}
+                onClick={() =>
+                  setSpecPerms((p) => [
+                    ...p,
+                    {
+                      _key: Date.now(),
+                      type_id: null,
+                      type_label: "",
+                      number: "",
+                      expiry: "",
+                    },
+                  ])
+                }
                 style={{
                   display: "flex",
                   alignItems: "center",
