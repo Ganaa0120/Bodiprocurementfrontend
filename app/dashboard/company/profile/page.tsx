@@ -11,7 +11,6 @@ import {
   Check,
   Save,
   Plus,
-  ChevronDown,
   Bell,
   Send,
   Search,
@@ -58,8 +57,6 @@ const REQUIRED_FIELDS = [
   { key: "aimag_niislel", label: "Аймаг / Нийслэл" },
   { key: "sum_duureg", label: "Сум / Дүүрэг" },
   { key: "address", label: "Дэлгэрэнгүй хаяг" },
-  { key: "bank_name", label: "Банкны нэр" },
-  { key: "bank_account_number", label: "Дансны дугаар" },
 ];
 
 type DirItem = {
@@ -1945,99 +1942,146 @@ export default function CompanyProfilePage() {
                     key={idx}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: gPerm,
-                      gap: 10,
-                      alignItems: "center",
-                      padding: "10px 12px",
+                      gridTemplateColumns: "1fr auto auto auto", // ✅ нэг мөр
+                      gap: 8,
+                      alignItems: "end",
+                      padding: "12px",
                       borderRadius: 10,
                       background: "white",
                       border: "1px solid #e2e8f0",
                       marginTop: 8,
                     }}
                   >
-                    {/* ✅ type_id-г value болгоно */}
-                    <FSelect
-                      label=""
-                      value={
-                        perm.type_id !== null && perm.type_id !== undefined
-                          ? String(perm.type_id)
-                          : ""
-                      }
-                      editing={editing}
-                      onChange={(v: string) => {
-                        const found = permTypes.find(
-                          (t: any) => String(t.id) === v,
-                        );
-                        setSpecPerms((p) =>
-                          p.map((x, i) =>
-                            i !== idx
-                              ? x
-                              : {
-                                  ...x,
-                                  type_id: found ? found.id : null, // ✅ number хэлбэрээр хадгална
-                                  type_label: found ? found.label : "",
-                                },
-                          ),
-                        );
-                      }}
-                      options={permTypes.map((t: any) => ({
-                        value: String(t.id),
-                        label: t.label,
-                      }))}
-                      placeholder="Төрөл сонгох"
-                    />
-
-                    <FInput
-                      label=""
-                      value={perm.number || ""}
-                      editing={editing}
-                      onChange={(v: string) =>
-                        setSpecPerms((p) =>
-                          p.map((x, i) =>
-                            i !== idx ? x : { ...x, number: v },
-                          ),
-                        )
-                      }
-                      placeholder="Дугаар"
-                    />
-
-                    <FInput
-                      label=""
-                      type="date"
-                      value={perm.expiry || ""}
-                      editing={editing}
-                      onChange={(v: string) =>
-                        setSpecPerms((p) =>
-                          p.map((x, i) =>
-                            i !== idx ? x : { ...x, expiry: v },
-                          ),
-                        )
-                      }
-                    />
-
-                    {editing && specPerms.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSpecPerms((p) => p.filter((_, i) => i !== idx))
-                        }
+                    {/* Тусгай зөвшөөрлийн төрөл */}
+                    <div style={{ minWidth: 0 }}>
+                      <div
                         style={{
-                          padding: "7px 12px",
-                          borderRadius: 8,
-                          border: "1px solid #fecaca",
-                          background: "#fef2f2",
-                          color: "#ef4444",
-                          fontSize: 12,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          whiteSpace: "nowrap" as const,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "#94a3b8",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase" as const,
+                          marginBottom: 4,
                         }}
                       >
-                        Устгах
-                      </button>
-                    ) : (
-                      <div />
-                    )}
+                        Тусгай зөвшөөрлийн төрөл
+                      </div>
+                      <FSelect
+                        label=""
+                        value={
+                          perm.type_id !== null && perm.type_id !== undefined
+                            ? String(perm.type_id)
+                            : ""
+                        }
+                        editing={editing}
+                        onChange={(v: string) => {
+                          const found = permTypes.find(
+                            (t: any) => String(t.id) === v,
+                          );
+                          setSpecPerms((p) =>
+                            p.map((x, i) =>
+                              i !== idx
+                                ? x
+                                : {
+                                    ...x,
+                                    type_id: found ? found.id : null,
+                                    type_label: found ? found.label : "",
+                                  },
+                            ),
+                          );
+                        }}
+                        options={permTypes.map((t: any) => ({
+                          value: String(t.id),
+                          label: t.label,
+                        }))}
+                        placeholder="Төрөл сонгох"
+                      />
+                    </div>
+
+                    {/* Дугаар */}
+                    <div style={{ width: 120 }}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "#94a3b8",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase" as const,
+                          marginBottom: 4,
+                        }}
+                      >
+                        Дугаар
+                      </div>
+                      <FInput
+                        label=""
+                        value={perm.number || ""}
+                        editing={editing}
+                        onChange={(v: string) =>
+                          setSpecPerms((p) =>
+                            p.map((x, i) =>
+                              i !== idx ? x : { ...x, number: v },
+                            ),
+                          )
+                        }
+                        placeholder="Дугаар"
+                      />
+                    </div>
+
+                    {/* Хүчинтэй хугацаа */}
+                    <div style={{ width: 150 }}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "#94a3b8",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase" as const,
+                          marginBottom: 4,
+                        }}
+                      >
+                        Хүчинтэй хугацаа
+                      </div>
+                      <FInput
+                        label=""
+                        type="date"
+                        value={perm.expiry || ""}
+                        editing={editing}
+                        onChange={(v: string) =>
+                          setSpecPerms((p) =>
+                            p.map((x, i) =>
+                              i !== idx ? x : { ...x, expiry: v },
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+
+                    {/* Устгах */}
+                    <div>
+                      {editing && specPerms.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpecPerms((p) => p.filter((_, i) => i !== idx))
+                          }
+                          style={{
+                            padding: "7px 12px",
+                            borderRadius: 8,
+                            border: "1px solid #fecaca",
+                            background: "#fef2f2",
+                            color: "#ef4444",
+                            fontSize: 12,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            whiteSpace: "nowrap" as const,
+                          }}
+                        >
+                          Устгах
+                        </button>
+                      ) : (
+                        <div />
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

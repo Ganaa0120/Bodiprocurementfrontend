@@ -215,7 +215,7 @@ export function FSelect({
   const showSearch = options.length > 10; // ✅ 10-аас их үед хайлт харуулна
 
   return (
-    <div data-fselect="true">
+    <div data-fselect="true" style={{ minWidth: 0 }}>
       {label && <label style={lbl}>{label}</label>}
       {editing ? (
         <>
@@ -227,7 +227,7 @@ export function FSelect({
               width: "100%",
               padding: "9px 32px 9px 12px",
               borderRadius: 10,
-              border: open ? "1.5px solid #0072BC" : "1.5px solid #e2e8f0",
+              border: open ? "1.5px solid #6366f1" : "1.5px solid #e2e8f0",
               background: "white",
               fontSize: 13,
               color: value ? "#0f172a" : "#94a3b8",
@@ -238,6 +238,7 @@ export function FSelect({
               alignItems: "center",
               justifyContent: "space-between",
               boxSizing: "border-box" as const,
+              overflow: "hidden", // ✅ энэ л нэмэгдэнэ
             }}
           >
             <span
@@ -245,6 +246,8 @@ export function FSelect({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap" as const,
+                flex: 1,
+                minWidth: 0,
               }}
             >
               {displayLabel}
@@ -273,6 +276,7 @@ export function FSelect({
                     : "auto",
                   left: coords.left,
                   width: coords.width,
+                  maxWidth: "min(90vw, 480px)", // ✅ хэт ирт болохгүй
                   zIndex: 99999,
                   background: "white",
                   borderRadius: 10,
@@ -414,8 +418,8 @@ export function FSelect({
                           onClick={() => {
                             onChange(v);
                             setOpen(false);
-                            setSearch("");
                           }}
+                          title={l}
                           style={{
                             width: "100%",
                             padding: "9px 14px",
@@ -432,22 +436,26 @@ export function FSelect({
                             alignItems: "center",
                             justifyContent: "space-between",
                           }}
-                          onMouseEnter={(e) => {
-                            if (!isSel)
-                              (
-                                e.currentTarget as HTMLElement
-                              ).style.background = "#f8f9ff";
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSel)
-                              (
-                                e.currentTarget as HTMLElement
-                              ).style.background = "transparent";
-                          }}
                         >
-                          {l}
+                          <span
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap" as const,
+                              flex: 1,
+                              minWidth: 0,
+                            }}
+                          >
+                            {l}
+                          </span>
                           {isSel && (
-                            <span style={{ fontSize: 14, color: "#0072BC" }}>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: "#6366f1",
+                                flexShrink: 0,
+                              }}
+                            >
                               ✓
                             </span>
                           )}
@@ -483,7 +491,11 @@ export function FSelect({
             padding: "10px 0",
             borderBottom: "1px solid #f1f5f9",
             fontWeight: value ? 500 : 400,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap" as const,
           }}
+          title={displayLabel}
         >
           {displayLabel}
         </div>
@@ -491,6 +503,7 @@ export function FSelect({
     </div>
   );
 }
+
 export function RadioGroup({ label, options, value, onChange, editing }: any) {
   return (
     <div>
