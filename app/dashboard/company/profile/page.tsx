@@ -1671,6 +1671,7 @@ export default function CompanyProfilePage() {
             label="Байгууллагын нэр *"
             value={form.company_name}
             editing={editing}
+            disabled={true}
             onChange={(v: string) => {
               F("company_name", v);
               setFieldErrors((p) => ({
@@ -1700,6 +1701,7 @@ export default function CompanyProfilePage() {
             label="Регистрийн дугаар *"
             value={form.register_number}
             editing={editing}
+            disabled={true}
             onChange={(v: string) => {
               const digits = v.replace(/\D/g, "").slice(0, 7);
               F("register_number", digits);
@@ -1759,8 +1761,29 @@ export default function CompanyProfilePage() {
 
       {/* 3. Үйл ажиллагаа */}
       <Section icon={Briefcase} title="ҮЙЛ АЖИЛЛАГААНЫ МЭДЭЭЛЭЛ">
-        
-
+        <div style={{ marginBottom: 16 }}>
+          <label
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#64748b",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase" as const,
+              display: "block",
+              marginBottom: 10,
+            }}
+          >
+            Үйл ажиллагааны чиглэл
+          </label>
+          {/* ✅ Нэмнэ */}
+          <DirectionPicker
+            dirs={dirs}
+            selDirs={selDirs}
+            editing={editing}
+            toggleMain={toggleMain}
+            toggleSub={toggleSub}
+          />
+        </div>
         <div
           style={{
             display: "grid",
@@ -1770,19 +1793,19 @@ export default function CompanyProfilePage() {
           }}
         >
           <div style={{ marginBottom: 14 }}>
-  <FSelect
-    label="Нийлүүлэх төрөл *"
-    value={form.supply_direction}
-    editing={editing}
-    onChange={(v: string) => F("supply_direction", v)}
-    options={[
-      { value: "goods",   label: "Бараа" },
-      { value: "service", label: "Үйлчилгээ" },
-      { value: "both",    label: "Хоёулаа" },
-    ]}
-    placeholder="Сонгоно уу"
-  />
-</div>
+            <FSelect
+              label="Нийлүүлэх төрөл *"
+              value={form.supply_direction}
+              editing={editing}
+              onChange={(v: string) => F("supply_direction", v)}
+              options={[
+                { value: "goods", label: "Бараа" },
+                { value: "service", label: "Үйлчилгээ" },
+                { value: "both", label: "Аль аль нь" },
+              ]}
+              placeholder="Сонгоно уу"
+            />
+          </div>
           <FInput
             label="Ажилчдын тоо"
             value={form.employee_count}

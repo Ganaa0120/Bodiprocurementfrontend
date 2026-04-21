@@ -323,6 +323,7 @@ export function ExecutiveDirectorsSection({
                 editing={editing}
                 onChange={(v: string) => update(idx, "position", v)}
                 fieldError={fieldErrors[`${idx}_position`]}
+                disabled={idx === 0}
               />
               <FInput
                 label="Овог"
