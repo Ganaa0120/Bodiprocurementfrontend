@@ -2364,6 +2364,7 @@ export default function PersonProfilePage() {
             label="Овог *"
             value={form.last_name}
             editing={editing}
+            disabled={true}
             onChange={(v: string) => {
               F("last_name", v);
               setFieldErrors((p) => ({
@@ -2376,6 +2377,7 @@ export default function PersonProfilePage() {
           <FInput
             label="Нэр *"
             value={form.first_name}
+            disabled={true}
             editing={editing}
             onChange={(v: string) => {
               F("first_name", v);
@@ -2475,6 +2477,7 @@ export default function PersonProfilePage() {
               <FInput
                 type="email"
                 value={form.email || ""}
+                disabled={true}
                 onChange={(v: string) => F("email", v)}
                 editing={true}
                 placeholder="example@gmail.com"
@@ -2809,7 +2812,7 @@ export default function PersonProfilePage() {
       <Card>
         <SectionTitle
           icon={Bell}
-          title="Мэдээлэл хүлээн авах хэлбэр"
+          title="МЭДЭГДЭЛ ХҮЛЭЭН АВАХ ХЭЛБЭР"
           subtitle="Зарын мэдэгдэл хэрхэн хүлээн авах"
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
