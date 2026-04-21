@@ -294,6 +294,8 @@ export default function SignupFormDemo() {
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [perLastName, setPerLastName] = useState("");
+  const [perFirstName, setPerFirstName] = useState("");
 
   const currentEmail = activeTab === "organization" ? orgEmail : perEmail;
 
@@ -405,6 +407,10 @@ export default function SignupFormDemo() {
     const errs: Record<string, string> = {};
     if (!/^[А-ЯӨҮЁ]{2}\d{8}$/.test(perRegister))
       errs.register = "2 монгол үсэг + 8 тоо (АБ12345678)";
+    if (!perLastName.trim() || !/^[\u0400-\u04FF\s\-]+$/.test(perLastName))
+      errs.last_name = "Монгол үсгээр бичнэ үү";
+    if (!perFirstName.trim() || !/^[\u0400-\u04FF\s\-]+$/.test(perFirstName))
+      errs.first_name = "Монгол үсгээр бичнэ үү";
     if (!perEmail.trim() || !/\S+@\S+\.\S+/.test(perEmail))
       errs.email = "И-мэйл буруу байна";
     if (!isValidPassword(perPassword))
@@ -487,16 +493,20 @@ export default function SignupFormDemo() {
             register_number: perRegister,
             email: perEmail,
             password: perPassword,
+            last_name: perLastName,   // ✅
+            first_name: perFirstName,
           }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Бүртгэхэд алдаа гарлаа");
         if (data.token) localStorage.setItem("token", data.token);
         if (data.user)
-          localStorage.setItem(
-            "user",
-            JSON.stringify({ ...data.user, role: "individual" }),
-          );
+  localStorage.setItem("user", JSON.stringify({
+    ...data.user,
+    role:       "individual",
+    last_name:  perLastName,   // ✅ profile-д харуулна
+    first_name: perFirstName,
+  }));
         setStep("done");
         setTimeout(
           () => router.push("/dashboard/person/profile?edit=true"),
@@ -641,7 +651,7 @@ export default function SignupFormDemo() {
                 error={orgErrors.name}
               />
               <Field
-                label="Байгааллагын и-мэйл *"
+                label="Байгууллагын и-мэйл *"
                 id="org-email"
                 type="email"
                 placeholder=""
@@ -724,6 +734,30 @@ export default function SignupFormDemo() {
                     {perErrors.register}
                   </p>
                 )}
+              </div>
+              <div className="flex gap-3">
+                <Field
+                  label="Овог *"
+                  id="per-last"
+                  placeholder="ДОРЖ"
+                  value={perLastName}
+                  onChange={(e) => {
+                    setPerLastName(e.target.value.toUpperCase());
+                    setPerErrors((p) => ({ ...p, last_name: "" }));
+                  }}
+                  error={perErrors.last_name}
+                />
+                <Field
+                  label="Нэр *"
+                  id="per-first"
+                  placeholder="Болд"
+                  value={perFirstName}
+                  onChange={(e) => {
+                    setPerFirstName(e.target.value);
+                    setPerErrors((p) => ({ ...p, first_name: "" }));
+                  }}
+                  error={perErrors.first_name}
+                />
               </div>
 
               <Field

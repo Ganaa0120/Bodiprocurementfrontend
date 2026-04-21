@@ -1759,28 +1759,7 @@ export default function CompanyProfilePage() {
 
       {/* 3. Үйл ажиллагаа */}
       <Section icon={Briefcase} title="ҮЙЛ АЖИЛЛАГААНЫ МЭДЭЭЛЭЛ">
-        <div style={{ marginBottom: 16 }}>
-          <label
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "#64748b",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase" as const,
-              display: "block",
-              marginBottom: 10,
-            }}
-          >
-            Үйл ажиллагааны чиглэл
-          </label>
-          <DirectionPicker
-            dirs={dirs}
-            selDirs={selDirs}
-            editing={editing}
-            toggleMain={toggleMain}
-            toggleSub={toggleSub}
-          />
-        </div>
+        
 
         <div
           style={{
@@ -1790,6 +1769,20 @@ export default function CompanyProfilePage() {
             marginBottom: 14,
           }}
         >
+          <div style={{ marginBottom: 14 }}>
+  <FSelect
+    label="Нийлүүлэх төрөл *"
+    value={form.supply_direction}
+    editing={editing}
+    onChange={(v: string) => F("supply_direction", v)}
+    options={[
+      { value: "goods",   label: "Бараа" },
+      { value: "service", label: "Үйлчилгээ" },
+      { value: "both",    label: "Хоёулаа" },
+    ]}
+    placeholder="Сонгоно уу"
+  />
+</div>
           <FInput
             label="Ажилчдын тоо"
             value={form.employee_count}
@@ -2176,7 +2169,7 @@ export default function CompanyProfilePage() {
       />
 
       {/* 6. Баримт бичиг */}
-      <Section icon={FileText} title="КОМПАНИЙН БАРИМТ БИЧИГ">
+      <Section icon={FileText} title="КОМПАНИЙН БАРИМТ БИЧГИЙН ХУУЛБАР">
         <div
           style={{
             display: "grid",
@@ -2495,7 +2488,7 @@ export default function CompanyProfilePage() {
       </Section>
 
       {/* 8. Мэдэгдлийн тохиргоо */}
-      <Section icon={Bell} title="МЭДЭГДЛИЙН ТОХИРГОО">
+      <Section icon={Bell} title="МЭДЭГДЭЛ ХҮЛЭЭН АВАХ ХЭЛБЭР">
         <div style={{ marginBottom: 16 }}>
           <label
             style={{

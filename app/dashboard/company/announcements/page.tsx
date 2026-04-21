@@ -94,7 +94,7 @@ export default function CompanyAnnouncementsPage() {
   });
 
   return (
-    <div style={{ maxWidth:960, margin:"0 auto", padding:"24px 16px" }}>
+    <div style={{ maxWidth:"100%", margin:"0 auto", padding:"24px 16px" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes modalIn{from{opacity:0;transform:scale(0.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}

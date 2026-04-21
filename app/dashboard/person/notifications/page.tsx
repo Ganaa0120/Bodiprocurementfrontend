@@ -56,7 +56,7 @@ export default function PersonNotificationsPage() {
   };
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px" }}>
+    <div style={{ maxWidth: "100%", margin: "0 auto", padding: "24px 16px" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}

@@ -30,7 +30,7 @@ export default function CompanyApplicationsPage() {
   const filtered = filter === "all" ? apps : apps.filter(a => a.status === filter);
 
   return (
-    <div style={{ maxWidth:860, margin:"0 auto", padding:"24px 16px" }}>
+    <div style={{ maxWidth:"100%", margin:"0 auto", padding:"24px 16px" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <div style={{ marginBottom:20 }}>

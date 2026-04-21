@@ -145,7 +145,7 @@ export default function PersonAnnouncementsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
+    <div style={{ maxWidth: "100%", margin: "0 auto", padding: "24px 16px" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes modalIn{

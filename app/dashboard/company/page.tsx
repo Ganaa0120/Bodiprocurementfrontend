@@ -183,7 +183,7 @@ export default function CompanyDashboard() {
   return (
     <div
       style={{
-        maxWidth: 960,
+        maxWidth: "100%",
         margin: "0 auto",
         display: "flex",
         flexDirection: "column",
@@ -656,7 +656,7 @@ export default function CompanyDashboard() {
                 Сүүлийн хүсэлтүүд
               </p>
               <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0" }}>
-                Байгааллагын хүсэлтүүд
+                Байгууллагын хүсэлтүүд
               </p>
             </div>
             <Link

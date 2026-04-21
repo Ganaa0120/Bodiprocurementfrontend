@@ -130,7 +130,7 @@ export default function PersonDashboard() {
   );
 
   return (
-    <div style={{ maxWidth:900,margin:"0 auto",padding:"24px 20px 48px",
+    <div style={{ maxWidth:"100%",margin:"0 auto",padding:"24px 20px 48px",
       display:"flex",flexDirection:"column",gap:20 }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
