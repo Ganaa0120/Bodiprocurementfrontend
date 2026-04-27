@@ -280,7 +280,6 @@ export function HeroCard({
             >
               <Pencil size={13} /> Засах
             </button>
-            {extraButtons}
           </div>
         )}
       </div>

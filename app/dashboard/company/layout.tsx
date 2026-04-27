@@ -184,7 +184,12 @@ export default function CompanyLayout({
                 flexShrink: 0,
               }}
             >
-              <Image src="/images/logosolo.png" alt="Logo" width={48} height={48} />
+              <Image
+                src="/images/logosolo.png"
+                alt="Logo"
+                width={48}
+                height={48}
+              />
             </div>
             <div>
               <p

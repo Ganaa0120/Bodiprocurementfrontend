@@ -296,6 +296,7 @@ export default function SignupFormDemo() {
   const [loading, setLoading] = useState(false);
   const [perLastName, setPerLastName] = useState("");
   const [perFirstName, setPerFirstName] = useState("");
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const currentEmail = activeTab === "organization" ? orgEmail : perEmail;
 
@@ -493,7 +494,7 @@ export default function SignupFormDemo() {
             register_number: perRegister,
             email: perEmail,
             password: perPassword,
-            last_name: perLastName,   // ✅
+            last_name: perLastName, // ✅
             first_name: perFirstName,
           }),
         });
@@ -501,12 +502,15 @@ export default function SignupFormDemo() {
         if (!res.ok) throw new Error(data.message || "Бүртгэхэд алдаа гарлаа");
         if (data.token) localStorage.setItem("token", data.token);
         if (data.user)
-  localStorage.setItem("user", JSON.stringify({
-    ...data.user,
-    role:       "individual",
-    last_name:  perLastName,   // ✅ profile-д харуулна
-    first_name: perFirstName,
-  }));
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              ...data.user,
+              role: "individual",
+              last_name: perLastName, // ✅ profile-д харуулна
+              first_name: perFirstName,
+            }),
+          );
         setStep("done");
         setTimeout(
           () => router.push("/dashboard/person/profile?edit=true"),
@@ -739,7 +743,7 @@ export default function SignupFormDemo() {
                 <Field
                   label="Овог *"
                   id="per-last"
-                  placeholder="ДОРЖ"
+                  placeholder=""
                   value={perLastName}
                   onChange={(e) => {
                     setPerLastName(e.target.value.toUpperCase());
@@ -750,7 +754,7 @@ export default function SignupFormDemo() {
                 <Field
                   label="Нэр *"
                   id="per-first"
-                  placeholder="Болд"
+                  placeholder=""
                   value={perFirstName}
                   onChange={(e) => {
                     setPerFirstName(e.target.value);
@@ -1010,14 +1014,157 @@ export default function SignupFormDemo() {
           <p className="text-center text-xs font-semibold text-amber-500 tracking-widest mb-3">
             АНХААРУУЛГА
           </p>
-          <a
-            href="/policy"
-            target="_blank"
-            className="flex items-center gap-1 text-sm text-indigo-500 hover:text-indigo-700 font-medium mb-4 transition-colors"
-          >
-            Дүрэм Журам Нууцлалын бодлого танилцах *{" "}
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          {/* Policy accordion */}
+          <div style={{ marginBottom: 16 }}>
+            <button
+              type="button"
+              onClick={() => setPolicyOpen((p) => !p)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid rgba(99,102,241,0.25)",
+                background: "rgba(99,102,241,0.06)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#6366f1",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                📄 Нийлүүлэгчээр бүртгүүлэх нөхцөл *
+              </span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="2.5"
+                style={{
+                  transform: policyOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform .25s",
+                  flexShrink: 0,
+                }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {policyOpen && (
+              <div
+                style={{
+                  marginTop: 6,
+                  borderRadius: 10,
+                  border: "1px solid #e0e7ff",
+                  background: "#f5f7ff",
+                  maxHeight: 320,
+                  overflowY: "auto",
+                  padding: "16px 18px",
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#c7d2fe #f5f7ff",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#3730a3",
+                    marginBottom: 12,
+                  }}
+                >
+                  Нийлүүлэгчээр бүртгүүлэх нөхцөл
+                </p>
+                <p
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#4338ca",
+                    marginBottom: 8,
+                  }}
+                >
+                  Нийлүүлэгч нь дараах нөхцөлийг хүлээн зөвшөөрнө:
+                </p>
+                <ol
+                  style={{
+                    paddingLeft: 18,
+                    margin: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  {[
+                    "Би/манай байгууллага хууль ёсоор бүртгэлтэй бөгөөд ирүүлж буй мэдээлэл, баримт бичиг үнэн зөв болохыг баталж байна.",
+                    "Би/манай байгууллага Монгол Улсын хууль тогтоомж, холбогдох стандарт, компанийн худалдан авалтын бодлого, журмын шаардлагыг мөрдөнө.",
+                    "Би/манай байгууллага шударга өрсөлдөөний зарчмаар оролцож, бусад оролцогчтой үгсэн хуйвалдахгүй.",
+                    "Би/манай байгууллага компанийн ажилтан, төлөөлөгчид бэлэг, урамшуулал, шан харамж санал болгохгүй бөгөөд ашиг сонирхлын зөрчил үүсгэхгүй.",
+                    "Би/манай байгууллага нийлүүлж буй бараа, ажил, үйлчилгээний чанар, техникийн шаардлага, хугацаа, аюулгүй байдал болон холбогдох баримт бичгийг бүрэн хангана.",
+                    "Би/манай байгууллага хүний эрх, хөдөлмөрийн зохистой харилцаа, байгаль орчин, ESG зарчмыг хүндэтгэн ажиллана.",
+                    "Би/манай байгууллага хамтын ажиллагааны явцад олж мэдсэн нууц болон бизнесийн мэдээллийг задруулахгүй.",
+                    "Би/манай байгууллага шаардлагатай тохиолдолд үнэлгээ, хяналт, аудитад хамтран ажиллана.",
+                    "Би/манай байгууллага гэрээ, захиалга болон тохиролцсон нөхцөлийг зөрчвөл хариуцлага хүлээхийг зөвшөөрнө.",
+                    "Худал мэдээлэл өгсөн, ноцтой зөрчил гаргасан, эсвэл гэрээний үүргээ биелүүлээгүй тохиолдолд хамтын ажиллагааг цуцлах, хар жагсаалтад бүртгэх боломжтойг ойлгож байна.",
+                  ].map((text, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        fontSize: 12,
+                        color: "#374151",
+                        lineHeight: 1.65,
+                      }}
+                    >
+                      {text}
+                    </li>
+                  ))}
+                </ol>
+                <div
+                  style={{
+                    marginTop: 14,
+                    padding: "12px 14px",
+                    borderRadius: 8,
+                    background: "rgba(99,102,241,0.07)",
+                    border: "1px solid rgba(99,102,241,0.18)",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#4338ca",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Нийлүүлэгчийн мэдэгдэл:
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 11,
+                      color: "#4b5563",
+                      lineHeight: 1.65,
+                      margin: 0,
+                    }}
+                  >
+                    Манай компанитай хамтран ажиллах нийлүүлэгч нь хууль
+                    тогтоомж, ёс зүй, шударга өрсөлдөөн, нууцлал, чанар, хүний
+                    эрх, байгаль орчин болон компанийн худалдан авалтын
+                    шаардлагыг мөрдөнө. Нийлүүлэгч нь ирүүлсэн мэдээллийн үнэн
+                    зөв байдлыг бүрэн хариуцна.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm text-neutral-700 leading-relaxed mb-5 space-y-3">
             <p>
               Та <strong>Бодь Группийн худалдан авалтын платформд</strong>{" "}
@@ -1055,7 +1202,7 @@ export default function SignupFormDemo() {
               {
                 checked: check2,
                 toggle: () => setCheck2(!check2),
-                label: "Бодлого журамтай танилцсан",
+                label: "Нийлүүлэгчийн нөхцөлтэй танилцсан",
               },
             ].map(({ checked, toggle, label }) => (
               <label

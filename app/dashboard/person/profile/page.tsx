@@ -2251,27 +2251,7 @@ export default function PersonProfilePage() {
                 >
                   <Pencil size={13} /> Засах
                 </button>
-                {/* Илгээх (editing биш үед) */}
-                <button
-                  onClick={handleSubmitClick}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "8px 16px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: "linear-gradient(135deg,#4f46e5,#6366f1)",
-                    color: "white",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <Send size={13} /> Илгээх
-                </button>
+                
               </div>
             )}
           </div>
