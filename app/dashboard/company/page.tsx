@@ -14,51 +14,48 @@ import Link from "next/link";
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: "Хүлээгдэж буй", color: "#d97706", bg: "#fffbeb" },
-  reviewed: { label: "Хянагдсан", color: "#2563eb", bg: "#eff6ff" },
-  approved: { label: "Баталгаажсан", color: "#059669", bg: "#ecfdf5" },
-  rejected: { label: "Татгалзсан", color: "#dc2626", bg: "#fef2f2" },
+  pending:  { label: "Хүлээгдэж буй", color: "#d97706", bg: "#fffbeb" },
+  reviewed: { label: "Хянагдсан",     color: "#2563eb", bg: "#eff6ff" },
+  approved: { label: "Баталгаажсан",  color: "#059669", bg: "#ecfdf5" },
+  rejected: { label: "Татгалзсан",    color: "#dc2626", bg: "#fef2f2" },
 };
 
 function Badge({ status }: { status: string }) {
   const c = STATUS[status] ?? STATUS.pending;
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 4,
-        padding: "3px 10px",
-        borderRadius: 99,
-        fontSize: 11,
-        fontWeight: 600,
-        background: c.bg,
-        color: c.color,
-      }}
-    >
-      <span
-        style={{
-          width: 4,
-          height: 4,
-          borderRadius: "50%",
-          background: c.color,
-        }}
-      />
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      padding: "3px 10px", borderRadius: 99,
+      fontSize: 11, fontWeight: 600,
+      background: c.bg, color: c.color,
+      whiteSpace: "nowrap",
+    }}>
+      <span style={{ width: 4, height: 4, borderRadius: "50%", background: c.color }} />
       {c.label}
     </span>
   );
 }
 
+function useW() {
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    setW(window.innerWidth);
+    const h = () => setW(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return w;
+}
+
 export default function CompanyDashboard() {
+  const w = useW();
+  const isMobile = w > 0 && w < 640;
+  const isTablet = w >= 640 && w < 1024;
+
   const [user, setUser] = useState<any>(null);
   const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0,
-  });
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
 
   const refreshStatus = async () => {
     const token = localStorage.getItem("token");
@@ -71,11 +68,7 @@ export default function CompanyDashboard() {
       if (data.success && (data.organization || data.user)) {
         const fresh = data.organization || data.user;
         const stored = JSON.parse(localStorage.getItem("user") || "{}");
-        const updated = {
-          ...stored,
-          status: fresh.status,
-          return_reason: fresh.return_reason,
-        };
+        const updated = { ...stored, status: fresh.status, return_reason: fresh.return_reason };
         localStorage.setItem("user", JSON.stringify(updated));
         setUser({ ...updated });
       }
@@ -97,10 +90,7 @@ export default function CompanyDashboard() {
 
   const fetchApps = async () => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!token) { setLoading(false); return; }
     try {
       const res = await fetch(`${API}/api/applications/mine?limit=10`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -116,244 +106,112 @@ export default function CompanyDashboard() {
           rejected: list.filter((a: any) => a.status === "rejected").length,
         });
       }
-    } catch {
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+    finally { setLoading(false); }
   };
 
-  // ✅ status variables нэг газарт тодорхойлно
   const s = user?.status;
   const isNew = s === "new";
   const isActive = s === "active" || s === "approved";
   const isReturned = s === "returned";
 
   const STAT_CARDS = [
-    {
-      label: "Нийт хүсэлт",
-      value: stats.total,
-      icon: FileText,
-      color: "#6366f1",
-      bg: "#eef2ff",
-    },
-    {
-      label: "Хүлээгдэж буй",
-      value: stats.pending,
-      icon: Clock,
-      color: "#d97706",
-      bg: "#fffbeb",
-    },
-    {
-      label: "Баталгаажсан",
-      value: stats.approved,
-      icon: CheckCircle,
-      color: "#059669",
-      bg: "#ecfdf5",
-    },
-    {
-      label: "Татгалзсан",
-      value: stats.rejected,
-      icon: XCircle,
-      color: "#dc2626",
-      bg: "#fef2f2",
-    },
+    { label: "Нийт хүсэлт",   value: stats.total,    icon: FileText,    color: "#0072BC", bg: "#e6f2fa" },
+    { label: "Хүлээгдэж буй", value: stats.pending,  icon: Clock,       color: "#d97706", bg: "#fffbeb" },
+    { label: "Баталгаажсан",  value: stats.approved, icon: CheckCircle, color: "#059669", bg: "#ecfdf5" },
+    { label: "Татгалзсан",    value: stats.rejected, icon: XCircle,     color: "#dc2626", bg: "#fef2f2" },
   ];
 
   const QUICK = [
-    {
-      href: "/dashboard/company/applications",
-      icon: "📋",
-      label: "Хүсэлтүүд",
-      desc: "Бүх хүсэлтийг харах",
-    },
-    {
-      href: "/dashboard/company/notifications",
-      icon: "🔔",
-      label: "Мэдэгдэл",
-      desc: "Шинэ мэдэгдлүүд",
-    },
-    {
-      href: "/dashboard/company/profile",
-      icon: "🏢",
-      label: "Профайл",
-      desc: "Мэдээллээ шинэчлэх",
-    },
+    { href: "/dashboard/company/applications",  icon: "📋", label: "Хүсэлтүүд", desc: "Бүх хүсэлтийг харах" },
+    { href: "/dashboard/company/notifications", icon: "🔔", label: "Мэдэгдэл",  desc: "Шинэ мэдэгдлүүд" },
+    { href: "/dashboard/company/profile",       icon: "🏢", label: "Профайл",   desc: "Мэдээллээ шинэчлэх" },
   ];
 
+  // Responsive grids
+  const statGrid    = isMobile ? "1fr 1fr" : isTablet ? "repeat(2,1fr)" : "repeat(4,1fr)";
+  const contentGrid = isMobile || isTablet ? "1fr" : "200px 1fr";
+  const quickGrid   = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(3,1fr)";
+
   return (
-    <div
-      style={{
-        maxWidth: "100%",
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 20,
-      }}
-    >
+    <div style={{ maxWidth: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: isMobile ? 14 : 20 }}>
       <style>{`
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
       `}</style>
 
       {/* ── Header ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 12,
-        }}
-      >
-        <div>
-          <p
-            style={{
-              fontSize: 11,
-              color: "#94a3b8",
-              margin: "0 0 4px",
-              fontWeight: 500,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-            }}
-          >
+      <div style={{
+        display: "flex",
+        alignItems: isMobile ? "flex-start" : "flex-start",
+        justifyContent: "space-between",
+        flexDirection: isMobile ? "column" : "row",
+        flexWrap: "wrap",
+        gap: 12,
+      }}>
+        <div style={{ minWidth: 0, maxWidth: "100%" }}>
+          <p style={{
+            fontSize: 11, color: "#94a3b8", margin: "0 0 4px",
+            fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase",
+          }}>
             Байгууллагын хянах самбар
           </p>
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: "#0f172a",
-              margin: 0,
-            }}
-          >
-            {user?.company_name || "Байгааллага"} 👋
+          <h1 style={{
+            fontSize: isMobile ? 18 : 22,
+            fontWeight: 700, color: "#0f172a", margin: 0,
+            wordBreak: "break-word",
+          }}>
+            {user?.company_name || "Байгуулллага"} 👋
           </h1>
           {user?.supplier_number && (
-            <p
-              style={{
-                fontSize: 11,
-                color: "#94a3b8",
-                margin: "3px 0 0",
-                fontFamily: "monospace",
-              }}
-            >
+            <p style={{ fontSize: 11, color: "#94a3b8", margin: "3px 0 0", fontFamily: "monospace" }}>
               {user.supplier_number}
             </p>
           )}
         </div>
 
-        {/* ✅ Status badge */}
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "6px 14px",
-            borderRadius: 99,
-            fontSize: 12,
-            fontWeight: 500,
-            background: isActive
-              ? "#ecfdf5"
-              : isReturned
-                ? "#fef2f2"
-                : isNew
-                  ? "#f0f9ff"
-                  : "#fffbeb",
-            color: isActive
-              ? "#059669"
-              : isReturned
-                ? "#dc2626"
-                : isNew
-                  ? "#0369a1"
-                  : "#d97706",
-            border: `1px solid ${isActive ? "#a7f3d0" : isReturned ? "#fecaca" : isNew ? "#bae6fd" : "#fde68a"}`,
-          }}
-        >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: isActive
-                ? "#10b981"
-                : isReturned
-                  ? "#ef4444"
-                  : isNew
-                    ? "#0ea5e9"
-                    : "#f59e0b",
-              animation:
-                isNew || s === "pending" ? "pulse 1.5s infinite" : "none",
-            }}
-          />
-          {isActive
-            ? "Баталгаажсан"
-            : isReturned
-              ? "Буцаагдсан"
-              : isNew
-                ? "Бүртгэл үүсгэх"
-                : "Хянагдаж байна"}
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "6px 14px", borderRadius: 99,
+          fontSize: 12, fontWeight: 500,
+          background: isActive ? "#ecfdf5" : isReturned ? "#fef2f2" : isNew ? "#f0f9ff" : "#fffbeb",
+          color: isActive ? "#059669" : isReturned ? "#dc2626" : isNew ? "#0369a1" : "#d97706",
+          border: `1px solid ${isActive ? "#a7f3d0" : isReturned ? "#fecaca" : isNew ? "#bae6fd" : "#fde68a"}`,
+          whiteSpace: "nowrap",
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%",
+            background: isActive ? "#10b981" : isReturned ? "#ef4444" : isNew ? "#0ea5e9" : "#f59e0b",
+            animation: isNew || s === "pending" ? "pulse 1.5s infinite" : "none",
+          }} />
+          {isActive ? "Баталгаажсан" : isReturned ? "Буцаагдсан" : isNew ? "Бүртгэл үүсгэх" : "Хянагдаж байна"}
         </span>
       </div>
 
       {/* ── Returned banner ── */}
       {isReturned && (
-        <Link
-          href="/dashboard/company/profile"
-          style={{ textDecoration: "none" }}
-        >
-          <div
-            style={{
-              background: "white",
-              border: "1px solid #fecaca",
-              borderRadius: 14,
-              padding: "14px 18px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "#fef2f2")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "white")
-            }
+        <Link href="/dashboard/company/profile" style={{ textDecoration: "none" }}>
+          <div style={{
+            background: "white", border: "1px solid #fecaca", borderRadius: 14,
+            padding: isMobile ? "12px 14px" : "14px 18px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            cursor: "pointer", gap: 12,
+          }}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#fef2f2")}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "white")}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                }}
-              >
-                ⚠️
-              </div>
-              <div>
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#dc2626",
-                    margin: 0,
-                  }}
-                >
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: "#fef2f2", border: "1px solid #fecaca",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+              }}>⚠️</div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#dc2626", margin: 0 }}>
                   Бүртгэл буцаагдсан байна
                 </p>
                 {user?.return_reason && (
-                  <p
-                    style={{
-                      fontSize: 12,
-                      color: "#ef4444",
-                      margin: "1px 0 0",
-                    }}
-                  >
+                  <p style={{ fontSize: 12, color: "#ef4444", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
                     {user.return_reason}
                   </p>
                 )}
@@ -366,58 +224,27 @@ export default function CompanyDashboard() {
 
       {/* ── New user banner ── */}
       {isNew && (
-        <Link
-          href="/dashboard/company/profile"
-          style={{ textDecoration: "none" }}
-        >
-          <div
-            style={{
-              background: "white",
-              border: "1px solid #bae6fd",
-              borderRadius: 14,
-              padding: "14px 18px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "#f0f9ff")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "white")
-            }
+        <Link href="/dashboard/company/profile" style={{ textDecoration: "none" }}>
+          <div style={{
+            background: "white", border: "1px solid #bae6fd", borderRadius: 14,
+            padding: isMobile ? "12px 14px" : "14px 18px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            cursor: "pointer", gap: 12,
+          }}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#f0f9ff")}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "white")}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: "#f0f9ff",
-                  border: "1px solid #bae6fd",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                }}
-              >
-                📝
-              </div>
-              <div>
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#0369a1",
-                    margin: 0,
-                  }}
-                >
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: "#f0f9ff", border: "1px solid #bae6fd",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+              }}>📝</div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#0369a1", margin: 0 }}>
                   Байгууллагын мэдээлэл бөглөнө үү
                 </p>
-                <p
-                  style={{ fontSize: 12, color: "#0ea5e9", margin: "1px 0 0" }}
-                >
+                <p style={{ fontSize: 12, color: "#0ea5e9", margin: "1px 0 0" }}>
                   Бүртгэлээ дуусгаж баталгаажуулалт авна уу
                 </p>
               </div>
@@ -429,110 +256,49 @@ export default function CompanyDashboard() {
 
       {/* ── Pending banner ── */}
       {s === "pending" && (
-        <Link
-          href="/dashboard/company/profile"
-          style={{ textDecoration: "none" }}
-        >
-          <div
-            style={{
-              background: "white",
-              border: "1px solid #fde68a",
-              borderRadius: 14,
-              padding: "14px 18px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                background: "#fffbeb",
-                border: "1px solid #fde68a",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 18,
-              }}
-            >
-              ⏳
-            </div>
-            <div>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#92400e",
-                  margin: 0,
-                }}
-              >
-                Бүртгэл хянагдаж байна
-              </p>
-              <p style={{ fontSize: 12, color: "#d97706", margin: "1px 0 0" }}>
-                Таны мэдээллийг администратор хянаж байна. Удахгүй мэдэгдэл
-                ирнэ.
-              </p>
-            </div>
+        <div style={{
+          background: "white", border: "1px solid #fde68a", borderRadius: 14,
+          padding: isMobile ? "12px 14px" : "14px 18px",
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            background: "#fffbeb", border: "1px solid #fde68a",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+          }}>⏳</div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#92400e", margin: 0 }}>
+              Бүртгэл хянагдаж байна
+            </p>
+            <p style={{ fontSize: 12, color: "#d97706", margin: "1px 0 0" }}>
+              Таны мэдээллийг администратор хянаж байна. Удахгүй мэдэгдэл ирнэ.
+            </p>
           </div>
-        </Link>
+        </div>
       )}
 
       {/* ── Stat cards ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 12,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: 12 }}>
         {STAT_CARDS.map(({ label, value, icon: Icon, color, bg }) => (
-          <div
-            key={label}
-            style={{
-              background: "white",
-              border: "1px solid #f1f5f9",
-              borderRadius: 14,
-              padding: "18px 20px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: 12,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+          <div key={label} style={{
+            background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
+            padding: isMobile ? "14px 16px" : "18px 20px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+            minWidth: 0,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, background: bg,
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
                 <Icon size={17} style={{ color }} />
               </div>
               <TrendingUp size={12} style={{ color: "#e2e8f0" }} />
             </div>
-            <p
-              style={{
-                fontSize: 26,
-                fontWeight: 700,
-                color: "#0f172a",
-                margin: 0,
-                lineHeight: 1,
-              }}
-            >
+            <p style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: "#0f172a", margin: 0, lineHeight: 1 }}>
               {loading ? "—" : value}
             </p>
-            <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 0" }}>
+            <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {label}
             </p>
           </div>
@@ -540,239 +306,107 @@ export default function CompanyDashboard() {
       </div>
 
       {/* ── Content grid ── */}
-      <div
-        style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 14 }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: contentGrid, gap: 14 }}>
         {/* Progress */}
-        <div
-          style={{
-            background: "white",
-            border: "1px solid #f1f5f9",
-            borderRadius: 14,
-            padding: 18,
-            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#0f172a",
-              margin: "0 0 16px",
-            }}
-          >
-            Дүн
-          </p>
+        <div style={{
+          background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
+          padding: 18, boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+          minWidth: 0,
+        }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Дүн</p>
           {[
-            { label: "Нийт", value: stats.total, color: "#6366f1" },
-            { label: "Хүлээгдэж", value: stats.pending, color: "#f59e0b" },
-            { label: "Батлагдсан", value: stats.approved, color: "#10b981" },
-            { label: "Татгалзсан", value: stats.rejected, color: "#ef4444" },
+            { label: "Нийт",        value: stats.total,    color: "#0072BC" },
+            { label: "Хүлээгдэж",   value: stats.pending,  color: "#f59e0b" },
+            { label: "Батлагдсан",  value: stats.approved, color: "#10b981" },
+            { label: "Татгалзсан",  value: stats.rejected, color: "#ef4444" },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ marginBottom: 14 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: 5,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: "#94a3b8",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 5,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      background: color,
-                      flexShrink: 0,
-                    }}
-                  />
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <span style={{ fontSize: 11, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
                   {label}
                 </span>
-                <span
-                  style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}
-                >
-                  {value}
-                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>{value}</span>
               </div>
-              <div
-                style={{
-                  height: 4,
-                  borderRadius: 99,
-                  background: "#f1f5f9",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    height: "100%",
-                    borderRadius: 99,
-                    background: color,
-                    width: `${(value / Math.max(stats.total, 1)) * 100}%`,
-                    transition: "width .8s ease",
-                  }}
-                />
+              <div style={{ height: 4, borderRadius: 99, background: "#f1f5f9", overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", borderRadius: 99, background: color,
+                  width: `${(value / Math.max(stats.total, 1)) * 100}%`,
+                  transition: "width .8s ease",
+                }} />
               </div>
             </div>
           ))}
         </div>
 
         {/* Recent apps */}
-        <div
-          style={{
-            background: "white",
-            border: "1px solid #f1f5f9",
-            borderRadius: 14,
-            overflow: "hidden",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-          }}
-        >
-          <div
-            style={{
-              padding: "16px 20px",
-              borderBottom: "1px solid #f8fafc",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#0f172a",
-                  margin: 0,
-                }}
-              >
-                Сүүлийн хүсэлтүүд
-              </p>
-              <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0" }}>
-                Байгууллагын хүсэлтүүд
-              </p>
+        <div style={{
+          background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
+          overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+          minWidth: 0,
+        }}>
+          <div style={{
+            padding: isMobile ? "14px 16px" : "16px 20px",
+            borderBottom: "1px solid #f8fafc",
+            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: 0 }}>Сүүлийн хүсэлтүүд</p>
+              <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0" }}>Байгууллагын хүсэлтүүд</p>
             </div>
-            <Link
-              href="/dashboard/company/applications"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 12,
-                color: "#6366f1",
-                fontWeight: 500,
-                textDecoration: "none",
-                padding: "5px 10px",
-                borderRadius: 8,
-                background: "#eef2ff",
-                border: "1px solid #c7d2fe",
-              }}
-            >
+            <Link href="/dashboard/company/applications" style={{
+              display: "flex", alignItems: "center", gap: 4,
+              fontSize: 12, color: "#0072BC", fontWeight: 500,
+              textDecoration: "none", padding: "5px 10px",
+              borderRadius: 8, background: "#e6f2fa",
+              border: "1px solid #bae0f3", flexShrink: 0,
+            }}>
               Бүгд <ChevronRight size={13} />
             </Link>
           </div>
           {loading ? (
-            <div
-              style={{ display: "flex", justifyContent: "center", padding: 40 }}
-            >
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  border: "2px solid #e2e8f0",
-                  borderTopColor: "#6366f1",
-                  borderRadius: "50%",
-                  animation: "spin .8s linear infinite",
-                }}
-              />
+            <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+              <div style={{
+                width: 20, height: 20,
+                border: "2px solid #e2e8f0", borderTopColor: "#0072BC",
+                borderRadius: "50%",
+                animation: "spin .8s linear infinite",
+              }} />
             </div>
           ) : apps.length === 0 ? (
             <div style={{ padding: "36px 20px", textAlign: "center" }}>
-              <FileText
-                size={28}
-                style={{
-                  color: "#e2e8f0",
-                  margin: "0 auto 8px",
-                  display: "block",
-                }}
-              />
-              <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
-                Хүсэлт байхгүй байна
-              </p>
+              <FileText size={28} style={{ color: "#e2e8f0", margin: "0 auto 8px", display: "block" }} />
+              <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>Хүсэлт байхгүй байна</p>
             </div>
           ) : (
             apps.slice(0, 6).map((app, i) => (
-              <div
-                key={app.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "11px 20px",
-                  borderBottom:
-                    i < Math.min(apps.length, 6) - 1
-                      ? "1px solid #f8fafc"
-                      : "none",
-                  transition: "background .12s",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLElement).style.background =
-                    "#fafafa")
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLElement).style.background =
-                    "transparent")
-                }
+              <div key={app.id} style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: isMobile ? "10px 16px" : "11px 20px",
+                borderBottom: i < Math.min(apps.length, 6) - 1 ? "1px solid #f8fafc" : "none",
+                transition: "background .12s", cursor: "pointer",
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#fafafa")}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "transparent")}
               >
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 9,
-                    flexShrink: 0,
-                    background: `hsl(${(i * 67) % 360},60%,92%)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: `hsl(${(i * 67) % 360},50%,40%)`,
-                  }}
-                >
+                <div style={{
+                  width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                  background: `hsl(${(i * 67) % 360},60%,92%)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 700,
+                  color: `hsl(${(i * 67) % 360},50%,40%)`,
+                }}>
                   {app.announcement_title?.[0] ?? "?"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: "#0f172a",
-                      margin: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#0f172a", margin: 0,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {app.announcement_title || "Тендер"}
                   </p>
-                  <p
-                    style={{
-                      fontSize: 11,
-                      color: "#94a3b8",
-                      margin: "1px 0 0",
-                    }}
-                  >
+                  <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {new Date(app.created_at).toLocaleDateString("mn-MN")}
-                    {app.price_offer &&
-                      ` · ${Number(app.price_offer).toLocaleString()}₮`}
+                    {app.price_offer && ` · ${Number(app.price_offer).toLocaleString()}₮`}
                   </p>
                 </div>
                 <Badge status={app.status} />
@@ -783,61 +417,37 @@ export default function CompanyDashboard() {
       </div>
 
       {/* ── Quick links ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3,1fr)",
-          gap: 12,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: quickGrid, gap: 12 }}>
         {QUICK.map(({ href, icon, label, desc }) => (
           <Link key={href} href={href} style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                background: "white",
-                border: "1px solid #f1f5f9",
-                borderRadius: 14,
-                padding: "16px 18px",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                transition: "all .15s",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.borderColor = "#c7d2fe";
-                el.style.boxShadow = "0 4px 16px rgba(99,102,241,0.1)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.borderColor = "#f1f5f9";
-                el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
-              }}
+            <div style={{
+              background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
+              padding: isMobile ? "14px 16px" : "16px 18px",
+              display: "flex", alignItems: "center", gap: 12,
+              transition: "all .15s",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              cursor: "pointer", minWidth: 0,
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.borderColor = "#bae0f3";
+              el.style.boxShadow = "0 4px 16px rgba(0,114,188,0.1)";
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.borderColor = "#f1f5f9";
+              el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
+            }}
             >
               <span style={{ fontSize: 20, flexShrink: 0 }}>{icon}</span>
-              <div style={{ flex: 1 }}>
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#0f172a",
-                    margin: 0,
-                  }}
-                >
-                  {label}
-                </p>
-                <p
-                  style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0" }}
-                >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: 0 }}>{label}</p>
+                <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {desc}
                 </p>
               </div>
-              <ChevronRight
-                size={14}
-                style={{ color: "#cbd5e1", flexShrink: 0 }}
-              />
+              <ChevronRight size={14} style={{ color: "#cbd5e1", flexShrink: 0 }} />
             </div>
           </Link>
         ))}
