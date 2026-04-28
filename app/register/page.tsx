@@ -297,6 +297,7 @@ export default function SignupFormDemo() {
   const [perLastName, setPerLastName] = useState("");
   const [perFirstName, setPerFirstName] = useState("");
   const [policyOpen, setPolicyOpen] = useState(false);
+  const [orgNameWarning, setOrgNameWarning] = useState(false);
 
   const currentEmail = activeTab === "organization" ? orgEmail : perEmail;
 
@@ -524,6 +525,30 @@ export default function SignupFormDemo() {
     }
   };
 
+  const handleOrgNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+
+    // 1. Англи (Latin) үсэг илрүүлэх
+    const hasLatin = /[a-zA-Z]/.test(value);
+
+    // 2. Зөвхөн кирилл үсэг + зөвшөөрөгдсөн тэмдэгтүүдийг үлдээх
+    let sanitized = value.replace(/[^А-ЯӨҮЁа-яөүё\s.,()"-]/g, "");
+
+    // 3. Эхний үсгийг том болгох (хэрэв кирилл үсэг байвал)
+    if (sanitized.length > 0) {
+      const firstChar = sanitized[0];
+      const rest = sanitized.slice(1);
+
+      // Кирилл том үсэг болгох
+      const upperFirst = firstChar.toUpperCase(); // Ө, Ү, Ё зэргийг зөв болгоно
+      sanitized = upperFirst + rest;
+    }
+
+    setOrgName(sanitized);
+    setOrgNameWarning(hasLatin);
+    setOrgErrors((p) => ({ ...p, name: "" }));
+  };
+
   const canVerify = otp.length === 6 && !expired && !loading;
 
   return (
@@ -648,12 +673,17 @@ export default function SignupFormDemo() {
                 type="text"
                 placeholder=""
                 value={orgName}
-                onChange={(e) => {
-                  setOrgName(e.target.value);
-                  setOrgErrors((p) => ({ ...p, name: "" }));
-                }}
+                onChange={handleOrgNameChange}
                 error={orgErrors.name}
               />
+
+              {/* Англи үсэг илэрвэл анхааруулга */}
+              {orgNameWarning && (
+                <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                  <AlertCircle size={11} />
+                  Зөвхөн кирилл үсгээр бичнэ үү
+                </p>
+              )}
               <Field
                 label="Байгууллагын и-мэйл *"
                 id="org-email"

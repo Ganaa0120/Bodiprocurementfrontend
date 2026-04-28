@@ -14,6 +14,7 @@ import {
   Bell,
   Send,
   Search,
+  ChevronDown,
 } from "lucide-react";
 import {
   API,
@@ -298,6 +299,7 @@ function SubmitModal({
 }
 
 // ── DirectionPicker ───────────────────────────────────────────
+// ── DirectionPicker ───────────────────────────────────────────
 function DirectionPicker({
   dirs,
   selDirs,
@@ -311,10 +313,19 @@ function DirectionPicker({
   toggleMain: (id: number) => void;
   toggleSub: (mainId: number, subId: number) => void;
 }) {
+  const w = useW();
+  const useAccordion = w > 0 && w < 1024; // mobile + tablet
+
+  // Desktop 2-pane state
   const [activeMain, setActiveMain] = useState<number | null>(
     selDirs.length > 0 ? selDirs[0].main_id : null,
   );
   const [search, setSearch] = useState("");
+
+  // Accordion state — which main direction is expanded
+  const [expandedId, setExpandedId] = useState<number | null>(
+    selDirs.length > 0 ? Number(selDirs[0].main_id) : null,
+  );
 
   const activeDir = dirs.find((d) => d.id === activeMain);
   const filteredSubs =
@@ -348,9 +359,9 @@ function DirectionPicker({
                 style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: "#4f46e5",
-                  background: "#eef2ff",
-                  border: "1px solid #c7d2fe",
+                  color: "#0072BC",
+                  background: "#e6f2fa",
+                  border: "1px solid #bae0f3",
                   padding: "3px 10px",
                   borderRadius: 99,
                   whiteSpace: "nowrap" as const,
@@ -389,7 +400,405 @@ function DirectionPicker({
     );
   }
 
-  // ── Edit mode — 2 хэсэгт хуваасан ─────────────────────────
+  // ═════════════════════════════════════════════════════════════
+  // ── Edit mode: ACCORDION (mobile + tablet < 1024px) ──────────
+  // ═════════════════════════════════════════════════════════════
+  if (useAccordion) {
+    return (
+      <div
+        style={{
+          border: "1.5px solid #e2e8f0",
+          borderRadius: 14,
+          overflow: "hidden",
+          background: "white",
+        }}
+      >
+        {dirs.length === 0 ? (
+          <div
+            style={{
+              padding: 24,
+              fontSize: 12,
+              color: "#94a3b8",
+              textAlign: "center" as const,
+            }}
+          >
+            Ачаалж байна...
+          </div>
+        ) : (
+          dirs.map((d, idx) => {
+            const isOn = selDirs.some(
+              (s) => Number(s.main_id) === Number(d.id),
+            );
+            const isExpanded = expandedId === d.id;
+            const sel = selDirs.find((s) => Number(s.main_id) === Number(d.id));
+            const filtered = (d.children || []).filter((c) =>
+              c.label.toLowerCase().includes(search.toLowerCase()),
+            );
+            const showSearch = (d.children?.length || 0) > 5;
+
+            return (
+              <div
+                key={d.id}
+                style={{
+                  borderBottom:
+                    idx < dirs.length - 1 ? "1px solid #f1f5f9" : "none",
+                }}
+              >
+                {/* Header row — clickable to expand */}
+                <div
+                  onClick={() => {
+                    setExpandedId(isExpanded ? null : d.id);
+                    setSearch("");
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "13px 14px",
+                    background: isExpanded ? "#fafafa" : "white",
+                    cursor: "pointer",
+                    transition: "background .15s",
+                    minHeight: 52,
+                  }}
+                >
+                  {/* Checkbox — toggleMain on click */}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMain(d.id);
+                      if (!isOn) {
+                        setExpandedId(d.id);
+                        setSearch("");
+                      }
+                    }}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 6,
+                      flexShrink: 0,
+                      cursor: "pointer",
+                      border: isOn ? "2px solid #0072BC" : "2px solid #d1d5db",
+                      background: isOn ? "#0072BC" : "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all .12s",
+                    }}
+                  >
+                    {isOn && <Check size={12} color="white" strokeWidth={3} />}
+                  </div>
+
+                  {/* Label */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: isOn ? 600 : 500,
+                        color: isOn ? "#1e293b" : "#374151",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap" as const,
+                      }}
+                    >
+                      {d.label}
+                    </div>
+                    {isOn && sel && sel.sub_ids.length > 0 && (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#0072BC",
+                          marginTop: 2,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {sel.sub_ids.length} дэд чиглэл сонгосон
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Chevron */}
+                  <ChevronDown
+                    size={16}
+                    style={{
+                      color: "#94a3b8",
+                      flexShrink: 0,
+                      transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform .2s",
+                    }}
+                  />
+                </div>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div
+                    style={{
+                      padding: "12px 14px 14px",
+                      background: "#fafafa",
+                      borderTop: "1px solid #f1f5f9",
+                      animation: "fadeIn .2s ease",
+                    }}
+                  >
+                    {!isOn ? (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#f59e0b",
+                          fontWeight: 500,
+                          padding: "4px 0",
+                        }}
+                      >
+                        ⚠️ Эхлээд үндсэн чиглэлийг сонгоно уу (зүүн талын
+                        checkbox)
+                      </div>
+                    ) : (d.children?.length || 0) === 0 ? (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#94a3b8",
+                          padding: "4px 0",
+                        }}
+                      >
+                        Дэд чиглэл байхгүй
+                      </div>
+                    ) : (
+                      <>
+                        {/* Search */}
+                        {showSearch && (
+                          <div
+                            style={{
+                              position: "relative",
+                              marginBottom: 10,
+                            }}
+                          >
+                            <Search
+                              size={13}
+                              style={{
+                                position: "absolute",
+                                left: 10,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                color: "#94a3b8",
+                                pointerEvents: "none",
+                              }}
+                            />
+                            <input
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                              placeholder="Дэд чиглэл хайх..."
+                              style={{
+                                width: "100%",
+                                padding: "8px 10px 8px 30px",
+                                borderRadius: 8,
+                                border: "1px solid #e2e8f0",
+                                fontSize: 12,
+                                outline: "none",
+                                background: "white",
+                                boxSizing: "border-box" as const,
+                                fontFamily: "inherit",
+                              }}
+                              onFocus={(e) =>
+                                ((e.target as HTMLElement).style.borderColor =
+                                  "#0072BC")
+                              }
+                              onBlur={(e) =>
+                                ((e.target as HTMLElement).style.borderColor =
+                                  "#e2e8f0")
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 6,
+                            marginBottom: 10,
+                            flexWrap: "wrap" as const,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              (d.children || []).forEach((c) => {
+                                if (sel && !sel.sub_ids.includes(c.id))
+                                  toggleSub(d.id, c.id);
+                              });
+                            }}
+                            style={{
+                              fontSize: 11,
+                              padding: "5px 10px",
+                              borderRadius: 6,
+                              border: "1px solid #bae0f3",
+                              background: "#e6f2fa",
+                              color: "#0072BC",
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Бүгдийг сонгох
+                          </button>
+                          {sel && sel.sub_ids.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                sel.sub_ids
+                                  .slice()
+                                  .forEach((id) => toggleSub(d.id, id))
+                              }
+                              style={{
+                                fontSize: 11,
+                                padding: "5px 10px",
+                                borderRadius: 6,
+                                border: "1px solid #fecaca",
+                                background: "#fef2f2",
+                                color: "#dc2626",
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Цэвэрлэх
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Sub-direction chips */}
+                        {filtered.length === 0 ? (
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#94a3b8",
+                              padding: "8px 0",
+                            }}
+                          >
+                            "{search}" олдсонгүй
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap" as const,
+                              gap: 6,
+                            }}
+                          >
+                            {filtered.map((sub) => {
+                              const isSubOn = sel?.sub_ids.some(
+                                (id) => Number(id) === Number(sub.id),
+                              );
+                              return (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  onClick={() => toggleSub(d.id, sub.id)}
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: 99,
+                                    fontSize: 12,
+                                    fontWeight: 500,
+                                    border: isSubOn
+                                      ? "1.5px solid #0072BC"
+                                      : "1.5px solid #e2e8f0",
+                                    background: isSubOn ? "#e6f2fa" : "white",
+                                    color: isSubOn ? "#0072BC" : "#64748b",
+                                    cursor: "pointer",
+                                    transition: "all .12s",
+                                    fontFamily: "inherit",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 5,
+                                  }}
+                                >
+                                  {isSubOn && (
+                                    <Check size={10} strokeWidth={3} />
+                                  )}
+                                  {sub.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Selected count */}
+                        {sel && sel.sub_ids.length > 0 && (
+                          <div
+                            style={{
+                              marginTop: 10,
+                              paddingTop: 10,
+                              borderTop: "1px solid #e2e8f0",
+                              fontSize: 11,
+                              color: "#0072BC",
+                              fontWeight: 600,
+                            }}
+                          >
+                            ✓ {sel.sub_ids.length} дэд чиглэл сонгогдсон
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+
+        {/* Bottom summary */}
+        <div
+          style={{
+            padding: "12px 14px",
+            borderTop: "1px solid #f1f5f9",
+            background: "#fafafa",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            flexWrap: "wrap" as const,
+          }}
+        >
+          {selDirs.length === 0 ? (
+            <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 500 }}>
+              ⚠️ Нэг буюу хэд хэдэн чиглэл сонгоно уу
+            </span>
+          ) : (
+            <>
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "#059669",
+                  fontWeight: 600,
+                }}
+              >
+                ✓ {selDirs.length} үндсэн чиглэл сонгогдсон
+              </span>
+              <button
+                type="button"
+                onClick={() => selDirs.forEach((s) => toggleMain(s.main_id))}
+                style={{
+                  fontSize: 11,
+                  color: "#ef4444",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderRadius: 6,
+                  padding: "3px 9px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  marginLeft: "auto",
+                  fontWeight: 600,
+                }}
+              >
+                Бүгдийг цэвэрлэх
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // ── Edit mode: DESKTOP 2-pane (≥ 1024px) ─────────────────────
+  // ═════════════════════════════════════════════════════════════
   return (
     <div
       style={{
@@ -454,9 +863,9 @@ function DirectionPicker({
                   style={{
                     padding: "10px 12px",
                     cursor: "pointer",
-                    background: isActive ? "#eef2ff" : "transparent",
+                    background: isActive ? "#e6f2fa" : "transparent",
                     borderLeft: isActive
-                      ? "3px solid #6366f1"
+                      ? "3px solid #0072BC"
                       : "3px solid transparent",
                     display: "flex",
                     alignItems: "center",
@@ -476,8 +885,8 @@ function DirectionPicker({
                       borderRadius: 5,
                       flexShrink: 0,
                       cursor: "pointer",
-                      border: isOn ? "2px solid #6366f1" : "2px solid #d1d5db",
-                      background: isOn ? "#6366f1" : "white",
+                      border: isOn ? "2px solid #0072BC" : "2px solid #d1d5db",
+                      background: isOn ? "#0072BC" : "white",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -492,7 +901,7 @@ function DirectionPicker({
                         fontSize: 12,
                         fontWeight: isOn ? 600 : 400,
                         color: isActive
-                          ? "#4f46e5"
+                          ? "#0072BC"
                           : isOn
                             ? "#1e293b"
                             : "#374151",
@@ -506,7 +915,7 @@ function DirectionPicker({
                     {isOn &&
                       (selDirs.find((s) => Number(s.main_id) === Number(d.id))
                         ?.sub_ids.length ?? 0) > 0 && (
-                        <div style={{ fontSize: 10, color: "#6366f1" }}>
+                        <div style={{ fontSize: 10, color: "#0072BC" }}>
                           {
                             selDirs.find(
                               (s) => Number(s.main_id) === Number(d.id),
@@ -541,7 +950,6 @@ function DirectionPicker({
             </div>
           ) : (
             <>
-              {/* Header */}
               <div
                 style={{
                   padding: "10px 14px",
@@ -554,7 +962,11 @@ function DirectionPicker({
               >
                 <div>
                   <div
-                    style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "#0f172a",
+                    }}
                   >
                     {activeDir?.label}
                   </div>
@@ -576,9 +988,9 @@ function DirectionPicker({
                         fontSize: 11,
                         padding: "3px 8px",
                         borderRadius: 6,
-                        border: "1px solid #c7d2fe",
-                        background: "#eef2ff",
-                        color: "#4f46e5",
+                        border: "1px solid #bae0f3",
+                        background: "#e6f2fa",
+                        color: "#0072BC",
                         cursor: "pointer",
                         fontFamily: "inherit",
                       }}
@@ -611,7 +1023,6 @@ function DirectionPicker({
                 )}
               </div>
 
-              {/* Search */}
               {(activeDir?.children.length || 0) > 5 && (
                 <div
                   style={{
@@ -646,7 +1057,7 @@ function DirectionPicker({
                       boxSizing: "border-box" as const,
                     }}
                     onFocus={(e) =>
-                      ((e.target as HTMLElement).style.borderColor = "#6366f1")
+                      ((e.target as HTMLElement).style.borderColor = "#0072BC")
                     }
                     onBlur={(e) =>
                       ((e.target as HTMLElement).style.borderColor = "#e2e8f0")
@@ -655,7 +1066,6 @@ function DirectionPicker({
                 </div>
               )}
 
-              {/* Sub-directions */}
               <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
                 {!activeSel ? (
                   <div
@@ -695,10 +1105,10 @@ function DirectionPicker({
                             fontSize: 12,
                             fontWeight: 500,
                             border: isSubOn
-                              ? "1.5px solid #6366f1"
+                              ? "1.5px solid #0072BC"
                               : "1.5px solid #e2e8f0",
-                            background: isSubOn ? "#eef2ff" : "white",
-                            color: isSubOn ? "#4f46e5" : "#64748b",
+                            background: isSubOn ? "#e6f2fa" : "white",
+                            color: isSubOn ? "#0072BC" : "#64748b",
                             cursor: "pointer",
                             transition: "all .12s",
                             fontFamily: "inherit",
@@ -722,7 +1132,7 @@ function DirectionPicker({
                     padding: "8px 14px",
                     borderTop: "1px solid #f1f5f9",
                     fontSize: 11,
-                    color: "#6366f1",
+                    color: "#0072BC",
                     fontWeight: 600,
                   }}
                 >
@@ -734,7 +1144,6 @@ function DirectionPicker({
         </div>
       </div>
 
-      {/* Bottom summary */}
       <div
         style={{
           padding: "10px 14px",
@@ -767,9 +1176,9 @@ function DirectionPicker({
                       fontSize: 11,
                       padding: "2px 8px",
                       borderRadius: 99,
-                      background: "#eef2ff",
-                      border: "1px solid #c7d2fe",
-                      color: "#4f46e5",
+                      background: "#e6f2fa",
+                      border: "1px solid #bae0f3",
+                      color: "#0072BC",
                       fontWeight: 600,
                     }}
                   >
@@ -1893,79 +2302,117 @@ export default function CompanyProfilePage() {
           />
         </div>
 
+        {/* ─── REPLACE the existing `{form.has_special_permission && (...)}` block with this ─── */}
+
         {form.has_special_permission && (
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: 10,
-              padding: 14,
+              padding: isMobile ? 10 : 14,
               borderRadius: 12,
               background: "#f8fafc",
               border: "1px solid #f1f5f9",
               marginTop: 8,
             }}
           >
-            <div style={{ overflowX: isMobile ? "auto" : ("visible" as any) }}>
-              <div style={{ minWidth: isMobile ? 480 : "auto" }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: gPerm,
-                    gap: 10,
-                    paddingBottom: 6,
-                    borderBottom: "1px solid #e2e8f0",
-                  }}
-                >
-                  {[
-                    "Тусгай зөвшөөрлийн төрөл",
-                    "Дугаар",
-                    "Хүчинтэй хугацаа",
-                    "",
-                  ].map((h, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "#94a3b8",
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase" as const,
-                      }}
-                    >
-                      {h}
-                    </div>
-                  ))}
-                </div>
-                {specPerms.map((perm: any, idx: number) => (
+            {specPerms.map((perm: any, idx: number) => {
+              // Shared handlers
+              const handleTypeChange = (v: string) => {
+                const found = permTypes.find((t: any) => String(t.id) === v);
+                setSpecPerms((p) =>
+                  p.map((x, i) =>
+                    i !== idx
+                      ? x
+                      : {
+                          ...x,
+                          type_id: found ? found.id : null,
+                          type_label: found ? found.label : "",
+                        },
+                  ),
+                );
+              };
+              const handleNumberChange = (v: string) =>
+                setSpecPerms((p) =>
+                  p.map((x, i) => (i !== idx ? x : { ...x, number: v })),
+                );
+              const handleExpiryChange = (v: string) =>
+                setSpecPerms((p) =>
+                  p.map((x, i) => (i !== idx ? x : { ...x, expiry: v })),
+                );
+              const handleRemove = () =>
+                setSpecPerms((p) => p.filter((_, i) => i !== idx));
+
+              const labelStyle: React.CSSProperties = {
+                fontSize: 10,
+                fontWeight: 700,
+                color: "#94a3b8",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase" as const,
+                marginBottom: 4,
+              };
+
+              // ═══════════════════════════════════════════════════
+              // MOBILE: CARD LAYOUT
+              // ═══════════════════════════════════════════════════
+              if (isMobile) {
+                return (
                   <div
                     key={idx}
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr auto auto auto", // ✅ нэг мөр
-                      gap: 8,
-                      alignItems: "end",
-                      padding: "12px",
+                      padding: 14,
                       borderRadius: 10,
                       background: "white",
                       border: "1px solid #e2e8f0",
-                      marginTop: 8,
                     }}
                   >
-                    {/* Тусгай зөвшөөрлийн төрөл */}
-                    <div style={{ minWidth: 0 }}>
-                      <div
+                    {/* Card header — title + delete */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingBottom: 10,
+                        marginBottom: 12,
+                        borderBottom: "1px solid #f1f5f9",
+                      }}
+                    >
+                      <span
                         style={{
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: 700,
-                          color: "#94a3b8",
+                          color: "#0072BC",
                           letterSpacing: "0.06em",
                           textTransform: "uppercase" as const,
-                          marginBottom: 4,
                         }}
                       >
-                        Тусгай зөвшөөрлийн төрөл
-                      </div>
+                        Зөвшөөрөл #{idx + 1}
+                      </span>
+                      {editing && specPerms.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={handleRemove}
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: 6,
+                            border: "1px solid #fecaca",
+                            background: "#fef2f2",
+                            color: "#ef4444",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          Устгах
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Type — full width */}
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={labelStyle}>Тусгай зөвшөөрлийн төрөл</div>
                       <FSelect
                         label=""
                         value={
@@ -1974,22 +2421,7 @@ export default function CompanyProfilePage() {
                             : ""
                         }
                         editing={editing}
-                        onChange={(v: string) => {
-                          const found = permTypes.find(
-                            (t: any) => String(t.id) === v,
-                          );
-                          setSpecPerms((p) =>
-                            p.map((x, i) =>
-                              i !== idx
-                                ? x
-                                : {
-                                    ...x,
-                                    type_id: found ? found.id : null,
-                                    type_label: found ? found.label : "",
-                                  },
-                            ),
-                          );
-                        }}
+                        onChange={handleTypeChange}
                         options={permTypes.map((t: any) => ({
                           value: String(t.id),
                           label: t.label,
@@ -1998,94 +2430,129 @@ export default function CompanyProfilePage() {
                       />
                     </div>
 
-                    {/* Дугаар */}
-                    <div style={{ width: 120 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: "#94a3b8",
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase" as const,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Дугаар
+                    {/* Number + Date — 2 column */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 10,
+                      }}
+                    >
+                      <div>
+                        <div style={labelStyle}>Дугаар</div>
+                        <FInput
+                          label=""
+                          value={perm.number || ""}
+                          editing={editing}
+                          onChange={handleNumberChange}
+                          placeholder="Дугаар"
+                        />
                       </div>
-                      <FInput
-                        label=""
-                        value={perm.number || ""}
-                        editing={editing}
-                        onChange={(v: string) =>
-                          setSpecPerms((p) =>
-                            p.map((x, i) =>
-                              i !== idx ? x : { ...x, number: v },
-                            ),
-                          )
-                        }
-                        placeholder="Дугаар"
-                      />
-                    </div>
-
-                    {/* Хүчинтэй хугацаа */}
-                    <div style={{ width: 150 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: "#94a3b8",
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase" as const,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Хүчинтэй хугацаа
+                      <div>
+                        <div style={labelStyle}>Хугацаа</div>
+                        <FInput
+                          label=""
+                          type="date"
+                          value={perm.expiry || ""}
+                          editing={editing}
+                          onChange={handleExpiryChange}
+                        />
                       </div>
-                      <FInput
-                        label=""
-                        type="date"
-                        value={perm.expiry || ""}
-                        editing={editing}
-                        onChange={(v: string) =>
-                          setSpecPerms((p) =>
-                            p.map((x, i) =>
-                              i !== idx ? x : { ...x, expiry: v },
-                            ),
-                          )
-                        }
-                      />
-                    </div>
-
-                    {/* Устгах */}
-                    <div>
-                      {editing && specPerms.length > 1 ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSpecPerms((p) => p.filter((_, i) => i !== idx))
-                          }
-                          style={{
-                            padding: "7px 12px",
-                            borderRadius: 8,
-                            border: "1px solid #fecaca",
-                            background: "#fef2f2",
-                            color: "#ef4444",
-                            fontSize: 12,
-                            cursor: "pointer",
-                            fontFamily: "inherit",
-                            whiteSpace: "nowrap" as const,
-                          }}
-                        >
-                          Устгах
-                        </button>
-                      ) : (
-                        <div />
-                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                );
+              }
+
+              // ═══════════════════════════════════════════════════
+              // DESKTOP / TABLET: ROW LAYOUT
+              // ═══════════════════════════════════════════════════
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 130px 160px auto",
+                    gap: 10,
+                    alignItems: "end",
+                    padding: 12,
+                    borderRadius: 10,
+                    background: "white",
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  {/* Type */}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={labelStyle}>Тусгай зөвшөөрлийн төрөл</div>
+                    <FSelect
+                      label=""
+                      value={
+                        perm.type_id !== null && perm.type_id !== undefined
+                          ? String(perm.type_id)
+                          : ""
+                      }
+                      editing={editing}
+                      onChange={handleTypeChange}
+                      options={permTypes.map((t: any) => ({
+                        value: String(t.id),
+                        label: t.label,
+                      }))}
+                      placeholder="Төрөл сонгох"
+                    />
+                  </div>
+
+                  {/* Number */}
+                  <div>
+                    <div style={labelStyle}>Дугаар</div>
+                    <FInput
+                      label=""
+                      value={perm.number || ""}
+                      editing={editing}
+                      onChange={handleNumberChange}
+                      placeholder="Дугаар"
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <div style={labelStyle}>Хүчинтэй хугацаа</div>
+                    <FInput
+                      label=""
+                      type="date"
+                      value={perm.expiry || ""}
+                      editing={editing}
+                      onChange={handleExpiryChange}
+                    />
+                  </div>
+
+                  {/* Delete */}
+                  <div>
+                    {editing && specPerms.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={handleRemove}
+                        style={{
+                          padding: "7px 12px",
+                          borderRadius: 8,
+                          border: "1px solid #fecaca",
+                          background: "#fef2f2",
+                          color: "#ef4444",
+                          fontSize: 12,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          whiteSpace: "nowrap" as const,
+                        }}
+                      >
+                        Устгах
+                      </button>
+                    ) : (
+                      <div />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* + Add button */}
             {editing && (
               <button
                 type="button"
@@ -2122,7 +2589,7 @@ export default function CompanyProfilePage() {
                 }
                 onMouseLeave={(e) =>
                   ((e.currentTarget as HTMLElement).style.background =
-                    "#eef2ff")
+                    "#0072BC1A")
                 }
               >
                 + Тусгай зөвшөөрлийн төрөл нэмэх
