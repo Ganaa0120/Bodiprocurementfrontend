@@ -167,7 +167,7 @@ export function AnnouncementsTab({ showToast }: { showToast: (m: string, ok?: bo
             </button>
             <button onClick={() => { setTarget(null); setModal("create"); }}
               style={{ padding:"9px 16px",borderRadius:10,background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",border:"none",color:"white",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6 }}>
-              <Plus size={14}/> Шинэ зарлал
+              <Plus size={14}/>Шинэ зарлал
             </button>
           </div>
         </div>

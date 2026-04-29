@@ -17,12 +17,9 @@ import {
   Search,
   Clock,
   ChevronUp,
-  Menu,
   BarChart3,
   Settings,
-  UserCheck,
   Activity,
-  ArrowUpRight,
   X,
   Eye,
   EyeOff,
@@ -37,10 +34,10 @@ import {
   ChevronDown,
   ChevronRight,
   Lock,
-  Unlock,
 } from "lucide-react";
 import { IndividualsTab } from "./_components/individuals/IndividualsTab";
 import { SpecialPermissionsTab } from "./_components/SpecialPermissionsTab";
+import { PendingEditsTab } from "./_components/pending-edits/PendingEditsTab";
 
 type NavId =
   | "dashboard"
@@ -51,7 +48,8 @@ type NavId =
   | "categories"
   | "directions"
   | "special_permissions"
-  | "announcements";
+  | "announcements"
+  | "pending_edits";
 type ModalMode = "create" | "edit" | null;
 
 type Admin = {
@@ -207,6 +205,15 @@ const NAV_PERMS: NavPerm[] = [
     subs: [
       { id: "admins.view", label: "Харах", desc: "Харах" },
       { id: "admins.manage", label: "Удирдах", desc: "Удирдах" },
+    ],
+  },
+  {
+    id: "pending_edits",
+    label: "Хүлээгдэж буй өөрчлөлт",
+    icon: "⏳",
+    superAdminOnly: true, // зөвхөн super admin
+    subs: [
+      { id: "pending_edits.view", label: "Харах", desc: "Pending edits харах" },
     ],
   },
 ];
@@ -1720,6 +1727,11 @@ export default function AdminDashboard() {
       label: "Тусгай зөвшөөрөл",
     },
     { id: "announcements" as NavId, icon: FileText, label: "Зарлалууд" },
+    {
+      id: "pending_edits" as NavId,
+      icon: Clock,
+      label: "Хүлээгдэж буй өөрчлөлт",
+    },
   ].filter((n) => canNav(n.id));
 
   useEffect(() => {
@@ -3366,6 +3378,9 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
+            )}
+            {nav === "pending_edits" && canNav("pending_edits") && (
+              <PendingEditsTab showToast={showToast} />
             )}
 
             {nav === "special_permissions" && canNav("special_permissions") && (

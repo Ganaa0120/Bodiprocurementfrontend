@@ -141,7 +141,7 @@ export function SendModal({ onClose, onSent, showToast }: {
             {[
               { v:"all",       l:"Бүгдэд илгээх",     d:"Бүх бүртгэлтэй нийлүүлэгчид",           icon:Globe,     color:"#10b981", bg:"rgba(16,185,129,0.12)" },
               { v:"individual",l:"Хувь хүн сонгох",    d:"Тодорхой хувь хүмүүсийг сонгон илгээх", icon:Users,     color:"#3b82f6", bg:"rgba(59,130,246,0.12)" },
-              { v:"company",   l:"Байгааллага сонгох", d:"Тодорхой байгааллагуудыг сонгон илгээх", icon:Building2, color:"#a78bfa", bg:"rgba(167,139,250,0.12)" },
+              { v:"company",   l:"Байгууллага сонгох", d:"Тодорхой байгууллагуудыг сонгон илгээх", icon:Building2, color:"#a78bfa", bg:"rgba(167,139,250,0.12)" },
             ].map(({v,l,d,icon:Icon,color,bg}) => (
               <button key={v} type="button" onClick={() => { setRecipType(v as any); setStep(2); }}
                 style={{ display:"flex",alignItems:"center",gap:16,padding:"18px 20px",borderRadius:14,cursor:"pointer",fontFamily:"inherit",textAlign:"left",background:"rgba(255,255,255,0.03)",border:`1px solid ${color}25`,transition:"all .15s",width:"100%" }}
@@ -170,7 +170,7 @@ export function SendModal({ onClose, onSent, showToast }: {
               <span style={{ fontSize:12,padding:"4px 12px",borderRadius:99,fontWeight:600,
                 background: recipType==="all"?"rgba(16,185,129,0.12)":recipType==="individual"?"rgba(59,130,246,0.12)":"rgba(167,139,250,0.12)",
                 color: recipType==="all"?"#10b981":recipType==="individual"?"#60a5fa":"#a78bfa" }}>
-                {recipType==="all"?"🌐 Бүгдэд":recipType==="individual"?"👤 Хувь хүн":"🏢 Байгааллага"}
+                {recipType==="all"?"🌐 Бүгдэд":recipType==="individual"?"👤 Хувь хүн":"🏢 Байгууллага"}
               </span>
             </div>
 

@@ -151,149 +151,221 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
         />
       )}
 
-      {/* ── Sidebar ── */}
-      <aside
-        className={cn("company-sidebar", open && "open")}
-        style={{
-          position: "fixed",
-          top: 0, left: 0, bottom: 0,
-          width: 240,
-          background: "white",
-          borderRight: "1px solid #f1f5f9",
-          display: "flex",
-          flexDirection: "column",
-          zIndex: 40,
-          transition: "transform .3s ease",
-          boxShadow: "4px 0 24px rgba(0,0,0,0.04)",
-        }}
-      >
-        {/* Logo */}
-        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #f8fafc" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Image src="/images/logosolo.png" alt="Logo" width={48} height={48} />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>Bodi Group</p>
-                <p style={{ fontSize: 10, color: "#94a3b8", margin: 0 }}>Нийлүүлэгч портал</p>
-              </div>
-            </div>
-            {/* Close drawer button — mobile only */}
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setOpen(false)}
-              style={{
-                background: "#f8fafc",
-                border: "1px solid #f1f5f9",
-                borderRadius: 9,
-                padding: 6,
-                cursor: "pointer",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <X size={16} style={{ color: "#64748b" }} />
-            </button>
-          </div>
-        </div>
+   {/* ── Sidebar ── */}
+<aside
+  className={cn("company-sidebar", open && "open")}
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 268,
+    background: "#0a1428",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    zIndex: 40,
+    transition: "transform 0.45s cubic-bezier(0.32, 0.72, 0, 1)",
+    boxShadow: "12px 0 60px rgba(0, 0, 0, 0.4)",
+    borderRight: "1px solid rgba(59, 155, 224, 0.18)",
+  }}
+>
+  {/* Animated Background */}
+  <div style={{
+    position: "absolute",
+    inset: 0,
+    zIndex: 0,
+    background: `
+      linear-gradient(135deg, 
+        rgba(0, 114, 188, 0.12) 0%, 
+        rgba(59, 155, 224, 0.08) 40%, 
+        rgba(16, 185, 129, 0.06) 70%, 
+        rgba(0, 114, 188, 0.10) 100%
+      ),
+      radial-gradient(circle at 25% 30%, rgba(59, 155, 224, 0.18) 0%, transparent 60%),
+      radial-gradient(circle at 80% 70%, rgba(0, 114, 188, 0.15) 0%, transparent 55%)
+    `,
+    animation: "gradientShift 35s ease infinite",
+    opacity: 0.92,
+  }} />
 
-        {/* User */}
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid #f8fafc" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+  {/* Subtle Grid */}
+  <div style={{
+    position: "absolute",
+    inset: 0,
+    zIndex: 1,
+    backgroundImage: `
+      linear-gradient(rgba(148,163,184,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.07) 1px, transparent 1px)
+    `,
+    backgroundSize: "48px 48px",
+    animation: "subtleDrift 90s linear infinite",
+    opacity: 0.65,
+  }} />
+
+  {/* Logo */}
+  <div style={{ 
+    padding: "28px 24px 20px", 
+    borderBottom: "1px solid rgba(59,155,224,0.15)",
+    zIndex: 3,
+    position: "relative"
+  }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{
+        width: 46, height: 46, borderRadius: 14,
+        background: "linear-gradient(135deg, #0072BC, #3b9be0, #60a5fa)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 0 25px rgba(59,155,224,0.6)",
+        flexShrink: 0,
+      }}>
+        <Image src="/images/logosolo.png" alt="Logo" width={40} height={40} />
+      </div>
+      <div>
+        <p style={{ fontSize: "16px", fontWeight: 700, color: "#f8fafc", letterSpacing: "-0.025em", margin: 0 }}>
+          Bodi Group
+        </p>
+        <p style={{ fontSize: "10.5px", color: "#64748b", margin: 0, letterSpacing: "1px" }}>
+          SUPPLIER PORTAL
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* User Info */}
+  <div style={{ 
+    padding: "22px 24px", 
+    borderBottom: "1px solid rgba(59,155,224,0.12)",
+    zIndex: 3,
+    position: "relative"
+  }}>
+    {/* ... User info хэвээр үлдээнэ (өмнөх кодтой ижил) ... */}
+    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: 14,
+        background: "linear-gradient(135deg, #e0e7ff, #c4d0ff)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "20px", fontWeight: 700, color: "#1e40af",
+        boxShadow: "inset 0 3px 10px rgba(0,0,0,0.15)",
+        border: "2px solid rgba(255,255,255,0.7)",
+      }}>
+        {user?.company_name?.[0] || "B"}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: "14.5px", fontWeight: 600, color: "#f1f5f9", margin: 0 }}>{user?.company_name || "Байгууллага"}</p>
+        <p style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "monospace" }}>{user?.supplier_number || "SUP-••••••"}</p>
+      </div>
+    </div>
+
+    {/* Status Badge - өмнөхтэй ижил */}
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 7,
+      padding: "6px 14px", borderRadius: 9999, fontSize: "11.5px", fontWeight: 500,
+      background: isActive ? "rgba(16,185,129,0.15)" : isReturned ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
+      color: isActive ? "#4ade80" : isReturned ? "#f87171" : "#fbbf24",
+      border: `1px solid ${isActive ? "rgba(74,222,128,0.4)" : isReturned ? "rgba(248,113,113,0.4)" : "rgba(251,191,36,0.4)"}`,
+    }}>
+      <div style={{ width: 7, height: 7, borderRadius: "50%", background: isActive ? "#4ade80" : isReturned ? "#f87171" : "#fbbf24", animation: isActive ? "pulse 2.5s infinite" : "none" }} />
+      {isActive ? "Баталгаажсан" : isReturned ? "Буцаагдсан" : isNew ? "Шинэ бүртгэл" : "Хянагдаж байна"}
+    </div>
+  </div>
+
+  {/* Navigation - 3D Active Effectтэй */}
+  <nav style={{ flex: 1, padding: "20px 16px", overflowY: "auto", zIndex: 3, position: "relative" }}>
+    <p style={{ fontSize: "10px", fontWeight: 600, color: "#64748b", letterSpacing: "1.2px", textTransform: "uppercase", padding: "0 12px 10px", marginBottom: 6 }}>
+      Үндсэн цэс
+    </p>
+
+    {NAV.map(({ href, label, icon: Icon }) => {
+      const active = pathname === href;
+      return (
+        <Link
+          key={href}
+          href={href}
+          onClick={() => setOpen(false)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "15px 18px",
+            borderRadius: 16,
+            color: active ? "#ffffff" : "#cbd5e1",
+            fontSize: "14.2px",
+            fontWeight: 500,
+            marginBottom: 6,
+            position: "relative",
+            transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)", // 3D мэдрэмжтэй smooth
+            transform: active ? "translateX(8px) scale(1.02)" : "translateX(0) scale(1)",
+            boxShadow: active ? "0 10px 25px rgba(59,155,224,0.25)" : "none",
+            overflow: "hidden",
+          }}
+        >
+          {/* 3D Active Background */}
+          {active && (
             <div style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: "linear-gradient(135deg,#e0e7ff,#c7d2fe)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 13, fontWeight: 700, color: "#6366f1",
-            }}>
-              {user?.company_name?.[0] || "?"}
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user?.company_name || "Байгууллага"}
-              </p>
-              <p style={{ fontSize: 10, color: "#94a3b8", margin: 0, fontFamily: "monospace" }}>
-                {user?.supplier_number || "—"}
-              </p>
-            </div>
-          </div>
-
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            padding: "3px 10px", borderRadius: 99,
-            fontSize: 11, fontWeight: 500,
-            background: isActive ? "#ecfdf5" : isReturned ? "#fef2f2" : "#fffbeb",
-            color: isActive ? "#059669" : isReturned ? "#dc2626" : "#d97706",
-          }}>
-            <span style={{
-              width: 5, height: 5, borderRadius: "50%",
-              background: isActive ? "#10b981" : isReturned ? "#ef4444" : "#f59e0b",
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(90deg, rgba(59,155,224,0.3), rgba(96,165,250,0.15))",
+              zIndex: -1,
+              borderRadius: 16,
             }} />
-            {isActive ? "Баталгаажсан" : isReturned ? "Буцаагдсан" : isNew ? "Бүртгэл үүсгэх" : "Хянагдаж байна"}
+          )}
+
+          {/* Left Glow Line */}
+          {active && (
+            <div style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 5,
+              background: "linear-gradient(to bottom, #60a5fa, #3b9be0)",
+              boxShadow: "4px 0 15px rgba(96,165,250,0.6)",
+            }} />
+          )}
+
+          <Icon 
+            size={19} 
+            style={{ 
+              flexShrink: 0,
+              color: active ? "#ffffff" : "#94a3b8",
+              transition: "all 0.35s ease",
+              transform: active ? "scale(1.15)" : "scale(1)",
+            }} 
+          />
+
+          <span style={{ 
+            flex: 1, 
+            transition: "all 0.35s ease",
+            color: active ? "#ffffff" : "#cbd5e1"
+          }}>
+            {label}
           </span>
 
-          {isReturned && user?.return_reason && (
-            <div style={{
-              marginTop: 8, padding: "7px 10px", borderRadius: 8,
-              background: "#fef2f2", border: "1px solid #fecaca",
-            }}>
-              <p style={{ fontSize: 10, color: "#dc2626", margin: 0, lineHeight: 1.5 }}>
-                ⚠️ {user.return_reason}
-              </p>
-            </div>
-          )}
-        </div>
+          {active && <ChevronRight size={17} style={{ color: "#ffffff", opacity: 0.9 }} />}
+        </Link>
+      );
+    })}
+  </nav>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "12px 12px", overflowY: "auto" }}>
-          <p style={{
-            fontSize: 10, fontWeight: 600, color: "#cbd5e1",
-            letterSpacing: "0.1em", textTransform: "uppercase",
-            padding: "0 8px", marginBottom: 6,
-          }}>Үндсэн</p>
-          {NAV.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setOpen(false)}
-                className={cn("nav-link", active && "active")}
-              >
-                <Icon size={15} style={{ flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>{label}</span>
-                {active && <ChevronRight size={13} />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Logout */}
-        <div style={{ padding: "12px", borderTop: "1px solid #f8fafc" }}>
-          <button
-            onClick={logout}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 12px", borderRadius: 10,
-              border: "none", background: "none", cursor: "pointer",
-              fontSize: 13, color: "#94a3b8",
-              transition: "all .15s", fontFamily: "inherit",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = "#fef2f2";
-              (e.currentTarget as HTMLElement).style.color = "#ef4444";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = "none";
-              (e.currentTarget as HTMLElement).style.color = "#94a3b8";
-            }}
-          >
-            <LogOut size={15} /> Системээс гарах
-          </button>
-        </div>
-      </aside>
+  {/* Logout - өмнөхтэй ижил */}
+  <div style={{ padding: "18px 20px", borderTop: "1px solid rgba(59,155,224,0.12)", zIndex: 3 }}>
+    <button
+      onClick={logout}
+      style={{
+        width: "100%", display: "flex", alignItems: "center", gap: 12,
+        padding: "14px 18px", borderRadius: 14, border: "none",
+        background: "rgba(248,113,113,0.1)", color: "#f87171",
+        fontSize: "14px", fontWeight: 500, cursor: "pointer",
+        transition: "all 0.25s ease",
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(248,113,113,0.18)"}
+      onMouseLeave={(e) => e.currentTarget.style.background = "rgba(248,113,113,0.1)"}
+    >
+      <LogOut size={18} />
+      Системээс гарах
+    </button>
+  </div>
+</aside>
 
       {/* ── Main ── */}
       <div

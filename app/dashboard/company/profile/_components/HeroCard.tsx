@@ -141,7 +141,7 @@ export function HeroCard({
               margin: 0,
             }}
           >
-            {profile?.company_name || "Байгааллага"}
+            {profile?.company_name || "Байгууллага"}
           </h2>
           <span
             style={{

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Loader2, FileText, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, FileText, Clock, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -26,155 +26,248 @@ export default function CompanyApplicationsPage() {
   const w = useW();
   const isMobile = w > 0 && w < 640;
 
-  const [apps,    setApps]    = useState<any[]>([]);
+  const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter,  setFilter]  = useState("all");
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
+
     fetch(`${API}/api/applications/mine?limit=50`, {
       headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.json())
-      .then(d => { if (d.success) setApps(d.applications ?? []); })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) setApps(d.applications ?? []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = filter === "all" ? apps : apps.filter(a => a.status === filter);
+  const filtered = filter === "all" 
+    ? apps 
+    : apps.filter(a => a.status === filter);
+
+  const totalCounts = {
+    all: apps.length,
+    pending: apps.filter(a => a.status === "pending").length,
+    approved: apps.filter(a => a.status === "approved").length,
+    rejected: apps.filter(a => a.status === "rejected").length,
+  };
 
   return (
-    <div style={{ maxWidth: "100%", margin: "0 auto", padding: isMobile ? "16px 4px" : "24px 16px" }}>
+    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 8px" : "28px 20px" }}>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg) } }
-        .app-tabs-scroll::-webkit-scrollbar { display: none; }
-        .app-tabs-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .app-card {
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .app-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
+        }
       `}</style>
 
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ 
+          fontSize: isMobile ? 24 : 28, 
+          fontWeight: 700, 
+          color: "#0f172a", 
+          margin: 0,
+          letterSpacing: "-0.02em"
+        }}>
           Миний хүсэлтүүд
         </h1>
-        <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
+        <p style={{ fontSize: 14.5, color: "#64748b", marginTop: 6 }}>
           Нийт {apps.length} хүсэлт гаргасан байна
         </p>
       </div>
 
-      {/* Filter tabs — horizontal scroll on mobile */}
-      <div
-        className="app-tabs-scroll"
-        style={{
-          display: "flex", gap: 6, marginBottom: 16,
-          flexWrap: isMobile ? "nowrap" : "wrap",
-          overflowX: isMobile ? "auto" : "visible",
-          paddingBottom: isMobile ? 4 : 0,
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
+      {/* Filter Tabs */}
+      <div style={{
+        display: "flex",
+        gap: 8,
+        marginBottom: 28,
+        flexWrap: "wrap",
+      }}>
         {[
-          { key: "all",      label: `Бүгд (${apps.length})` },
-          { key: "pending",  label: `Хүлээгдэж (${apps.filter(a => a.status === "pending").length})` },
-          { key: "approved", label: `Баталгаажсан (${apps.filter(a => a.status === "approved").length})` },
-          { key: "rejected", label: `Татгалзсан (${apps.filter(a => a.status === "rejected").length})` },
-        ].map(({ key, label }) => {
-          const sc     = key === "all" ? null : STATUS_CFG[key];
+          { key: "all",      label: "Бүгд", count: totalCounts.all },
+          { key: "pending",  label: "Хүлээгдэж буй", count: totalCounts.pending },
+          { key: "approved", label: "Баталгаажсан", count: totalCounts.approved },
+          { key: "rejected", label: "Татгалзсан", count: totalCounts.rejected },
+        ].map(({ key, label, count }) => {
           const active = filter === key;
+          const sc = key === "all" ? null : STATUS_CFG[key];
+
           return (
-            <button key={key} onClick={() => setFilter(key)}
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
               style={{
-                padding: "8px 14px", borderRadius: 10,
-                fontSize: 12, fontWeight: 500,
-                cursor: "pointer", fontFamily: "inherit",
+                padding: "11px 20px",
+                borderRadius: 14,
+                fontSize: 14,
+                fontWeight: 600,
+                background: active 
+                  ? (sc?.color + "12" || "#e0f2fe") 
+                  : "white",
+                color: active 
+                  ? (sc?.color || "#3b9be0") 
+                  : "#475569",
+                border: active 
+                  ? `2.5px solid ${sc?.color || "#3b9be0"}` 
+                  : "2px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                transition: "all 0.2s ease",
                 whiteSpace: "nowrap",
-                flexShrink: 0,
-                border: active ? `1.5px solid ${sc?.color ?? "#0072BC"}40` : "1.5px solid #e2e8f0",
-                background: active ? `${sc?.color ?? "#0072BC"}08` : "white",
-                color: active ? (sc?.color ?? "#0072BC") : "#64748b",
               }}
             >
               {label}
+              <span style={{
+                fontSize: 12,
+                padding: "2px 8px",
+                borderRadius: 9999,
+                background: active ? (sc?.color || "#3b9be0") : "#f1f5f9",
+                color: active ? "white" : "#64748b",
+                fontWeight: 700,
+              }}>
+                {count}
+              </span>
             </button>
           );
         })}
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: 56, gap: 10 }}>
-          <Loader2 size={20} style={{ color: "#0072BC", animation: "spin .8s linear infinite" }} />
-          <span style={{ fontSize: 13, color: "#94a3b8" }}>Ачаалж байна...</span>
+        <div style={{ textAlign: "center", padding: "100px 20px" }}>
+          <Loader2 size={32} style={{ color: "#3b9be0", animation: "spin 0.9s linear infinite", margin: "0 auto 20px" }} />
+          <p style={{ color: "#64748b", fontSize: 15 }}>Хүсэлтүүдийг ачаалж байна...</p>
         </div>
       ) : filtered.length === 0 ? (
         <div style={{
-          textAlign: "center" as const, padding: "56px 0",
-          background: "white", borderRadius: 18, border: "1px solid #f1f5f9",
+          textAlign: "center",
+          padding: "100px 20px",
+          background: "white",
+          borderRadius: 20,
+          border: "1px solid #f1f5f9",
         }}>
-          <FileText size={32} style={{ color: "#e2e8f0", display: "block", margin: "0 auto 12px" }} />
-          <p style={{ fontSize: 13, color: "#cbd5e1", margin: 0 }}>Хүсэлт байхгүй байна</p>
+          <FileText size={52} style={{ color: "#e2e8f0", marginBottom: 16 }} />
+          <p style={{ fontSize: 15.5, color: "#94a3b8" }}>Хүсэлт байхгүй байна</p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.map(app => {
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {filtered.map((app) => {
             const sc = STATUS_CFG[app.status] ?? STATUS_CFG.pending;
+            const isApproved = app.status === "approved";
+            const isRejected = app.status === "rejected";
+            const isPending = app.status === "pending";
+
             return (
-              <div key={app.id} style={{
-                background: "white", borderRadius: 16,
-                padding: isMobile ? "14px 16px" : "18px 20px",
-                border: "1px solid #f1f5f9",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-                borderLeft: `3px solid ${sc.color}`,
-              }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div
+                key={app.id}
+                className="app-card"
+                style={{
+                  background: "white",
+                  borderRadius: 20,
+                  padding: isMobile ? "20px 20px" : "24px 28px",
+                  border: `1px solid ${sc.border}`,
+                  borderLeft: `4px solid ${sc.color}`,
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+                  transition: "all 0.25s ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 20 }}>
+                  {/* Status Icon */}
+                  <div style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 14,
+                    background: sc.bg,
+                    border: `2px solid ${sc.border}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}>
+                    {isApproved && <CheckCircle2 size={26} style={{ color: sc.color }} />}
+                    {isRejected && <XCircle size={26} style={{ color: sc.color }} />}
+                    {isPending && <Clock size={26} style={{ color: sc.color }} />}
+                  </div>
+
+                  {/* Main Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      display: "flex", alignItems: "center",
-                      gap: 8, marginBottom: 6, flexWrap: "wrap",
-                    }}>
-                      <span style={{
-                        fontSize: 14, fontWeight: 700, color: "#0f172a",
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                      <h3 style={{
+                        fontSize: 16.5,
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        margin: 0,
+                        flex: 1,
                         wordBreak: "break-word",
                       }}>
-                        {app.announcement_title || "Тендер"}
-                      </span>
+                        {app.announcement_title || "Тендер / Зарлал"}
+                      </h3>
                       <span style={{
-                        fontSize: 11, fontWeight: 600, padding: "2px 9px",
-                        borderRadius: 99, background: sc.bg, color: sc.color,
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        padding: "6px 14px",
+                        borderRadius: 9999,
+                        background: sc.bg,
+                        color: sc.color,
                         border: `1px solid ${sc.border}`,
                         whiteSpace: "nowrap",
                       }}>
                         {sc.label}
                       </span>
                     </div>
-                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 11, color: "#94a3b8",
-                        display: "flex", alignItems: "center", gap: 4 }}>
-                        <Clock size={11} /> {new Date(app.created_at).toLocaleDateString("mn-MN")}
+
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13.5, color: "#64748b", marginBottom: 10 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <Clock size={14} /> {new Date(app.created_at).toLocaleDateString("mn-MN")}
                       </span>
                       {app.price_offer && (
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                          💰 {Number(app.price_offer).toLocaleString()}₮
-                        </span>
+                        <span>💰 {Number(app.price_offer).toLocaleString()} ₮</span>
                       )}
                     </div>
+
                     {app.note && (
-                      <p style={{ fontSize: 12, color: "#64748b", margin: "8px 0 0", lineHeight: 1.5,
-                        wordBreak: "break-word" }}>
+                      <p style={{
+                        fontSize: 14,
+                        color: "#475569",
+                        lineHeight: 1.6,
+                        margin: "8px 0 0",
+                        padding: "10px 14px",
+                        background: "#f8fafc",
+                        borderRadius: 10,
+                      }}>
                         {app.note}
                       </p>
                     )}
+
                     {app.return_reason && (
                       <div style={{
-                        marginTop: 8, padding: "8px 12px", borderRadius: 8,
-                        background: "#fef2f2", border: "1px solid #fecaca",
-                        fontSize: 12, color: "#dc2626", wordBreak: "break-word",
+                        marginTop: 12,
+                        padding: "12px 16px",
+                        borderRadius: 12,
+                        background: "#fef2f2",
+                        border: "1px solid #fecaca",
+                        color: "#dc2626",
+                        fontSize: 13.5,
                       }}>
                         <strong>Буцаасан шалтгаан:</strong> {app.return_reason}
                       </div>
                     )}
                   </div>
-                  <div style={{ flexShrink: 0 }}>
-                    {app.status === "approved" && <CheckCircle2 size={20} style={{ color: "#10b981" }} />}
-                    {app.status === "rejected" && <XCircle     size={20} style={{ color: "#ef4444" }} />}
-                    {app.status === "pending"  && <Clock       size={20} style={{ color: "#f59e0b" }} />}
+
+                  {/* Arrow Indicator */}
+                  <div style={{ flexShrink: 0, paddingTop: 8 }}>
+                    <ArrowRight size={20} style={{ color: "#94a3b8" }} />
                   </div>
                 </div>
               </div>

@@ -59,6 +59,39 @@ export function AnnModal({
   const curType = TYPE[annType];
   const TIcon = curType.icon;
 
+  // ── Track unsaved changes — Esc/close confirmation-д ашиглана ──
+  const isDirty =
+    form.title.trim() !== "" ||
+    form.description.trim() !== "" ||
+    form.requirements.trim() !== "" ||
+    form.recipient_ids.length > 0 ||
+    form.activity_directions.length > 0 ||
+    form.budget_from !== "" ||
+    form.budget_to !== "" ||
+    form.rfq_quantity !== "" ||
+    form.rfq_specs !== "";
+
+  // ── Confirmed close — мэдээлэл бичсэн бол сэрэмжлүүлнэ ──
+  const safeClose = () => {
+    if (isDirty && mode === "create") {
+      const ok = window.confirm(
+        "Бөглөсөн мэдээлэл устах болно. Үнэхээр гарах уу?",
+      );
+      if (!ok) return;
+    }
+    onClose();
+  };
+
+  // ── Esc key listener ──────────────────────────────────────
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") safeClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirty, mode]);
+
   useEffect(() => {
     fetch(`${API}/api/categories`)
       .then((r) => r.json())
@@ -141,7 +174,7 @@ export function AnnModal({
     }
   };
 
-  // Type selector
+  // ── Type selector (зөвхөн create горимд) ──────────────────
   if (mode === "create" && !step)
     return (
       <div
@@ -155,7 +188,6 @@ export function AnnModal({
           background: "rgba(0,0,0,0.85)",
           backdropFilter: "blur(10px)",
         }}
-        onClick={onClose}
       >
         <div
           style={{
@@ -167,7 +199,6 @@ export function AnnModal({
             padding: 32,
             boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
           }}
-          onClick={(e) => e.stopPropagation()}
         >
           <div
             style={{
@@ -302,7 +333,6 @@ export function AnnModal({
         padding: "20px 16px",
         overflowY: "auto",
       }}
-      onClick={onClose}
     >
       <div
         style={{
@@ -315,7 +345,6 @@ export function AnnModal({
           boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
           marginBottom: 24,
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div
           style={{
@@ -327,7 +356,15 @@ export function AnnModal({
         >
           {mode === "create" && (
             <button
-              onClick={() => setStep(null)}
+              onClick={() => {
+                if (isDirty) {
+                  const ok = window.confirm(
+                    "Бөглөсөн мэдээлэл устах болно. Буцах уу?",
+                  );
+                  if (!ok) return;
+                }
+                setStep(null);
+              }}
               style={{
                 background: "rgba(255,255,255,0.05)",
                 border: "1px solid rgba(255,255,255,0.07)",
@@ -377,7 +414,8 @@ export function AnnModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={safeClose}
+            title="Хаах (Esc)"
             style={{
               background: "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.07)",
@@ -848,7 +886,7 @@ export function AnnModal({
 
           <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
             <button
-              onClick={onClose}
+              onClick={safeClose}
               style={{
                 flex: 1,
                 height: 44,

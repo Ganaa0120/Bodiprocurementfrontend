@@ -14,23 +14,24 @@ import Link from "next/link";
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  pending:  { label: "Хүлээгдэж буй", color: "#d97706", bg: "#fffbeb" },
+  pending:  { label: "Хүлээгдэж буй", color: "#f59e0b", bg: "#fffbeb" },
   reviewed: { label: "Хянагдсан",     color: "#2563eb", bg: "#eff6ff" },
-  approved: { label: "Баталгаажсан",  color: "#059669", bg: "#ecfdf5" },
-  rejected: { label: "Татгалзсан",    color: "#dc2626", bg: "#fef2f2" },
+  approved: { label: "Баталгаажсан",  color: "#10b981", bg: "#ecfdf5" },
+  rejected: { label: "Татгалзсан",    color: "#ef4444", bg: "#fef2f2" },
 };
 
 function Badge({ status }: { status: string }) {
   const c = STATUS[status] ?? STATUS.pending;
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "3px 10px", borderRadius: 99,
-      fontSize: 11, fontWeight: 600,
+      display: "inline-flex", alignItems: "center", gap: 5,
+      padding: "5px 12px", borderRadius: 9999,
+      fontSize: 11.5, fontWeight: 600,
       background: c.bg, color: c.color,
+      border: `1px solid ${c.color}30`,
       whiteSpace: "nowrap",
     }}>
-      <span style={{ width: 4, height: 4, borderRadius: "50%", background: c.color }} />
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: c.color }} />
       {c.label}
     </span>
   );
@@ -70,7 +71,7 @@ export default function CompanyDashboard() {
         const stored = JSON.parse(localStorage.getItem("user") || "{}");
         const updated = { ...stored, status: fresh.status, return_reason: fresh.return_reason };
         localStorage.setItem("user", JSON.stringify(updated));
-        setUser({ ...updated });
+        setUser(updated);
       }
     } catch {}
   };
@@ -80,7 +81,7 @@ export default function CompanyDashboard() {
     if (u) setUser(JSON.parse(u));
     fetchApps();
     refreshStatus();
-    const interval = setInterval(refreshStatus, 30_000);
+    const interval = setInterval(refreshStatus, 30000);
     window.addEventListener("focus", refreshStatus);
     return () => {
       clearInterval(interval);
@@ -116,299 +117,278 @@ export default function CompanyDashboard() {
   const isReturned = s === "returned";
 
   const STAT_CARDS = [
-    { label: "Нийт хүсэлт",   value: stats.total,    icon: FileText,    color: "#0072BC", bg: "#e6f2fa" },
-    { label: "Хүлээгдэж буй", value: stats.pending,  icon: Clock,       color: "#d97706", bg: "#fffbeb" },
-    { label: "Баталгаажсан",  value: stats.approved, icon: CheckCircle, color: "#059669", bg: "#ecfdf5" },
-    { label: "Татгалзсан",    value: stats.rejected, icon: XCircle,     color: "#dc2626", bg: "#fef2f2" },
+    { label: "Нийт хүсэлт",   value: stats.total,    icon: FileText,    color: "#3b9be0", bg: "rgba(59,155,224,0.08)" },
+    { label: "Хүлээгдэж буй", value: stats.pending,  icon: Clock,       color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
+    { label: "Баталгаажсан",  value: stats.approved, icon: CheckCircle, color: "#10b981", bg: "rgba(16,185,129,0.08)" },
+    { label: "Татгалзсан",    value: stats.rejected, icon: XCircle,     color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
   ];
 
   const QUICK = [
-    { href: "/dashboard/company/applications",  icon: "📋", label: "Хүсэлтүүд", desc: "Бүх хүсэлтийг харах" },
+    { href: "/dashboard/company/applications",  icon: "📋", label: "Хүсэлтүүд", desc: "Бүх хүсэлтээ удирдах" },
     { href: "/dashboard/company/notifications", icon: "🔔", label: "Мэдэгдэл",  desc: "Шинэ мэдэгдлүүд" },
-    { href: "/dashboard/company/profile",       icon: "🏢", label: "Профайл",   desc: "Мэдээллээ шинэчлэх" },
+    { href: "/dashboard/company/profile",       icon: "🏢", label: "Профайл",   desc: "Байгууллагын мэдээлэл" },
   ];
 
-  // Responsive grids
-  const statGrid    = isMobile ? "1fr 1fr" : isTablet ? "repeat(2,1fr)" : "repeat(4,1fr)";
-  const contentGrid = isMobile || isTablet ? "1fr" : "200px 1fr";
-  const quickGrid   = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(3,1fr)";
+  const statGrid = isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(4,1fr)";
 
   return (
-    <div style={{ maxWidth: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: isMobile ? 14 : 20 }}>
+    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "0 8px" : "0 12px" }}>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg) } }
-        @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
       `}</style>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div style={{
         display: "flex",
-        alignItems: isMobile ? "flex-start" : "flex-start",
-        justifyContent: "space-between",
         flexDirection: isMobile ? "column" : "row",
-        flexWrap: "wrap",
-        gap: 12,
+        alignItems: isMobile ? "flex-start" : "center",
+        justifyContent: "space-between",
+        gap: 16,
+        marginBottom: 28,
       }}>
-        <div style={{ minWidth: 0, maxWidth: "100%" }}>
-          <p style={{
-            fontSize: 11, color: "#94a3b8", margin: "0 0 4px",
-            fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase",
-          }}>
-            Байгууллагын хянах самбар
+        <div>
+          <p style={{ fontSize: 12, color: "#64748b", margin: 0, letterSpacing: "0.5px", fontWeight: 500 }}>
+            БАЙГУУЛЛАГЫН ХЯНАХ САМБАР
           </p>
           <h1 style={{
-            fontSize: isMobile ? 18 : 22,
-            fontWeight: 700, color: "#0f172a", margin: 0,
-            wordBreak: "break-word",
+            fontSize: isMobile ? 22 : 28,
+            fontWeight: 700,
+            color: "#0f172a",
+            margin: "8px 0 4px",
+            letterSpacing: "-0.03em",
           }}>
-            {user?.company_name || "Байгуулллага"} 👋
+            Сайн байна уу, {user?.company_name?.split(" ")[0] || "Байгууллага"}?
           </h1>
           {user?.supplier_number && (
-            <p style={{ fontSize: 11, color: "#94a3b8", margin: "3px 0 0", fontFamily: "monospace" }}>
+            <p style={{ fontSize: 13, color: "#64748b", fontFamily: "monospace" }}>
               {user.supplier_number}
             </p>
           )}
         </div>
 
-        <span style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "6px 14px", borderRadius: 99,
-          fontSize: 12, fontWeight: 500,
-          background: isActive ? "#ecfdf5" : isReturned ? "#fef2f2" : isNew ? "#f0f9ff" : "#fffbeb",
-          color: isActive ? "#059669" : isReturned ? "#dc2626" : isNew ? "#0369a1" : "#d97706",
-          border: `1px solid ${isActive ? "#a7f3d0" : isReturned ? "#fecaca" : isNew ? "#bae6fd" : "#fde68a"}`,
-          whiteSpace: "nowrap",
+        <div style={{
+          padding: "8px 16px",
+          borderRadius: 9999,
+          background: isActive ? "rgba(16,185,129,0.1)" : isReturned ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
+          color: isActive ? "#10b981" : isReturned ? "#ef4444" : "#f59e0b",
+          fontSize: 13,
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          border: `1px solid ${isActive ? "#4ade80" : isReturned ? "#f87171" : "#fbbf24"}30`,
         }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: "50%",
-            background: isActive ? "#10b981" : isReturned ? "#ef4444" : isNew ? "#0ea5e9" : "#f59e0b",
-            animation: isNew || s === "pending" ? "pulse 1.5s infinite" : "none",
+          <div style={{
+            width: 8, height: 8, borderRadius: "50%",
+            background: isActive ? "#4ade80" : isReturned ? "#f87171" : "#fbbf24",
+            animation: (isNew || s === "pending") ? "pulse 2s infinite" : "none",
           }} />
           {isActive ? "Баталгаажсан" : isReturned ? "Буцаагдсан" : isNew ? "Бүртгэл үүсгэх" : "Хянагдаж байна"}
-        </span>
+        </div>
       </div>
 
-      {/* ── Returned banner ── */}
-      {isReturned && (
-        <Link href="/dashboard/company/profile" style={{ textDecoration: "none" }}>
-          <div style={{
-            background: "white", border: "1px solid #fecaca", borderRadius: 14,
-            padding: isMobile ? "12px 14px" : "14px 18px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            cursor: "pointer", gap: 12,
-          }}
-          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#fef2f2")}
-          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "white")}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+      {/* Status Banners */}
+      {(isReturned || isNew || s === "pending") && (
+        <div style={{ marginBottom: 24 }}>
+          {isReturned && (
+            <Link href="/dashboard/company/profile" style={{ textDecoration: "none" }}>
               <div style={{
-                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                background: "#fef2f2", border: "1px solid #fecaca",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-              }}>⚠️</div>
-              <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#dc2626", margin: 0 }}>
-                  Бүртгэл буцаагдсан байна
-                </p>
-                {user?.return_reason && (
-                  <p style={{ fontSize: 12, color: "#ef4444", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
-                    {user.return_reason}
-                  </p>
-                )}
+                background: "white", border: "1px solid #fecaca", borderRadius: 16,
+                padding: 18, display: "flex", alignItems: "center", gap: 16,
+                boxShadow: "0 4px 20px rgba(239,68,68,0.08)",
+              }}>
+                <div style={{ fontSize: 28 }}>⚠️</div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 600, color: "#dc2626", margin: 0 }}>Бүртгэл буцаагдсан байна</p>
+                  {user?.return_reason && <p style={{ margin: "4px 0 0", color: "#ef4444", fontSize: 13 }}>{user.return_reason}</p>}
+                </div>
+                <ArrowRight size={20} style={{ color: "#dc2626" }} />
               </div>
-            </div>
-            <ArrowRight size={16} style={{ color: "#dc2626", flexShrink: 0 }} />
-          </div>
-        </Link>
-      )}
+            </Link>
+          )}
 
-      {/* ── New user banner ── */}
-      {isNew && (
-        <Link href="/dashboard/company/profile" style={{ textDecoration: "none" }}>
-          <div style={{
-            background: "white", border: "1px solid #bae6fd", borderRadius: 14,
-            padding: isMobile ? "12px 14px" : "14px 18px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            cursor: "pointer", gap: 12,
-          }}
-          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#f0f9ff")}
-          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "white")}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+          {isNew && (
+            <Link href="/dashboard/company/profile" style={{ textDecoration: "none" }}>
               <div style={{
-                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                background: "#f0f9ff", border: "1px solid #bae6fd",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-              }}>📝</div>
-              <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#0369a1", margin: 0 }}>
-                  Байгууллагын мэдээлэл бөглөнө үү
-                </p>
-                <p style={{ fontSize: 12, color: "#0ea5e9", margin: "1px 0 0" }}>
-                  Бүртгэлээ дуусгаж баталгаажуулалт авна уу
+                background: "white", border: "1px solid #bae6fd", borderRadius: 16,
+                padding: 18, display: "flex", alignItems: "center", gap: 16,
+                boxShadow: "0 4px 20px rgba(59,155,224,0.08)",
+              }}>
+                <div style={{ fontSize: 28 }}>📝</div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 600, color: "#0369a1", margin: 0 }}>Байгууллагын мэдээллээ бөглөнө үү</p>
+                  <p style={{ margin: "4px 0 0", color: "#0ea5e9", fontSize: 13 }}>Бүртгэлээ дуусгаж баталгаажуулалт авна уу</p>
+                </div>
+                <ArrowRight size={20} style={{ color: "#3b9be0" }} />
+              </div>
+            </Link>
+          )}
+
+          {s === "pending" && (
+            <div style={{
+              background: "white", border: "1px solid #fde68a", borderRadius: 16,
+              padding: 18, display: "flex", alignItems: "center", gap: 16,
+            }}>
+              <div style={{ fontSize: 28 }}>⏳</div>
+              <div>
+                <p style={{ fontWeight: 600, color: "#92400e", margin: 0 }}>Бүртгэл хянагдаж байна</p>
+                <p style={{ margin: "4px 0 0", color: "#d97706", fontSize: 13 }}>
+                  Таны мэдээллийг администратор хянаж байна. Удахгүй мэдэгдэл ирнэ.
                 </p>
               </div>
             </div>
-            <ArrowRight size={16} style={{ color: "#0369a1", flexShrink: 0 }} />
-          </div>
-        </Link>
-      )}
-
-      {/* ── Pending banner ── */}
-      {s === "pending" && (
-        <div style={{
-          background: "white", border: "1px solid #fde68a", borderRadius: 14,
-          padding: isMobile ? "12px 14px" : "14px 18px",
-          display: "flex", alignItems: "center", gap: 12,
-        }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-            background: "#fffbeb", border: "1px solid #fde68a",
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-          }}>⏳</div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#92400e", margin: 0 }}>
-              Бүртгэл хянагдаж байна
-            </p>
-            <p style={{ fontSize: 12, color: "#d97706", margin: "1px 0 0" }}>
-              Таны мэдээллийг администратор хянаж байна. Удахгүй мэдэгдэл ирнэ.
-            </p>
-          </div>
+          )}
         </div>
       )}
 
-      {/* ── Stat cards ── */}
-      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: 12 }}>
-        {STAT_CARDS.map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} style={{
-            background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
-            padding: isMobile ? "14px 16px" : "18px 20px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-            minWidth: 0,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+      {/* Statistics Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: 16, marginBottom: 28 }}>
+        {STAT_CARDS.map(({ label, value, icon: Icon, color, bg }, index) => (
+          <div
+            key={index}
+            style={{
+              background: "white",
+              border: "1px solid #f1f5f9",
+              borderRadius: 18,
+              padding: isMobile ? "18px 20px" : "22px 24px",
+              boxShadow: "0 6px 24px rgba(0,0,0,0.04)",
+              transition: "transform 0.3s ease, box-shadow 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-6px)";
+              e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.04)";
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div style={{
-                width: 36, height: 36, borderRadius: 10, background: bg,
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                width: 48, height: 48, borderRadius: 14,
+                background: bg,
+                display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Icon size={17} style={{ color }} />
+                <Icon size={22} style={{ color }} />
               </div>
-              <TrendingUp size={12} style={{ color: "#e2e8f0" }} />
+              <TrendingUp size={18} style={{ color: "#e2e8f0" }} />
             </div>
-            <p style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: "#0f172a", margin: 0, lineHeight: 1 }}>
-              {loading ? "—" : value}
+
+            <p style={{
+              fontSize: isMobile ? 28 : 32,
+              fontWeight: 700,
+              color: "#0f172a",
+              margin: "16px 0 4px",
+            }}>
+              {loading ? "—" : value.toLocaleString()}
             </p>
-            <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {label}
-            </p>
+            <p style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>{label}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Content grid ── */}
-      <div style={{ display: "grid", gridTemplateColumns: contentGrid, gap: 14 }}>
-        {/* Progress */}
+      {/* Main Content Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "280px 1fr", gap: 20 }}>
+        
+        {/* Progress / Summary */}
         <div style={{
-          background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
-          padding: 18, boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-          minWidth: 0,
+          background: "white",
+          border: "1px solid #f1f5f9",
+          borderRadius: 18,
+          padding: 24,
+          boxShadow: "0 6px 24px rgba(0,0,0,0.04)",
         }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Дүн</p>
+          <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 20 }}>Хүсэлтийн дүн шинжилгээ</p>
+          
           {[
-            { label: "Нийт",        value: stats.total,    color: "#0072BC" },
-            { label: "Хүлээгдэж",   value: stats.pending,  color: "#f59e0b" },
-            { label: "Батлагдсан",  value: stats.approved, color: "#10b981" },
-            { label: "Татгалзсан",  value: stats.rejected, color: "#ef4444" },
+            { label: "Нийт хүсэлт", value: stats.total, color: "#3b9be0" },
+            { label: "Хүлээгдэж буй", value: stats.pending, color: "#f59e0b" },
+            { label: "Баталгаажсан", value: stats.approved, color: "#10b981" },
+            { label: "Татгалзсан", value: stats.rejected, color: "#ef4444" },
           ].map(({ label, value, color }) => (
-            <div key={label} style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ fontSize: 11, color: "#94a3b8", display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                  {label}
-                </span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>{value}</span>
+            <div key={label} style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 13, color: "#475569" }}>{label}</span>
+                <span style={{ fontWeight: 600, color: "#0f172a" }}>{value}</span>
               </div>
-              <div style={{ height: 4, borderRadius: 99, background: "#f1f5f9", overflow: "hidden" }}>
+              <div style={{ height: 6, background: "#f1f5f9", borderRadius: 9999, overflow: "hidden" }}>
                 <div style={{
-                  height: "100%", borderRadius: 99, background: color,
+                  height: "100%",
                   width: `${(value / Math.max(stats.total, 1)) * 100}%`,
-                  transition: "width .8s ease",
+                  background: color,
+                  borderRadius: 9999,
+                  transition: "width 1s ease",
                 }} />
               </div>
             </div>
           ))}
         </div>
 
-        {/* Recent apps */}
+        {/* Recent Applications */}
         <div style={{
-          background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
-          overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-          minWidth: 0,
+          background: "white",
+          border: "1px solid #f1f5f9",
+          borderRadius: 18,
+          overflow: "hidden",
+          boxShadow: "0 6px 24px rgba(0,0,0,0.04)",
         }}>
-          <div style={{
-            padding: isMobile ? "14px 16px" : "16px 20px",
-            borderBottom: "1px solid #f8fafc",
-            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: 0 }}>Сүүлийн хүсэлтүүд</p>
-              <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0" }}>Байгууллагын хүсэлтүүд</p>
+          <div style={{ padding: "20px 24px", borderBottom: "1px solid #f8fafc", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 600 }}>Сүүлийн хүсэлтүүд</p>
+              <p style={{ fontSize: 12, color: "#64748b" }}>Хамгийн сүүлд илгээсэн хүсэлтүүд</p>
             </div>
             <Link href="/dashboard/company/applications" style={{
-              display: "flex", alignItems: "center", gap: 4,
-              fontSize: 12, color: "#0072BC", fontWeight: 500,
-              textDecoration: "none", padding: "5px 10px",
-              borderRadius: 8, background: "#e6f2fa",
-              border: "1px solid #bae0f3", flexShrink: 0,
+              fontSize: 13, color: "#3b9be0", fontWeight: 500, display: "flex", alignItems: "center", gap: 4,
             }}>
-              Бүгд <ChevronRight size={13} />
+              Бүгдийг харах <ChevronRight size={16} />
             </Link>
           </div>
+
           {loading ? (
-            <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-              <div style={{
-                width: 20, height: 20,
-                border: "2px solid #e2e8f0", borderTopColor: "#0072BC",
-                borderRadius: "50%",
-                animation: "spin .8s linear infinite",
-              }} />
+            <div style={{ padding: 60, textAlign: "center" }}>
+              <div style={{ width: 24, height: 24, border: "3px solid #e2e8f0", borderTopColor: "#3b9be0", borderRadius: "50%", animation: "spin 0.9s linear infinite", margin: "0 auto" }} />
             </div>
           ) : apps.length === 0 ? (
-            <div style={{ padding: "36px 20px", textAlign: "center" }}>
-              <FileText size={28} style={{ color: "#e2e8f0", margin: "0 auto 8px", display: "block" }} />
-              <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>Хүсэлт байхгүй байна</p>
+            <div style={{ padding: 60, textAlign: "center" }}>
+              <FileText size={36} style={{ color: "#cbd5e1", marginBottom: 12 }} />
+              <p style={{ color: "#94a3b8" }}>Хүсэлт байхгүй байна</p>
             </div>
           ) : (
-            apps.slice(0, 6).map((app, i) => (
-              <div key={app.id} style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: isMobile ? "10px 16px" : "11px 20px",
-                borderBottom: i < Math.min(apps.length, 6) - 1 ? "1px solid #f8fafc" : "none",
-                transition: "background .12s", cursor: "pointer",
-              }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#fafafa")}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "transparent")}
+            apps.slice(0, 5).map((app, i) => (
+              <div
+                key={app.id}
+                style={{
+                  padding: "16px 24px",
+                  borderBottom: i < apps.length - 1 ? "1px solid #f8fafc" : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#fafcff")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 <div style={{
-                  width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                  background: `hsl(${(i * 67) % 360},60%,92%)`,
+                  width: 42, height: 42, borderRadius: 12,
+                  background: `hsl(${(i * 55) % 360}, 70%, 96%)`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 700,
-                  color: `hsl(${(i * 67) % 360},50%,40%)`,
+                  fontSize: 15, fontWeight: 700, color: `hsl(${(i * 55) % 360}, 60%, 45%)`,
                 }}>
-                  {app.announcement_title?.[0] ?? "?"}
+                  {app.announcement_title?.[0] || "T"}
                 </div>
+
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "#0f172a", margin: 0,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <p style={{ fontWeight: 500, margin: 0, fontSize: 14, color: "#0f172a" }}>
                     {app.announcement_title || "Тендер"}
                   </p>
-                  <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {new Date(app.created_at).toLocaleDateString("mn-MN")}
-                    {app.price_offer && ` · ${Number(app.price_offer).toLocaleString()}₮`}
+                  <p style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                    {new Date(app.created_at).toLocaleDateString("mn-MN")} 
+                    {app.price_offer && ` • ${Number(app.price_offer).toLocaleString()} ₮`}
                   </p>
                 </div>
+
                 <Badge status={app.status} />
               </div>
             ))
@@ -416,41 +396,41 @@ export default function CompanyDashboard() {
         </div>
       </div>
 
-      {/* ── Quick links ── */}
-      <div style={{ display: "grid", gridTemplateColumns: quickGrid, gap: 12 }}>
-        {QUICK.map(({ href, icon, label, desc }) => (
-          <Link key={href} href={href} style={{ textDecoration: "none" }}>
-            <div style={{
-              background: "white", border: "1px solid #f1f5f9", borderRadius: 14,
-              padding: isMobile ? "14px 16px" : "16px 18px",
-              display: "flex", alignItems: "center", gap: 12,
-              transition: "all .15s",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-              cursor: "pointer", minWidth: 0,
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.borderColor = "#bae0f3";
-              el.style.boxShadow = "0 4px 16px rgba(0,114,188,0.1)";
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.borderColor = "#f1f5f9";
-              el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
-            }}
-            >
-              <span style={{ fontSize: 20, flexShrink: 0 }}>{icon}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", margin: 0 }}>{label}</p>
-                <p style={{ fontSize: 11, color: "#94a3b8", margin: "1px 0 0",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {desc}
-                </p>
+      {/* Quick Actions */}
+      <div style={{ marginTop: 28 }}>
+        <p style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 12 }}>Түргэн үйлдлүүд</p>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(3,1fr)", gap: 14 }}>
+          {QUICK.map((item) => (
+            <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
+              <div style={{
+                background: "white",
+                border: "1px solid #f1f5f9",
+                borderRadius: 16,
+                padding: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                transition: "all 0.25s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#3b9be0";
+                e.currentTarget.style.boxShadow = "0 8px 25px rgba(59,155,224,0.12)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#f1f5f9";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+              >
+                <span style={{ fontSize: 26 }}>{item.icon}</span>
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: 14.5, margin: 0 }}>{item.label}</p>
+                  <p style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{item.desc}</p>
+                </div>
+                <ChevronRight size={18} style={{ marginLeft: "auto", color: "#94a3b8" }} />
               </div>
-              <ChevronRight size={14} style={{ color: "#cbd5e1", flexShrink: 0 }} />
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

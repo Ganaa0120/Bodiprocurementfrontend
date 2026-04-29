@@ -7,14 +7,9 @@ import {
   Briefcase,
   FileText,
   CreditCard,
-  X,
-  Check,
-  Save,
   Plus,
   Bell,
   Send,
-  Search,
-  ChevronDown,
 } from "lucide-react";
 import {
   API,
@@ -36,6 +31,14 @@ import {
   validateOwnersMongolian,
 } from "@/utils/mongolianValidation";
 import { UB_DUUREG, AIMAG_SUM } from "@/constants/addressData";
+
+// ── Extracted components ─────────────────────────────────────
+import { useBreakpoint, type DirItem, type SelDir, type PermType } from "./_components/useW";
+import { SubmitModal } from "./_components/SubmitModal";
+import { SuccessModal } from "./_components/SuccessModal";
+import { SaveBar } from "./_components/SaveBar";
+import { DirectionPicker } from "./_components/DirectionPicker";
+import { SpecialPermissionsSection } from "./_components/SpecialPermissionsSection";
 
 const BLANK_EXEC = {
   position: "Гүйцэтгэх захирал",
@@ -59,24 +62,6 @@ const REQUIRED_FIELDS = [
   { key: "sum_duureg", label: "Сум / Дүүрэг" },
   { key: "address", label: "Дэлгэрэнгүй хаяг" },
 ];
-
-type DirItem = {
-  id: number;
-  label: string;
-  children: { id: number; label: string }[];
-};
-type SelDir = { main_id: number; sub_ids: number[] };
-
-function useW() {
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    setW(window.innerWidth);
-    const h = () => setW(window.innerWidth);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
-  }, []);
-  return w;
-}
 
 function buildForm(u: any) {
   return {
@@ -107,1121 +92,15 @@ function buildForm(u: any) {
   };
 }
 
-// ── SubmitModal ───────────────────────────────────────────────
-function SubmitModal({
-  missing,
-  onConfirm,
-  onClose,
-  saving,
-}: {
-  missing: { key: string; label: string }[];
-  onConfirm: () => void;
-  onClose: () => void;
-  saving: boolean;
-}) {
-  const isComplete = missing.length === 0;
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15,23,42,0.5)",
-        backdropFilter: "blur(4px)",
-        zIndex: 100,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "white",
-          borderRadius: 20,
-          padding: 28,
-          maxWidth: 440,
-          width: "100%",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-          animation: "fadeIn .2s ease",
-        }}
-      >
-        {isComplete ? (
-          <>
-            <div style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ fontSize: 52, marginBottom: 12 }}>✅</div>
-              <div
-                style={{
-                  fontSize: 17,
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  marginBottom: 8,
-                }}
-              >
-                Мэдээлэл бүрэн бөглөгдсөн байна
-              </div>
-              <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.7 }}>
-                Та мэдээлэлээ илгээхдээ итгэлтэй байна уу?
-                <br />
-                Илгээсний дараа хянагдах болно.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                onClick={onClose}
-                style={{
-                  flex: 1,
-                  padding: "11px 0",
-                  borderRadius: 10,
-                  border: "1.5px solid #e2e8f0",
-                  background: "white",
-                  color: "#64748b",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                Болих
-              </button>
-              <button
-                onClick={onConfirm}
-                disabled={saving}
-                style={{
-                  flex: 1,
-                  padding: "11px 0",
-                  borderRadius: 10,
-                  border: "none",
-                  background: "linear-gradient(135deg,#4f46e5,#6366f1)",
-                  color: "white",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  opacity: saving ? 0.7 : 1,
-                }}
-              >
-                {saving ? (
-                  <Loader2
-                    size={14}
-                    style={{ animation: "spin .8s linear infinite" }}
-                  />
-                ) : (
-                  <Send size={14} />
-                )}
-                {saving ? "Илгээж байна..." : "Илгээх"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ marginBottom: 20 }}>
-              <div
-                style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  marginBottom: 8,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontSize: 24 }}>⚠️</span> Дутуу мэдээлэл байна
-              </div>
-              <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
-                Илгээхийн өмнө дараах талбаруудыг бөглөнө үү:
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                marginBottom: 20,
-                maxHeight: 260,
-                overflowY: "auto",
-              }}
-            >
-              {missing.map((f) => (
-                <div
-                  key={f.key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "9px 14px",
-                    borderRadius: 10,
-                    background: "#fef2f2",
-                    border: "1px solid #fecaca",
-                  }}
-                >
-                  <span
-                    style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}
-                  >
-                    ✕
-                  </span>
-                  <span
-                    style={{ fontSize: 13, color: "#dc2626", fontWeight: 500 }}
-                  >
-                    {f.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={onClose}
-              style={{
-                width: "100%",
-                padding: "11px 0",
-                borderRadius: 10,
-                border: "1.5px solid #e2e8f0",
-                background: "white",
-                color: "#0f172a",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Буцаж бөглөх
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── DirectionPicker ───────────────────────────────────────────
-// ── DirectionPicker ───────────────────────────────────────────
-function DirectionPicker({
-  dirs,
-  selDirs,
-  editing,
-  toggleMain,
-  toggleSub,
-}: {
-  dirs: DirItem[];
-  selDirs: SelDir[];
-  editing: boolean;
-  toggleMain: (id: number) => void;
-  toggleSub: (mainId: number, subId: number) => void;
-}) {
-  const w = useW();
-  const useAccordion = w > 0 && w < 1024; // mobile + tablet
-
-  // Desktop 2-pane state
-  const [activeMain, setActiveMain] = useState<number | null>(
-    selDirs.length > 0 ? selDirs[0].main_id : null,
-  );
-  const [search, setSearch] = useState("");
-
-  // Accordion state — which main direction is expanded
-  const [expandedId, setExpandedId] = useState<number | null>(
-    selDirs.length > 0 ? Number(selDirs[0].main_id) : null,
-  );
-
-  const activeDir = dirs.find((d) => d.id === activeMain);
-  const filteredSubs =
-    activeDir?.children.filter((c) =>
-      c.label.toLowerCase().includes(search.toLowerCase()),
-    ) || [];
-  const activeSel = selDirs.find(
-    (s) => Number(s.main_id) === Number(activeMain),
-  );
-
-  // ── Read-only ──────────────────────────────────────────────
-  if (!editing) {
-    if (selDirs.length === 0)
-      return <div style={{ fontSize: 13, color: "#cbd5e1" }}>—</div>;
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {selDirs.map((sel) => {
-          const main = dirs.find((d) => Number(d.id) === Number(sel.main_id));
-          if (!main) return null;
-          return (
-            <div
-              key={sel.main_id}
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-                gap: 8,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "#0072BC",
-                  background: "#e6f2fa",
-                  border: "1px solid #bae0f3",
-                  padding: "3px 10px",
-                  borderRadius: 99,
-                  whiteSpace: "nowrap" as const,
-                }}
-              >
-                {main.label}
-              </span>
-              {sel.sub_ids.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                  {sel.sub_ids.map((sid) => {
-                    const sub = main.children?.find(
-                      (c: any) => Number(c.id) === Number(sid),
-                    );
-                    return sub ? (
-                      <span
-                        key={sid}
-                        style={{
-                          fontSize: 11,
-                          color: "#64748b",
-                          background: "#f8fafc",
-                          border: "1px solid #e2e8f0",
-                          padding: "3px 8px",
-                          borderRadius: 99,
-                        }}
-                      >
-                        {sub.label}
-                      </span>
-                    ) : null;
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  // ═════════════════════════════════════════════════════════════
-  // ── Edit mode: ACCORDION (mobile + tablet < 1024px) ──────────
-  // ═════════════════════════════════════════════════════════════
-  if (useAccordion) {
-    return (
-      <div
-        style={{
-          border: "1.5px solid #e2e8f0",
-          borderRadius: 14,
-          overflow: "hidden",
-          background: "white",
-        }}
-      >
-        {dirs.length === 0 ? (
-          <div
-            style={{
-              padding: 24,
-              fontSize: 12,
-              color: "#94a3b8",
-              textAlign: "center" as const,
-            }}
-          >
-            Ачаалж байна...
-          </div>
-        ) : (
-          dirs.map((d, idx) => {
-            const isOn = selDirs.some(
-              (s) => Number(s.main_id) === Number(d.id),
-            );
-            const isExpanded = expandedId === d.id;
-            const sel = selDirs.find((s) => Number(s.main_id) === Number(d.id));
-            const filtered = (d.children || []).filter((c) =>
-              c.label.toLowerCase().includes(search.toLowerCase()),
-            );
-            const showSearch = (d.children?.length || 0) > 5;
-
-            return (
-              <div
-                key={d.id}
-                style={{
-                  borderBottom:
-                    idx < dirs.length - 1 ? "1px solid #f1f5f9" : "none",
-                }}
-              >
-                {/* Header row — clickable to expand */}
-                <div
-                  onClick={() => {
-                    setExpandedId(isExpanded ? null : d.id);
-                    setSearch("");
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "13px 14px",
-                    background: isExpanded ? "#fafafa" : "white",
-                    cursor: "pointer",
-                    transition: "background .15s",
-                    minHeight: 52,
-                  }}
-                >
-                  {/* Checkbox — toggleMain on click */}
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMain(d.id);
-                      if (!isOn) {
-                        setExpandedId(d.id);
-                        setSearch("");
-                      }
-                    }}
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 6,
-                      flexShrink: 0,
-                      cursor: "pointer",
-                      border: isOn ? "2px solid #0072BC" : "2px solid #d1d5db",
-                      background: isOn ? "#0072BC" : "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "all .12s",
-                    }}
-                  >
-                    {isOn && <Check size={12} color="white" strokeWidth={3} />}
-                  </div>
-
-                  {/* Label */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: isOn ? 600 : 500,
-                        color: isOn ? "#1e293b" : "#374151",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap" as const,
-                      }}
-                    >
-                      {d.label}
-                    </div>
-                    {isOn && sel && sel.sub_ids.length > 0 && (
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "#0072BC",
-                          marginTop: 2,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {sel.sub_ids.length} дэд чиглэл сонгосон
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Chevron */}
-                  <ChevronDown
-                    size={16}
-                    style={{
-                      color: "#94a3b8",
-                      flexShrink: 0,
-                      transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "transform .2s",
-                    }}
-                  />
-                </div>
-
-                {/* Expanded content */}
-                {isExpanded && (
-                  <div
-                    style={{
-                      padding: "12px 14px 14px",
-                      background: "#fafafa",
-                      borderTop: "1px solid #f1f5f9",
-                      animation: "fadeIn .2s ease",
-                    }}
-                  >
-                    {!isOn ? (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#f59e0b",
-                          fontWeight: 500,
-                          padding: "4px 0",
-                        }}
-                      >
-                        ⚠️ Эхлээд үндсэн чиглэлийг сонгоно уу (зүүн талын
-                        checkbox)
-                      </div>
-                    ) : (d.children?.length || 0) === 0 ? (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#94a3b8",
-                          padding: "4px 0",
-                        }}
-                      >
-                        Дэд чиглэл байхгүй
-                      </div>
-                    ) : (
-                      <>
-                        {/* Search */}
-                        {showSearch && (
-                          <div
-                            style={{
-                              position: "relative",
-                              marginBottom: 10,
-                            }}
-                          >
-                            <Search
-                              size={13}
-                              style={{
-                                position: "absolute",
-                                left: 10,
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                color: "#94a3b8",
-                                pointerEvents: "none",
-                              }}
-                            />
-                            <input
-                              value={search}
-                              onChange={(e) => setSearch(e.target.value)}
-                              placeholder="Дэд чиглэл хайх..."
-                              style={{
-                                width: "100%",
-                                padding: "8px 10px 8px 30px",
-                                borderRadius: 8,
-                                border: "1px solid #e2e8f0",
-                                fontSize: 12,
-                                outline: "none",
-                                background: "white",
-                                boxSizing: "border-box" as const,
-                                fontFamily: "inherit",
-                              }}
-                              onFocus={(e) =>
-                                ((e.target as HTMLElement).style.borderColor =
-                                  "#0072BC")
-                              }
-                              onBlur={(e) =>
-                                ((e.target as HTMLElement).style.borderColor =
-                                  "#e2e8f0")
-                              }
-                            />
-                          </div>
-                        )}
-
-                        {/* Action buttons */}
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: 6,
-                            marginBottom: 10,
-                            flexWrap: "wrap" as const,
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              (d.children || []).forEach((c) => {
-                                if (sel && !sel.sub_ids.includes(c.id))
-                                  toggleSub(d.id, c.id);
-                              });
-                            }}
-                            style={{
-                              fontSize: 11,
-                              padding: "5px 10px",
-                              borderRadius: 6,
-                              border: "1px solid #bae0f3",
-                              background: "#e6f2fa",
-                              color: "#0072BC",
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                              fontWeight: 600,
-                            }}
-                          >
-                            Бүгдийг сонгох
-                          </button>
-                          {sel && sel.sub_ids.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                sel.sub_ids
-                                  .slice()
-                                  .forEach((id) => toggleSub(d.id, id))
-                              }
-                              style={{
-                                fontSize: 11,
-                                padding: "5px 10px",
-                                borderRadius: 6,
-                                border: "1px solid #fecaca",
-                                background: "#fef2f2",
-                                color: "#dc2626",
-                                cursor: "pointer",
-                                fontFamily: "inherit",
-                                fontWeight: 600,
-                              }}
-                            >
-                              Цэвэрлэх
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Sub-direction chips */}
-                        {filtered.length === 0 ? (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: "#94a3b8",
-                              padding: "8px 0",
-                            }}
-                          >
-                            "{search}" олдсонгүй
-                          </div>
-                        ) : (
-                          <div
-                            style={{
-                              display: "flex",
-                              flexWrap: "wrap" as const,
-                              gap: 6,
-                            }}
-                          >
-                            {filtered.map((sub) => {
-                              const isSubOn = sel?.sub_ids.some(
-                                (id) => Number(id) === Number(sub.id),
-                              );
-                              return (
-                                <button
-                                  key={sub.id}
-                                  type="button"
-                                  onClick={() => toggleSub(d.id, sub.id)}
-                                  style={{
-                                    padding: "6px 12px",
-                                    borderRadius: 99,
-                                    fontSize: 12,
-                                    fontWeight: 500,
-                                    border: isSubOn
-                                      ? "1.5px solid #0072BC"
-                                      : "1.5px solid #e2e8f0",
-                                    background: isSubOn ? "#e6f2fa" : "white",
-                                    color: isSubOn ? "#0072BC" : "#64748b",
-                                    cursor: "pointer",
-                                    transition: "all .12s",
-                                    fontFamily: "inherit",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 5,
-                                  }}
-                                >
-                                  {isSubOn && (
-                                    <Check size={10} strokeWidth={3} />
-                                  )}
-                                  {sub.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* Selected count */}
-                        {sel && sel.sub_ids.length > 0 && (
-                          <div
-                            style={{
-                              marginTop: 10,
-                              paddingTop: 10,
-                              borderTop: "1px solid #e2e8f0",
-                              fontSize: 11,
-                              color: "#0072BC",
-                              fontWeight: 600,
-                            }}
-                          >
-                            ✓ {sel.sub_ids.length} дэд чиглэл сонгогдсон
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
-
-        {/* Bottom summary */}
-        <div
-          style={{
-            padding: "12px 14px",
-            borderTop: "1px solid #f1f5f9",
-            background: "#fafafa",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            flexWrap: "wrap" as const,
-          }}
-        >
-          {selDirs.length === 0 ? (
-            <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 500 }}>
-              ⚠️ Нэг буюу хэд хэдэн чиглэл сонгоно уу
-            </span>
-          ) : (
-            <>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: "#059669",
-                  fontWeight: 600,
-                }}
-              >
-                ✓ {selDirs.length} үндсэн чиглэл сонгогдсон
-              </span>
-              <button
-                type="button"
-                onClick={() => selDirs.forEach((s) => toggleMain(s.main_id))}
-                style={{
-                  fontSize: 11,
-                  color: "#ef4444",
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: 6,
-                  padding: "3px 9px",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  marginLeft: "auto",
-                  fontWeight: 600,
-                }}
-              >
-                Бүгдийг цэвэрлэх
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ═════════════════════════════════════════════════════════════
-  // ── Edit mode: DESKTOP 2-pane (≥ 1024px) ─────────────────────
-  // ═════════════════════════════════════════════════════════════
-  return (
-    <div
-      style={{
-        border: "1.5px solid #e2e8f0",
-        borderRadius: 14,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "200px 1fr",
-          minHeight: 360,
-        }}
-      >
-        {/* Зүүн: Үндсэн чиглэлүүд */}
-        <div
-          style={{
-            borderRight: "1px solid #f1f5f9",
-            background: "#fafafa",
-            overflowY: "auto",
-            maxHeight: 400,
-          }}
-        >
-          <div
-            style={{
-              padding: "10px 12px",
-              fontSize: 10,
-              fontWeight: 700,
-              color: "#94a3b8",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase" as const,
-              borderBottom: "1px solid #f1f5f9",
-            }}
-          >
-            Үндсэн чиглэл
-          </div>
-          {dirs.length === 0 ? (
-            <div
-              style={{
-                padding: 16,
-                fontSize: 12,
-                color: "#94a3b8",
-                textAlign: "center" as const,
-              }}
-            >
-              Ачаалж байна...
-            </div>
-          ) : (
-            dirs.map((d) => {
-              const isOn = selDirs.some(
-                (s) => Number(s.main_id) === Number(d.id),
-              );
-              const isActive = activeMain === d.id;
-              return (
-                <div
-                  key={d.id}
-                  onClick={() => {
-                    setActiveMain(d.id);
-                    setSearch("");
-                  }}
-                  style={{
-                    padding: "10px 12px",
-                    cursor: "pointer",
-                    background: isActive ? "#e6f2fa" : "transparent",
-                    borderLeft: isActive
-                      ? "3px solid #0072BC"
-                      : "3px solid transparent",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    transition: "all .12s",
-                  }}
-                >
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMain(d.id);
-                      if (!isOn) setActiveMain(d.id);
-                    }}
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: 5,
-                      flexShrink: 0,
-                      cursor: "pointer",
-                      border: isOn ? "2px solid #0072BC" : "2px solid #d1d5db",
-                      background: isOn ? "#0072BC" : "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "all .12s",
-                    }}
-                  >
-                    {isOn && <Check size={10} color="white" strokeWidth={3} />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: isOn ? 600 : 400,
-                        color: isActive
-                          ? "#0072BC"
-                          : isOn
-                            ? "#1e293b"
-                            : "#374151",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap" as const,
-                      }}
-                    >
-                      {d.label}
-                    </div>
-                    {isOn &&
-                      (selDirs.find((s) => Number(s.main_id) === Number(d.id))
-                        ?.sub_ids.length ?? 0) > 0 && (
-                        <div style={{ fontSize: 10, color: "#0072BC" }}>
-                          {
-                            selDirs.find(
-                              (s) => Number(s.main_id) === Number(d.id),
-                            )?.sub_ids.length
-                          }{" "}
-                          сонгосон
-                        </div>
-                      )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Баруун: Дэд чиглэлүүд */}
-        <div style={{ display: "flex", flexDirection: "column" as const }}>
-          {activeMain === null ? (
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "column" as const,
-                gap: 8,
-                color: "#94a3b8",
-              }}
-            >
-              <span style={{ fontSize: 28 }}>👈</span>
-              <span style={{ fontSize: 13 }}>Үндсэн чиглэл сонгоно уу</span>
-            </div>
-          ) : (
-            <>
-              <div
-                style={{
-                  padding: "10px 14px",
-                  borderBottom: "1px solid #f1f5f9",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: "#0f172a",
-                    }}
-                  >
-                    {activeDir?.label}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                    {activeDir?.children.length || 0} дэд чиглэл
-                  </div>
-                </div>
-                {activeSel && (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        activeDir?.children.forEach((c) => {
-                          if (!activeSel.sub_ids.includes(c.id))
-                            toggleSub(activeMain, c.id);
-                        });
-                      }}
-                      style={{
-                        fontSize: 11,
-                        padding: "3px 8px",
-                        borderRadius: 6,
-                        border: "1px solid #bae0f3",
-                        background: "#e6f2fa",
-                        color: "#0072BC",
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      Бүгдийг сонгох
-                    </button>
-                    {activeSel.sub_ids.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          activeSel.sub_ids
-                            .slice()
-                            .forEach((id) => toggleSub(activeMain, id))
-                        }
-                        style={{
-                          fontSize: 11,
-                          padding: "3px 8px",
-                          borderRadius: 6,
-                          border: "1px solid #fecaca",
-                          background: "#fef2f2",
-                          color: "#dc2626",
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        Цэвэрлэх
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {(activeDir?.children.length || 0) > 5 && (
-                <div
-                  style={{
-                    padding: "8px 14px",
-                    borderBottom: "1px solid #f1f5f9",
-                    position: "relative",
-                  }}
-                >
-                  <Search
-                    size={13}
-                    style={{
-                      position: "absolute",
-                      left: 26,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: "#94a3b8",
-                      pointerEvents: "none",
-                    }}
-                  />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Дэд чиглэл хайх..."
-                    style={{
-                      width: "100%",
-                      padding: "7px 10px 7px 30px",
-                      borderRadius: 8,
-                      border: "1px solid #e2e8f0",
-                      fontSize: 12,
-                      outline: "none",
-                      background: "white",
-                      boxSizing: "border-box" as const,
-                    }}
-                    onFocus={(e) =>
-                      ((e.target as HTMLElement).style.borderColor = "#0072BC")
-                    }
-                    onBlur={(e) =>
-                      ((e.target as HTMLElement).style.borderColor = "#e2e8f0")
-                    }
-                  />
-                </div>
-              )}
-
-              <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
-                {!activeSel ? (
-                  <div
-                    style={{
-                      padding: "12px 0",
-                      fontSize: 12,
-                      color: "#f59e0b",
-                      fontWeight: 500,
-                    }}
-                  >
-                    ⚠️ Эхлээд үндсэн чиглэлийг сонгоно уу (зүүн талын checkbox)
-                  </div>
-                ) : filteredSubs.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "12px 0",
-                      fontSize: 12,
-                      color: "#94a3b8",
-                    }}
-                  >
-                    {search ? `"${search}" олдсонгүй` : "Дэд чиглэл байхгүй"}
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {filteredSubs.map((sub) => {
-                      const isSubOn = activeSel.sub_ids.some(
-                        (id) => Number(id) === Number(sub.id),
-                      );
-                      return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => toggleSub(activeMain, sub.id)}
-                          style={{
-                            padding: "6px 14px",
-                            borderRadius: 99,
-                            fontSize: 12,
-                            fontWeight: 500,
-                            border: isSubOn
-                              ? "1.5px solid #0072BC"
-                              : "1.5px solid #e2e8f0",
-                            background: isSubOn ? "#e6f2fa" : "white",
-                            color: isSubOn ? "#0072BC" : "#64748b",
-                            cursor: "pointer",
-                            transition: "all .12s",
-                            fontFamily: "inherit",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          {isSubOn && <Check size={10} strokeWidth={3} />}
-                          {sub.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {activeSel && activeSel.sub_ids.length > 0 && (
-                <div
-                  style={{
-                    padding: "8px 14px",
-                    borderTop: "1px solid #f1f5f9",
-                    fontSize: 11,
-                    color: "#0072BC",
-                    fontWeight: 600,
-                  }}
-                >
-                  ✓ {activeSel.sub_ids.length} дэд чиглэл сонгогдсон
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      <div
-        style={{
-          padding: "10px 14px",
-          borderTop: "1px solid #f1f5f9",
-          background: "#fafafa",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          flexWrap: "wrap" as const,
-        }}
-      >
-        {selDirs.length === 0 ? (
-          <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 500 }}>
-            ⚠️ Нэг буюу хэд хэдэн чиглэл сонгоно уу
-          </span>
-        ) : (
-          <>
-            <span style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
-              ✓ {selDirs.length} үндсэн чиглэл сонгогдсон
-            </span>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" as const }}>
-              {selDirs.map((sel) => {
-                const main = dirs.find(
-                  (d) => Number(d.id) === Number(sel.main_id),
-                );
-                return main ? (
-                  <span
-                    key={sel.main_id}
-                    style={{
-                      fontSize: 11,
-                      padding: "2px 8px",
-                      borderRadius: 99,
-                      background: "#e6f2fa",
-                      border: "1px solid #bae0f3",
-                      color: "#0072BC",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {main.label}
-                  </span>
-                ) : null;
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={() => selDirs.forEach((s) => toggleMain(s.main_id))}
-              style={{
-                fontSize: 11,
-                color: "#ef4444",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                borderRadius: 6,
-                padding: "2px 8px",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                marginLeft: "auto",
-              }}
-            >
-              Бүгдийг цэвэрлэх
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Main Page ─────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════
+// MAIN PAGE
+// ═════════════════════════════════════════════════════════════
 export default function CompanyProfilePage() {
-  const w = useW();
-  const isMobile = w > 0 && w < 640;
-  const isTablet = w > 0 && w < 1024;
+  const { isMobile, isTablet } = useBreakpoint();
 
   const [profile, setProfile] = useState<any>(null);
   const [dirs, setDirs] = useState<DirItem[]>([]);
-  const [permTypes, setPermTypes] = useState<{ id: number; label: string }[]>(
-    [],
-  );
+  const [permTypes, setPermTypes] = useState<PermType[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -1240,23 +119,18 @@ export default function CompanyProfilePage() {
   const [owners, setOwners] = useState<any[]>([{ ...BLANK_OWNER }]);
   const [ownerSnap, setOwnerSnap] = useState<any[]>([{ ...BLANK_OWNER }]);
   const [finalOwners, setFinalOwners] = useState<any[]>([{ ...BLANK_FINAL }]);
-  const [finalOwnerSnap, setFinalOwnerSnap] = useState<any[]>([
-    { ...BLANK_FINAL },
-  ]);
+  const [finalOwnerSnap, setFinalOwnerSnap] = useState<any[]>([{ ...BLANK_FINAL }]);
   const [directors, setDirectors] = useState<any[]>([{ ...BLANK_EXEC }]);
   const [directorSnap, setDirectorSnap] = useState<any[]>([{ ...BLANK_EXEC }]);
   const [specPerms, setSpecPerms] = useState<any[]>([{ ...BLANK_PERM }]);
   const [specPermSnap, setSpecPermSnap] = useState<any[]>([{ ...BLANK_PERM }]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [ownerFieldErrors, setOwnerFieldErrors] = useState<
-    Record<string, string>
-  >({});
-  const [directorFieldErrors, setDirectorFieldErrors] = useState<
-    Record<string, string>
-  >({});
+  const [ownerFieldErrors, setOwnerFieldErrors] = useState<Record<string, string>>({});
+  const [directorFieldErrors, setDirectorFieldErrors] = useState<Record<string, string>>({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
+  // ── Initial fetch ──────────────────────────────────────────
   useEffect(() => {
     fetch(`${API}/api/activity-directions`)
       .then((r) => r.json())
@@ -1305,58 +179,28 @@ export default function CompanyProfilePage() {
 
           const rawDirs = u.activity_directions || [];
           const parsedDirs: SelDir[] =
-            Array.isArray(rawDirs) &&
-            rawDirs.length > 0 &&
-            typeof rawDirs[0] === "object"
+            Array.isArray(rawDirs) && rawDirs.length > 0 && typeof rawDirs[0] === "object"
               ? rawDirs.map((d: any) => ({
                   main_id: Number(d.main_id),
                   sub_ids: (d.sub_ids || []).map(Number),
                 }))
-              : rawDirs.map((id: number) => ({
-                  main_id: Number(id),
-                  sub_ids: [],
-                }));
+              : rawDirs.map((id: number) => ({ main_id: Number(id), sub_ids: [] }));
           setSelDirs(parsedDirs);
           setSelDirSnap(parsedDirs);
 
-          setOwners(
-            u.beneficial_owners?.length
-              ? u.beneficial_owners
-              : [{ ...BLANK_OWNER }],
-          );
-          setOwnerSnap(
-            u.beneficial_owners?.length
-              ? u.beneficial_owners
-              : [{ ...BLANK_OWNER }],
-          );
-          setFinalOwners(
-            u.final_beneficial_owners?.length
-              ? u.final_beneficial_owners
-              : [{ ...BLANK_FINAL }],
-          );
-          setFinalOwnerSnap(
-            u.final_beneficial_owners?.length
-              ? u.final_beneficial_owners
-              : [{ ...BLANK_FINAL }],
-          );
-          setDirectors(
-            u.executive_directors?.length
-              ? u.executive_directors
-              : [{ ...BLANK_EXEC }],
-          );
-          setDirectorSnap(
-            u.executive_directors?.length
-              ? u.executive_directors
-              : [{ ...BLANK_EXEC }],
-          );
+          setOwners(u.beneficial_owners?.length ? u.beneficial_owners : [{ ...BLANK_OWNER }]);
+          setOwnerSnap(u.beneficial_owners?.length ? u.beneficial_owners : [{ ...BLANK_OWNER }]);
+          setFinalOwners(u.final_beneficial_owners?.length ? u.final_beneficial_owners : [{ ...BLANK_FINAL }]);
+          setFinalOwnerSnap(u.final_beneficial_owners?.length ? u.final_beneficial_owners : [{ ...BLANK_FINAL }]);
+          setDirectors(u.executive_directors?.length ? u.executive_directors : [{ ...BLANK_EXEC }]);
+          setDirectorSnap(u.executive_directors?.length ? u.executive_directors : [{ ...BLANK_EXEC }]);
 
-          // ✅ updated → u болгосон
           setSpecPerms(
             u.special_permissions?.length
               ? u.special_permissions.map((p: any, i: number) => ({
                   ...p,
                   _key: i,
-                  type_label: p.type_label || "", // permTypes useEffect-д нөхнө
+                  type_label: p.type_label || "",
                 }))
               : [{ ...BLANK_PERM }],
           );
@@ -1370,23 +214,17 @@ export default function CompanyProfilePage() {
               : [{ ...BLANK_PERM }],
           );
 
-          const savedUrls = Array.isArray(u.extra_documents)
-            ? u.extra_documents
-            : [];
+          const savedUrls = Array.isArray(u.extra_documents) ? u.extra_documents : [];
           setExtraFileUrls(savedUrls);
           setExtraUrlSnap(savedUrls);
 
           const p: Record<string, string> = {};
           if (u.company_logo_url) p.company_logo = u.company_logo_url;
-          if (u.doc_state_registry_url)
-            p.doc_state_registry = u.doc_state_registry_url;
-          if (u.doc_vat_certificate_url)
-            p.doc_vat_certificate = u.doc_vat_certificate_url;
-          if (u.doc_special_permission_url)
-            p.doc_special_permission = u.doc_special_permission_url;
+          if (u.doc_state_registry_url) p.doc_state_registry = u.doc_state_registry_url;
+          if (u.doc_vat_certificate_url) p.doc_vat_certificate = u.doc_vat_certificate_url;
+          if (u.doc_special_permission_url) p.doc_special_permission = u.doc_special_permission_url;
           if (u.doc_contract_url) p.doc_contract = u.doc_contract_url;
-          if (u.doc_company_intro_url)
-            p.doc_company_intro = u.doc_company_intro_url;
+          if (u.doc_company_intro_url) p.doc_company_intro = u.doc_company_intro_url;
           setPreviews(p);
           setEditing(!u.aimag_niislel && !u.address && !u.bank_name);
         }
@@ -1405,13 +243,7 @@ export default function CompanyProfilePage() {
           if (d.success && (d.organization || d.user)) {
             const fresh = d.organization || d.user;
             setProfile((p: any) =>
-              p
-                ? {
-                    ...p,
-                    status: fresh.status,
-                    return_reason: fresh.return_reason,
-                  }
-                : p,
+              p ? { ...p, status: fresh.status, return_reason: fresh.return_reason } : p,
             );
             const stored = JSON.parse(localStorage.getItem("user") || "{}");
             localStorage.setItem(
@@ -1437,7 +269,7 @@ export default function CompanyProfilePage() {
     };
   }, []);
 
-  // ✅ permTypes ачаалагдсаны дараа type_label-г нөхнө
+  // ── Sync type_label after permTypes load ──────────────────
   useEffect(() => {
     if (permTypes.length === 0) return;
     setSpecPerms((prev) =>
@@ -1445,13 +277,13 @@ export default function CompanyProfilePage() {
         ...perm,
         type_label:
           perm.type_label ||
-          permTypes.find((t: any) => Number(t.id) === Number(perm.type_id))
-            ?.label ||
+          permTypes.find((t) => Number(t.id) === Number(perm.type_id))?.label ||
           "",
       })),
     );
-  }, [permTypes]); // ✅ permTypes өөрчлөгдөхөд л ажиллана
+  }, [permTypes]);
 
+  // ── Helpers ────────────────────────────────────────────────
   const F = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
   const onFile = (field: string, file: File) => {
     setFiles((p) => ({ ...p, [field]: file }));
@@ -1461,15 +293,9 @@ export default function CompanyProfilePage() {
   const getMissingFields = () => {
     const missing = REQUIRED_FIELDS.filter((f) => !form[f.key]);
     if (selDirs.length === 0)
-      missing.push({
-        key: "activity_directions",
-        label: "Үйл ажиллагааны чиглэл",
-      });
+      missing.push({ key: "activity_directions", label: "Үйл ажиллагааны чиглэл" });
     if (!previews.doc_state_registry)
-      missing.push({
-        key: "doc_state_registry",
-        label: "Улсын бүртгэлийн гэрчилгээ",
-      });
+      missing.push({ key: "doc_state_registry", label: "Улсын бүртгэлийн гэрчилгээ" });
     if (!owners[0]?.last_name || !owners[0]?.first_name)
       missing.push({ key: "owners", label: "Эзэмшигчийн мэдээлэл" });
     return missing;
@@ -1533,7 +359,7 @@ export default function CompanyProfilePage() {
     setFieldErrors({});
   };
 
-  // ── API helper ───────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────
   const doSave = async (extraFormFields?: Record<string, string>) => {
     setSaving(true);
     setError("");
@@ -1572,16 +398,11 @@ export default function CompanyProfilePage() {
       setForm(f);
       setSnapshot(f);
       const withId = (arr: any[]) =>
-        arr.map((p) => ({
-          ...p,
-          id: p.id || Math.random().toString(36).slice(2),
-        }));
+        arr.map((p) => ({ ...p, id: p.id || Math.random().toString(36).slice(2) }));
 
       const rawDirs = updated.activity_directions || [];
       const parsedDirs: SelDir[] =
-        Array.isArray(rawDirs) &&
-        rawDirs.length > 0 &&
-        typeof rawDirs[0] === "object"
+        Array.isArray(rawDirs) && rawDirs.length > 0 && typeof rawDirs[0] === "object"
           ? rawDirs.map((d: any) => ({
               main_id: Number(d.main_id),
               sub_ids: (d.sub_ids || []).map(Number),
@@ -1590,44 +411,20 @@ export default function CompanyProfilePage() {
       setSelDirs(parsedDirs);
       setSelDirSnap(parsedDirs);
 
-      setOwners(
-        updated.beneficial_owners?.length
-          ? updated.beneficial_owners
-          : [{ ...BLANK_OWNER }],
-      );
-      setOwnerSnap(
-        updated.beneficial_owners?.length
-          ? updated.beneficial_owners
-          : [{ ...BLANK_OWNER }],
-      );
-      setFinalOwners(
-        updated.final_beneficial_owners?.length
-          ? updated.final_beneficial_owners
-          : [{ ...BLANK_FINAL }],
-      );
-      setFinalOwnerSnap(
-        updated.final_beneficial_owners?.length
-          ? updated.final_beneficial_owners
-          : [{ ...BLANK_FINAL }],
-      );
-      setDirectors(
-        updated.executive_directors?.length
-          ? updated.executive_directors
-          : [{ ...BLANK_EXEC }],
-      );
-      setDirectorSnap(
-        updated.executive_directors?.length
-          ? updated.executive_directors
-          : [{ ...BLANK_EXEC }],
-      );
+      setOwners(updated.beneficial_owners?.length ? updated.beneficial_owners : [{ ...BLANK_OWNER }]);
+      setOwnerSnap(updated.beneficial_owners?.length ? updated.beneficial_owners : [{ ...BLANK_OWNER }]);
+      setFinalOwners(updated.final_beneficial_owners?.length ? updated.final_beneficial_owners : [{ ...BLANK_FINAL }]);
+      setFinalOwnerSnap(updated.final_beneficial_owners?.length ? updated.final_beneficial_owners : [{ ...BLANK_FINAL }]);
+      setDirectors(updated.executive_directors?.length ? updated.executive_directors : [{ ...BLANK_EXEC }]);
+      setDirectorSnap(updated.executive_directors?.length ? updated.executive_directors : [{ ...BLANK_EXEC }]);
       setSpecPerms(
         updated.special_permissions?.length
-          ? withId(updated.special_permissions) // ✅
+          ? withId(updated.special_permissions)
           : [{ ...BLANK_PERM, id: Math.random().toString(36).slice(2) }],
       );
       setSpecPermSnap(
         updated.special_permissions?.length
-          ? withId(updated.special_permissions) // ✅
+          ? withId(updated.special_permissions)
           : [{ ...BLANK_PERM, id: Math.random().toString(36).slice(2) }],
       );
 
@@ -1641,18 +438,13 @@ export default function CompanyProfilePage() {
 
       const p: Record<string, string> = { ...previews };
       if (updated.company_logo_url) p.company_logo = updated.company_logo_url;
-      if (updated.doc_state_registry_url)
-        p.doc_state_registry = updated.doc_state_registry_url;
-      if (updated.doc_vat_certificate_url)
-        p.doc_vat_certificate = updated.doc_vat_certificate_url;
-      if (updated.doc_special_permission_url)
-        p.doc_special_permission = updated.doc_special_permission_url;
+      if (updated.doc_state_registry_url) p.doc_state_registry = updated.doc_state_registry_url;
+      if (updated.doc_vat_certificate_url) p.doc_vat_certificate = updated.doc_vat_certificate_url;
+      if (updated.doc_special_permission_url) p.doc_special_permission = updated.doc_special_permission_url;
       if (updated.doc_contract_url) p.doc_contract = updated.doc_contract_url;
-      if (updated.doc_company_intro_url)
-        p.doc_company_intro = updated.doc_company_intro_url;
+      if (updated.doc_company_intro_url) p.doc_company_intro = updated.doc_company_intro_url;
       setPreviews(p);
 
-      // ✅ localStorage + event
       try {
         const stored = JSON.parse(localStorage.getItem("user") || "{}");
         localStorage.setItem("user", JSON.stringify({ ...stored, ...updated }));
@@ -1663,8 +455,7 @@ export default function CompanyProfilePage() {
       setEditing(false);
       setShowSubmitModal(false);
       setFiles({});
-      if (!profile?.company_name && !extraFormFields?.status)
-        setShowSuccessModal(true);
+      if (!profile?.company_name && !extraFormFields?.status) setShowSuccessModal(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e: any) {
       setError(e.message);
@@ -1673,21 +464,15 @@ export default function CompanyProfilePage() {
     }
   };
 
-  // Validation хийсэн хадгалах
+  // Validation хийсэн хадгалах (currently unused but kept for future)
   const handleSave = async () => {
-    if (
-      form.company_name !== snapshot.company_name &&
-      !isMongolian(form.company_name)
-    ) {
+    if (form.company_name !== snapshot.company_name && !isMongolian(form.company_name)) {
       setFieldErrors((p) => ({ ...p, company_name: "Крилл үсгээр бичнэ үү" }));
       setError("Байгууллагын нэр монгол үсгээр бичнэ үү");
       return;
     }
     if (form.register_number && form.register_number.length !== 7) {
-      setFieldErrors((p) => ({
-        ...p,
-        register_number: "7 оронтой тоо оруулна уу",
-      }));
+      setFieldErrors((p) => ({ ...p, register_number: "7 оронтой тоо оруулна уу" }));
       setError("Регистрийн дугаар 7 оронтой байх ёстой");
       return;
     }
@@ -1730,69 +515,44 @@ export default function CompanyProfilePage() {
     await doSave();
   };
 
-  // Draft хадгалах — validation хийхгүй
   const handleSaveDraft = () => doSave();
-  // Илгээх товч
   const handleSubmitClick = () => setShowSubmitModal(true);
-  // Modal-аас илгээх
   const handleConfirmSubmit = () => doSave({ status: "pending" });
 
   const isNewUser = !profile?.company_name;
   const pct = (() => {
     const fields = [
-      form.company_name,
-      form.register_number,
-      form.company_type,
-      form.established_date,
-      form.aimag_niislel,
-      form.sum_duureg,
-      form.address,
-      owners[0]?.last_name,
-      owners[0]?.first_name,
-      owners[0]?.phone,
-      form.bank_name,
-      form.bank_account_number,
+      form.company_name, form.register_number, form.company_type, form.established_date,
+      form.aimag_niislel, form.sum_duureg, form.address,
+      owners[0]?.last_name, owners[0]?.first_name, owners[0]?.phone,
+      form.bank_name, form.bank_account_number,
     ];
-    const extras = [selDirs.length > 0, !!previews.doc_state_registry].filter(
-      Boolean,
-    ).length;
+    const extras = [selDirs.length > 0, !!previews.doc_state_registry].filter(Boolean).length;
     return Math.min(
       100,
-      Math.round(
-        ((fields.filter(Boolean).length + extras) / (fields.length + 2)) * 100,
-      ),
+      Math.round(((fields.filter(Boolean).length + extras) / (fields.length + 2)) * 100),
     );
   })();
 
   if (loading)
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 400,
-        }}
-      >
-        <Loader2
-          size={22}
-          style={{ color: "#6366f1", animation: "spin .8s linear infinite" }}
-        />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
+        <Loader2 size={22} style={{ color: "#0072BC", animation: "spin .8s linear infinite" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
 
+  // Responsive grids
   const g2 = isMobile ? "1fr" : "1fr 1fr";
   const g3 = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr";
   const g4 = isMobile ? "1fr 1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr 1fr";
   const gDoc = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(3,1fr)";
   const gAddr = isMobile ? "1fr" : "1fr 2fr";
-  const gPerm = isMobile ? "1fr" : "2fr 1fr 1fr auto";
 
   return (
     <div
       style={{
-        maxWidth: "100%",
+        maxWidth: "90%",
         margin: "0 auto",
         display: "flex",
         flexDirection: "column",
@@ -1806,14 +566,13 @@ export default function CompanyProfilePage() {
         @keyframes spin   { to { transform:rotate(360deg) } }
         @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar { width:6px; height:6px; }
-  ::-webkit-scrollbar-track { background:#f1f5f9; border-radius:99px; }
-  ::-webkit-scrollbar-thumb { background:#0072BC; border-radius:99px; }
-  ::-webkit-scrollbar-thumb:hover { background:#005a96; }
+        ::-webkit-scrollbar { width:6px; height:6px; }
+        ::-webkit-scrollbar-track { background:#f1f5f9; border-radius:99px; }
+        ::-webkit-scrollbar-thumb { background:#0072BC; border-radius:99px; }
+        ::-webkit-scrollbar-thumb:hover { background:#005a96; }
       `}</style>
 
-      {/* Submit Modal */}
+      {/* Modals */}
       {showSubmitModal && (
         <SubmitModal
           missing={getMissingFields()}
@@ -1822,130 +581,18 @@ export default function CompanyProfilePage() {
           saving={saving}
         />
       )}
+      {showSuccessModal && <SuccessModal onClose={() => setShowSuccessModal(false)} />}
 
-      {/* Sticky bar */}
+      {/* Top sticky save bar */}
       {editing && (
-        <div
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 50,
-            animation: "fadeIn .2s ease",
-            background: "rgba(255,255,255,0.96)",
-            backdropFilter: "blur(12px)",
-            border: "1px solid #e2e8f0",
-            borderRadius: isMobile ? 10 : 14,
-            padding: isMobile ? "10px 12px" : "12px 18px",
-            display: "flex",
-            flexDirection: isMobile ? "column" : ("row" as any),
-            alignItems: isMobile ? "stretch" : "center",
-            justifyContent: "space-between",
-            gap: 10,
-            boxShadow: "0 4px 20px rgba(99,102,241,0.12)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "#f59e0b",
-                animation: "pulse 1.5s infinite",
-              }}
-            />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
-              {isNewUser ? "Мэдээлэл бөглөх" : "Засварлаж байна"}
-            </span>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              justifyContent: isMobile ? "flex-end" : "flex-start",
-            }}
-          >
-            {!isNewUser && (
-              <button
-                onClick={cancelEdit}
-                disabled={saving}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: isMobile ? "8px 12px" : "8px 16px",
-                  borderRadius: 9,
-                  border: "1px solid #e2e8f0",
-                  background: "white",
-                  color: "#64748b",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                <X size={13} /> Болих
-              </button>
-            )}
-            {/* Хадгалах */}
-            <button
-              onClick={handleSaveDraft}
-              disabled={saving}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                padding: isMobile ? "8px 14px" : "8px 16px",
-                borderRadius: 9,
-                border: "1.5px solid #e2e8f0",
-                background: "white",
-                color: "#0f172a",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              <Save size={13} /> Хадгалах
-            </button>
-            {/* Илгээх */}
-            <button
-              onClick={handleSubmitClick}
-              disabled={saving}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                padding: isMobile ? "8px 16px" : "8px 20px",
-                borderRadius: 9,
-                border: "none",
-                background: "#0072BC",
-                color: "white",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: saving ? "not-allowed" : "pointer",
-                opacity: saving ? 0.7 : 1,
-                fontFamily: "inherit",
-                flex: isMobile ? 1 : ("none" as any),
-                justifyContent: "center",
-              }}
-            >
-              {saving ? (
-                <>
-                  <Loader2
-                    size={13}
-                    style={{ animation: "spin .8s linear infinite" }}
-                  />{" "}
-                  Хадгалж байна...
-                </>
-              ) : (
-                <>
-                  <Send size={13} /> Илгээх
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+        <SaveBar
+          variant="sticky"
+          isNewUser={isNewUser}
+          saving={saving}
+          onCancel={cancelEdit}
+          onSaveDraft={handleSaveDraft}
+          onSubmit={handleSubmitClick}
+        />
       )}
 
       <HeroCard
@@ -1983,13 +630,7 @@ export default function CompanyProfilePage() {
       />
 
       {profile?.status === "returned" && (
-        <div
-          style={{
-            borderRadius: 14,
-            border: "1.5px solid #fecaca",
-            overflow: "hidden",
-          }}
-        >
+        <div style={{ borderRadius: 14, border: "1.5px solid #fecaca", overflow: "hidden" }}>
           <div
             style={{
               padding: "12px 16px",
@@ -1997,9 +638,7 @@ export default function CompanyProfilePage() {
               display: "flex",
               alignItems: "center",
               gap: 10,
-              borderBottom: profile?.return_reason
-                ? "1px solid #fecaca"
-                : "none",
+              borderBottom: profile?.return_reason ? "1px solid #fecaca" : "none",
             }}
           >
             <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
@@ -2063,16 +702,9 @@ export default function CompanyProfilePage() {
       {error && <Alert type="error" msg={error} />}
       {saved && <Alert type="success" msg="Амжилттай хадгаллаа" />}
 
-      {/* 1. Байгууллагын үндсэн мэдээлэл */}
+      {/* 1. Үндсэн мэдээлэл */}
       <Section icon={Building2} title="БАЙГУУЛЛАГЫН ҮНДСЭН МЭДЭЭЛЭЛ">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: g2,
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
           <FInput
             label="Байгууллагын нэр *"
             value={form.company_name}
@@ -2082,8 +714,7 @@ export default function CompanyProfilePage() {
               F("company_name", v);
               setFieldErrors((p) => ({
                 ...p,
-                company_name:
-                  v && !isMongolian(v) ? "Крилл үсгээр бичнэ үү" : "",
+                company_name: v && !isMongolian(v) ? "Крилл үсгээр бичнэ үү" : "",
               }));
             }}
             fieldError={fieldErrors.company_name}
@@ -2095,14 +726,7 @@ export default function CompanyProfilePage() {
             onChange={(v: string) => F("company_name_en", v)}
           />
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: g2,
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
           <FInput
             label="Регистрийн дугаар *"
             value={form.register_number}
@@ -2113,8 +737,7 @@ export default function CompanyProfilePage() {
               F("register_number", digits);
               setFieldErrors((p) => ({
                 ...p,
-                register_number:
-                  digits && digits.length < 7 ? "7 оронтой тоо оруулна уу" : "",
+                register_number: digits && digits.length < 7 ? "7 оронтой тоо оруулна уу" : "",
               }));
             }}
             fieldError={fieldErrors.register_number}
@@ -2125,16 +748,7 @@ export default function CompanyProfilePage() {
             value={form.company_type}
             editing={editing}
             onChange={(v: string) => F("company_type", v)}
-            options={[
-              "ХХК",
-              "ХХК/ГХО",
-              "ХК",
-              "Холбоо",
-              "Хоршоо",
-              "ТББ",
-              "Сан",
-              "Нөхөрлөл",
-            ]}
+            options={["ХХК", "ХХК/ГХО", "ХК", "Холбоо", "Хоршоо", "ТББ", "Сан", "Нөхөрлөл"]}
           />
           <RadioGroup
             label="НӨАТ төлөгч"
@@ -2181,7 +795,6 @@ export default function CompanyProfilePage() {
           >
             Үйл ажиллагааны чиглэл
           </label>
-          {/* ✅ Нэмнэ */}
           <DirectionPicker
             dirs={dirs}
             selDirs={selDirs}
@@ -2190,14 +803,7 @@ export default function CompanyProfilePage() {
             toggleSub={toggleSub}
           />
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: g3,
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: g3, gap: 14, marginBottom: 14 }}>
           <div style={{ marginBottom: 14 }}>
             <FSelect
               label="Нийлүүлэх төрөл *"
@@ -2265,12 +871,8 @@ export default function CompanyProfilePage() {
                 transition: "border-color .15s",
                 boxSizing: "border-box" as const,
               }}
-              onFocus={(e) =>
-                ((e.target as HTMLElement).style.borderColor = "#6366f1")
-              }
-              onBlur={(e) =>
-                ((e.target as HTMLElement).style.borderColor = "#e2e8f0")
-              }
+              onFocus={(e) => ((e.target as HTMLElement).style.borderColor = "#0072BC")}
+              onBlur={(e) => ((e.target as HTMLElement).style.borderColor = "#e2e8f0")}
             />
           ) : (
             <div
@@ -2302,313 +904,19 @@ export default function CompanyProfilePage() {
           />
         </div>
 
-        {/* ─── REPLACE the existing `{form.has_special_permission && (...)}` block with this ─── */}
-
         {form.has_special_permission && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              padding: isMobile ? 10 : 14,
-              borderRadius: 12,
-              background: "#f8fafc",
-              border: "1px solid #f1f5f9",
-              marginTop: 8,
-            }}
-          >
-            {specPerms.map((perm: any, idx: number) => {
-              // Shared handlers
-              const handleTypeChange = (v: string) => {
-                const found = permTypes.find((t: any) => String(t.id) === v);
-                setSpecPerms((p) =>
-                  p.map((x, i) =>
-                    i !== idx
-                      ? x
-                      : {
-                          ...x,
-                          type_id: found ? found.id : null,
-                          type_label: found ? found.label : "",
-                        },
-                  ),
-                );
-              };
-              const handleNumberChange = (v: string) =>
-                setSpecPerms((p) =>
-                  p.map((x, i) => (i !== idx ? x : { ...x, number: v })),
-                );
-              const handleExpiryChange = (v: string) =>
-                setSpecPerms((p) =>
-                  p.map((x, i) => (i !== idx ? x : { ...x, expiry: v })),
-                );
-              const handleRemove = () =>
-                setSpecPerms((p) => p.filter((_, i) => i !== idx));
-
-              const labelStyle: React.CSSProperties = {
-                fontSize: 10,
-                fontWeight: 700,
-                color: "#94a3b8",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase" as const,
-                marginBottom: 4,
-              };
-
-              // ═══════════════════════════════════════════════════
-              // MOBILE: CARD LAYOUT
-              // ═══════════════════════════════════════════════════
-              if (isMobile) {
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: 14,
-                      borderRadius: 10,
-                      background: "white",
-                      border: "1px solid #e2e8f0",
-                    }}
-                  >
-                    {/* Card header — title + delete */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        paddingBottom: 10,
-                        marginBottom: 12,
-                        borderBottom: "1px solid #f1f5f9",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "#0072BC",
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase" as const,
-                        }}
-                      >
-                        Зөвшөөрөл #{idx + 1}
-                      </span>
-                      {editing && specPerms.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={handleRemove}
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: 6,
-                            border: "1px solid #fecaca",
-                            background: "#fef2f2",
-                            color: "#ef4444",
-                            fontSize: 11,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontFamily: "inherit",
-                          }}
-                        >
-                          Устгах
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Type — full width */}
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={labelStyle}>Тусгай зөвшөөрлийн төрөл</div>
-                      <FSelect
-                        label=""
-                        value={
-                          perm.type_id !== null && perm.type_id !== undefined
-                            ? String(perm.type_id)
-                            : ""
-                        }
-                        editing={editing}
-                        onChange={handleTypeChange}
-                        options={permTypes.map((t: any) => ({
-                          value: String(t.id),
-                          label: t.label,
-                        }))}
-                        placeholder="Төрөл сонгох"
-                      />
-                    </div>
-
-                    {/* Number + Date — 2 column */}
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 10,
-                      }}
-                    >
-                      <div>
-                        <div style={labelStyle}>Дугаар</div>
-                        <FInput
-                          label=""
-                          value={perm.number || ""}
-                          editing={editing}
-                          onChange={handleNumberChange}
-                          placeholder="Дугаар"
-                        />
-                      </div>
-                      <div>
-                        <div style={labelStyle}>Хугацаа</div>
-                        <FInput
-                          label=""
-                          type="date"
-                          value={perm.expiry || ""}
-                          editing={editing}
-                          onChange={handleExpiryChange}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // ═══════════════════════════════════════════════════
-              // DESKTOP / TABLET: ROW LAYOUT
-              // ═══════════════════════════════════════════════════
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 130px 160px auto",
-                    gap: 10,
-                    alignItems: "end",
-                    padding: 12,
-                    borderRadius: 10,
-                    background: "white",
-                    border: "1px solid #e2e8f0",
-                  }}
-                >
-                  {/* Type */}
-                  <div style={{ minWidth: 0 }}>
-                    <div style={labelStyle}>Тусгай зөвшөөрлийн төрөл</div>
-                    <FSelect
-                      label=""
-                      value={
-                        perm.type_id !== null && perm.type_id !== undefined
-                          ? String(perm.type_id)
-                          : ""
-                      }
-                      editing={editing}
-                      onChange={handleTypeChange}
-                      options={permTypes.map((t: any) => ({
-                        value: String(t.id),
-                        label: t.label,
-                      }))}
-                      placeholder="Төрөл сонгох"
-                    />
-                  </div>
-
-                  {/* Number */}
-                  <div>
-                    <div style={labelStyle}>Дугаар</div>
-                    <FInput
-                      label=""
-                      value={perm.number || ""}
-                      editing={editing}
-                      onChange={handleNumberChange}
-                      placeholder="Дугаар"
-                    />
-                  </div>
-
-                  {/* Date */}
-                  <div>
-                    <div style={labelStyle}>Хүчинтэй хугацаа</div>
-                    <FInput
-                      label=""
-                      type="date"
-                      value={perm.expiry || ""}
-                      editing={editing}
-                      onChange={handleExpiryChange}
-                    />
-                  </div>
-
-                  {/* Delete */}
-                  <div>
-                    {editing && specPerms.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={handleRemove}
-                        style={{
-                          padding: "7px 12px",
-                          borderRadius: 8,
-                          border: "1px solid #fecaca",
-                          background: "#fef2f2",
-                          color: "#ef4444",
-                          fontSize: 12,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          whiteSpace: "nowrap" as const,
-                        }}
-                      >
-                        Устгах
-                      </button>
-                    ) : (
-                      <div />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* + Add button */}
-            {editing && (
-              <button
-                type="button"
-                onClick={() =>
-                  setSpecPerms((p) => [
-                    ...p,
-                    {
-                      _key: Date.now(),
-                      type_id: null,
-                      type_label: "",
-                      number: "",
-                      expiry: "",
-                    },
-                  ])
-                }
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  padding: "10px",
-                  borderRadius: 10,
-                  border: "1.5px dashed #0072BC",
-                  background: "#0072BC1A",
-                  color: "#0072BC",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLElement).style.background =
-                    "#e0e7ff")
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLElement).style.background =
-                    "#0072BC1A")
-                }
-              >
-                + Тусгай зөвшөөрлийн төрөл нэмэх
-              </button>
-            )}
-          </div>
+          <SpecialPermissionsSection
+            specPerms={specPerms}
+            setSpecPerms={setSpecPerms}
+            permTypes={permTypes}
+            editing={editing}
+          />
         )}
       </Section>
 
       {/* 4. Хаяг */}
       <Section icon={MapPin} title="ХАЯГИЙН МЭДЭЭЛЭЛ">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: g2,
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
           <FSelect
             label="Аймаг / Нийслэл"
             value={form.aimag_niislel}
@@ -2648,9 +956,7 @@ export default function CompanyProfilePage() {
                   ? AIMAG_SUM[form.aimag_niislel]
                   : []
               }
-              placeholder={
-                form.aimag_niislel ? "Сум сонгох" : "Эхлээд аймаг сонгоно уу"
-              }
+              placeholder={form.aimag_niislel ? "Сум сонгох" : "Эхлээд аймаг сонгоно уу"}
             />
           )}
         </div>
@@ -2704,14 +1010,7 @@ export default function CompanyProfilePage() {
 
       {/* 6. Баримт бичиг */}
       <Section icon={FileText} title="КОМПАНИЙН БАРИМТ БИЧГИЙН ХУУЛБАР">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: gDoc,
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: gDoc, gap: 14, marginBottom: 14 }}>
           <DocUpload
             label="Улсын бүртгэлийн гэрчилгээ"
             fieldKey="doc_state_registry"
@@ -2756,14 +1055,7 @@ export default function CompanyProfilePage() {
             Нэмэлт баримт бичиг
           </label>
           {extraFileUrls.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                marginBottom: 10,
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
               {extraFileUrls.map((url, i) => {
                 const name = decodeURIComponent(
                   url.split("/").pop()?.split("?")[0] || `Файл ${i + 1}`,
@@ -2781,10 +1073,7 @@ export default function CompanyProfilePage() {
                       border: "1px solid #a7f3d0",
                     }}
                   >
-                    <FileText
-                      size={14}
-                      style={{ color: "#059669", flexShrink: 0 }}
-                    />
+                    <FileText size={14} style={{ color: "#059669", flexShrink: 0 }} />
                     <a
                       href={url}
                       target="_blank"
@@ -2815,9 +1104,7 @@ export default function CompanyProfilePage() {
                     {editing && (
                       <button
                         type="button"
-                        onClick={() =>
-                          setExtraFileUrls((p) => p.filter((_, j) => j !== i))
-                        }
+                        onClick={() => setExtraFileUrls((p) => p.filter((_, j) => j !== i))}
                         style={{
                           background: "rgba(239,68,68,0.08)",
                           border: "1px solid rgba(239,68,68,0.2)",
@@ -2839,14 +1126,7 @@ export default function CompanyProfilePage() {
             </div>
           )}
           {extraFiles.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                marginBottom: 10,
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
               {extraFiles.map((f, i) => (
                 <div
                   key={`new-${i}`}
@@ -2860,10 +1140,7 @@ export default function CompanyProfilePage() {
                     border: "1px solid #fde68a",
                   }}
                 >
-                  <FileText
-                    size={14}
-                    style={{ color: "#f59e0b", flexShrink: 0 }}
-                  />
+                  <FileText size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
                   <span
                     style={{
                       fontSize: 12,
@@ -2889,9 +1166,7 @@ export default function CompanyProfilePage() {
                   {editing && (
                     <button
                       type="button"
-                      onClick={() =>
-                        setExtraFiles((p) => p.filter((_, j) => j !== i))
-                      }
+                      onClick={() => setExtraFiles((p) => p.filter((_, j) => j !== i))}
                       style={{
                         background: "rgba(239,68,68,0.08)",
                         border: "1px solid rgba(239,68,68,0.2)",
@@ -2925,17 +1200,11 @@ export default function CompanyProfilePage() {
                 cursor: "pointer",
                 transition: "all .15s",
               }}
-              onMouseEnter={(e) =>
-                ((e.currentTarget as HTMLElement).style.background = "#e0e7ff")
-              }
-              onMouseLeave={(e) =>
-                ((e.currentTarget as HTMLElement).style.background = "#eef2ff")
-              }
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#cce4f4")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "#0072BC1A")}
             >
               <Plus size={14} style={{ color: "#0072BC" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#0072BC" }}>
-                Файл нэмэх
-              </span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#0072BC" }}>Файл нэмэх</span>
               <input
                 type="file"
                 multiple
@@ -2953,24 +1222,15 @@ export default function CompanyProfilePage() {
               />
             </label>
           )}
-          {!editing &&
-            extraFileUrls.length === 0 &&
-            extraFiles.length === 0 && (
-              <div style={{ fontSize: 13, color: "#cbd5e1" }}>—</div>
-            )}
+          {!editing && extraFileUrls.length === 0 && extraFiles.length === 0 && (
+            <div style={{ fontSize: 13, color: "#cbd5e1" }}>—</div>
+          )}
         </div>
       </Section>
 
-      {/* 7. Санхүүгийн мэдээлэл */}
+      {/* 7. Санхүү */}
       <Section icon={CreditCard} title="САНХҮҮГИЙН МЭДЭЭЛЭЛ">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: g2,
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
           <FInput
             label="Банкны нэр"
             value={form.bank_name}
@@ -3021,7 +1281,7 @@ export default function CompanyProfilePage() {
         </div>
       </Section>
 
-      {/* 8. Мэдэгдлийн тохиргоо */}
+      {/* 8. Мэдэгдэл */}
       <Section icon={Bell} title="МЭДЭГДЭЛ ХҮЛЭЭН АВАХ ХЭЛБЭР">
         <div style={{ marginBottom: 16 }}>
           <label
@@ -3056,9 +1316,7 @@ export default function CompanyProfilePage() {
               return (
                 <div
                   key={opt.value}
-                  onClick={() =>
-                    editing && F("notification_preference", opt.value)
-                  }
+                  onClick={() => editing && F("notification_preference", opt.value)}
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
@@ -3066,9 +1324,7 @@ export default function CompanyProfilePage() {
                     padding: "14px 16px",
                     borderRadius: 12,
                     cursor: editing ? "pointer" : "default",
-                    border: isOn
-                      ? "1.5px solid #0072BC"
-                      : "1.5px solid #0072BC33",
+                    border: isOn ? "1.5px solid #0072BC" : "1.5px solid #0072BC33",
                     background: isOn ? "#0072BC1A" : "white",
                     transition: "all .15s",
                   }}
@@ -3089,24 +1345,12 @@ export default function CompanyProfilePage() {
                   >
                     {isOn && (
                       <div
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: "50%",
-                          background: "white",
-                        }}
+                        style={{ width: 6, height: 6, borderRadius: "50%", background: "white" }}
                       />
                     )}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        marginBottom: 3,
-                      }}
-                    >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                       <span style={{ fontSize: 15 }}>{opt.icon}</span>
                       <span
                         style={{
@@ -3118,31 +1362,14 @@ export default function CompanyProfilePage() {
                         {opt.label}
                       </span>
                     </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#94a3b8",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {opt.desc}
-                    </div>
+                    <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5 }}>{opt.desc}</div>
                     {opt.value === "selected_dirs" && isOn && (
                       <div
-                        style={{
-                          marginTop: 10,
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 5,
-                        }}
+                        style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 5 }}
                       >
                         {selDirs.length === 0 ? (
                           <span
-                            style={{
-                              fontSize: 11,
-                              color: "#f59e0b",
-                              fontWeight: 500,
-                            }}
+                            style={{ fontSize: 11, color: "#f59e0b", fontWeight: 500 }}
                           >
                             ⚠️ Үйл ажиллагааны чиглэл сонгоогүй байна
                           </span>
@@ -3157,9 +1384,9 @@ export default function CompanyProfilePage() {
                                 style={{
                                   fontSize: 11,
                                   fontWeight: 600,
-                                  color: "#4f46e5",
-                                  background: "#eef2ff",
-                                  border: "1px solid #c7d2fe",
+                                  color: "#0072BC",
+                                  background: "#e6f2fa",
+                                  border: "1px solid #bae0f3",
                                   padding: "2px 8px",
                                   borderRadius: 99,
                                 }}
@@ -3217,254 +1444,14 @@ export default function CompanyProfilePage() {
 
       {/* Bottom save bar */}
       {editing && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 10,
-            padding: isMobile ? "12px" : "16px 20px",
-            background: "white",
-            borderRadius: 14,
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 -4px 20px rgba(99,102,241,0.08)",
-            flexDirection: isMobile ? "column" : ("row" as any),
-          }}
-        >
-          {!isNewUser && (
-            <button
-              onClick={cancelEdit}
-              disabled={saving}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                padding: "10px 20px",
-                borderRadius: 10,
-                border: "1px solid #e2e8f0",
-                background: "white",
-                color: "#64748b",
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              <X size={14} /> Болих
-            </button>
-          )}
-          {/* Хадгалах */}
-          <button
-            onClick={handleSaveDraft}
-            disabled={saving}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              padding: "10px 24px",
-              borderRadius: 10,
-              border: "1.5px solid #e2e8f0",
-              background: "white",
-              color: "#0f172a",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              flex: isMobile ? 1 : ("none" as any),
-            }}
-          >
-            <Save size={14} /> Хадгалах
-          </button>
-          {/* Илгээх */}
-          <button
-            onClick={handleSubmitClick}
-            disabled={saving}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              padding: "10px 28px",
-              borderRadius: 10,
-              border: "none",
-              background: "linear-gradient(135deg,#4f46e5,#6366f1)",
-              color: "white",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.7 : 1,
-              fontFamily: "inherit",
-              boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
-              flex: isMobile ? 1 : ("none" as any),
-            }}
-          >
-            {saving ? (
-              <>
-                <Loader2
-                  size={14}
-                  style={{ animation: "spin .8s linear infinite" }}
-                />{" "}
-                Илгээж байна...
-              </>
-            ) : (
-              <>
-                <Send size={14} /> Илгээх
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 200,
-            background: "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: isMobile ? "flex-end" : "center",
-            justifyContent: "center",
-            padding: isMobile ? 0 : 16,
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: isMobile ? "100%" : 420,
-              background: "white",
-              borderRadius: isMobile ? "20px 20px 0 0" : 24,
-              padding: isMobile ? "28px 20px 40px" : 36,
-              textAlign: "center",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
-              animation: "fadeIn .3s ease",
-            }}
-          >
-            <div
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg,#d1fae5,#a7f3d0)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 20px",
-                fontSize: 32,
-              }}
-            >
-              ✅
-            </div>
-            <h2
-              style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: "#0f172a",
-                margin: "0 0 10px",
-              }}
-            >
-              Бүртгэл амжилттай!
-            </h2>
-            <p
-              style={{
-                fontSize: 14,
-                color: "#64748b",
-                lineHeight: 1.7,
-                margin: "0 0 24px",
-              }}
-            >
-              Таны бүртгэл амжилттай дууслаа.
-              <br />
-              Администратор таны бүртгэлийг хянах болно.
-              <br />
-              Удахгүй буцаад хариу өгнө.
-            </p>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 8,
-                marginBottom: 24,
-              }}
-            >
-              {["Бүртгэл", "Хянагдаж байна", "Баталгаажна"].map((step, i) => (
-                <div
-                  key={i}
-                  style={{ display: "flex", alignItems: "center", gap: 8 }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background:
-                          i === 0 ? "#10b981" : i === 1 ? "#f59e0b" : "#e2e8f0",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 12,
-                        color: "white",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {i === 0 ? "✓" : i + 1}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color:
-                          i === 0 ? "#10b981" : i === 1 ? "#f59e0b" : "#94a3b8",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {step}
-                    </span>
-                  </div>
-                  {i < 2 && (
-                    <div
-                      style={{
-                        width: 24,
-                        height: 2,
-                        borderRadius: 99,
-                        marginBottom: 16,
-                        background: i === 0 ? "#10b981" : "#e2e8f0",
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowSuccessModal(false)}
-              style={{
-                width: "100%",
-                height: 46,
-                borderRadius: 12,
-                border: "none",
-                background: "linear-gradient(135deg,#4f46e5,#6366f1)",
-                color: "white",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
-              }}
-            >
-              Ойлголоо
-            </button>
-          </div>
-        </div>
+        <SaveBar
+          variant="bottom"
+          isNewUser={isNewUser}
+          saving={saving}
+          onCancel={cancelEdit}
+          onSaveDraft={handleSaveDraft}
+          onSubmit={handleSubmitClick}
+        />
       )}
     </div>
   );

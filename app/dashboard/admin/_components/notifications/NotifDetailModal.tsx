@@ -218,7 +218,7 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
             </div>
             <div style={{ padding:"10px 14px",borderRadius:10,background:"rgba(59,130,246,0.05)",border:"1px solid rgba(59,130,246,0.12)" }}>
               <div style={{ fontSize:11,color:"rgba(96,165,250,0.7)" }}>
-                📤 {notif.recipient_type==="all" ? "Бүх нийлүүлэгчдэд дахин илгээгдэнэ" : notif.recipient_type==="individual" ? "Хувь хүн нийлүүлэгчдэд дахин илгээгдэнэ" : "Байгааллага нийлүүлэгчдэд дахин илгээгдэнэ"}
+                📤 {notif.recipient_type==="all" ? "Бүх нийлүүлэгчдэд дахин илгээгдэнэ" : notif.recipient_type==="individual" ? "Хувь хүн нийлүүлэгчдэд дахин илгээгдэнэ" : "Байгууллага нийлүүлэгчдэд дахин илгээгдэнэ"}
               </div>
             </div>
             <div style={{ display:"flex",gap:10 }}>

@@ -54,7 +54,7 @@ export function RecipientPicker({ form, setForm, directions, accentColor, option
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
-        {[{v:"individual",l:"Хувь хүн",I:Users},{v:"company",l:"Байгааллага",I:Building2}].map(({v,l,I}) => (
+        {[{v:"individual",l:"Хувь хүн",I:Users},{v:"company",l:"Байгууллага",I:Building2}].map(({v,l,I}) => (
           <button key={v} type="button"
             onClick={() => setForm((p: any) => ({ ...p, recipient_type: v, recipient_ids: [] }))}
             style={{ height:42,borderRadius:10,cursor:"pointer",fontFamily:"inherit",

@@ -11,5 +11,5 @@ export type Notif = {
 export const recipientLabel = (type: string) => {
   if (type === "all")        return { l:"Бүгдэд",     color:"#10b981", bg:"rgba(16,185,129,0.12)" };
   if (type === "individual") return { l:"Хувь хүн",   color:"#3b82f6", bg:"rgba(59,130,246,0.12)" };
-  return                            { l:"Байгааллага", color:"#a78bfa", bg:"rgba(167,139,250,0.12)" };
+  return                            { l:"Байгууллага", color:"#a78bfa", bg:"rgba(167,139,250,0.12)" };
 };
