@@ -314,7 +314,7 @@ export function DetailModal({
                   <SectionTitle icon={Briefcase} label="Үйл ажиллагааны мэдээлэл"/>
                   <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:20 }}>
                     <div>
-                      <InfoRow label="Нийлүүлэх чиглэл" value={supply(org.supply_direction)}/>
+                      <InfoRow label="Нийлүүлэх төрөл" value={supply(org.supply_direction)}/>
                       {org.activity_description && (
                         <div style={{ marginTop:10 }}>
                           <div style={{ fontSize:10,color:"rgba(148,163,184,0.35)",marginBottom:5,textTransform:"uppercase" as const,letterSpacing:"0.08em" }}>Тайлбар</div>

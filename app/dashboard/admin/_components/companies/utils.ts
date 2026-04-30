@@ -12,7 +12,7 @@ export const fmtDate = (v?: string | null) => {
 };
 
 export const supply = (v?: string) =>
-  v==="goods"?"Бараа":v==="service"?"Үйлчилгээ":v==="both"?"Хоёулаа":v;
+  v==="goods"?"Бараа":v==="service"?"Үйлчилгээ":v==="both"?"Аль аль нь":v;
 
 export const gender = (v?: string) =>
   v==="male"?"Эрэгтэй":v==="female"?"Эмэгтэй":v;
