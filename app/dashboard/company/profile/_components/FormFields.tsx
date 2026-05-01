@@ -13,25 +13,6 @@ const lbl: React.CSSProperties = {
   display: "block",
   marginBottom: 6,
 };
-const base = (editing: boolean): React.CSSProperties => ({
-  width: "100%",
-  paddingTop: 9,
-  paddingBottom: 9,
-  paddingLeft: editing ? 12 : 0,
-  paddingRight: 12,
-  borderRadius: 10,
-  fontSize: 13,
-  outline: "none",
-  border: editing ? "1.5px solid #e2e8f0" : "1.5px solid transparent",
-  background: editing ? "white" : "transparent",
-  color: "#0f172a",
-  boxSizing: "border-box" as const,
-  transition: "all .15s",
-});
-const fo = (e: any) =>
-  ((e.target as HTMLElement).style.borderColor = "#6366f1");
-const bl = (e: any) =>
-  ((e.target as HTMLElement).style.borderColor = "#e2e8f0");
 
 const S = {
   label: {
@@ -45,7 +26,45 @@ const S = {
   } as React.CSSProperties,
 };
 
-// FormFields.tsx — FInput функц
+// ── Compact field error pill ─────────────────────────────────
+function FieldError({ msg }: { msg: string }) {
+  if (!msg) return null;
+  return (
+    <div
+      data-error="true"
+      className="has-error"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        marginTop: 5,
+        padding: "3px 8px",
+        background: "#fef2f2",
+        border: "1px solid #fecaca",
+        borderRadius: 6,
+        maxWidth: "100%",
+      }}
+    >
+      <span style={{ fontSize: 10, color: "#ef4444", flexShrink: 0 }}>✕</span>
+      <span
+        style={{
+          fontSize: 11,
+          color: "#dc2626",
+          fontWeight: 500,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap" as const,
+        }}
+      >
+        {msg}
+      </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// FInput
+// ─────────────────────────────────────────────────────────────
 export function FInput({
   label,
   value,
@@ -55,25 +74,25 @@ export function FInput({
   placeholder,
   mono = false,
   fieldError,
-  disabled, // ✅ нэмнэ
+  disabled,
 }: any) {
   const [focused, setFocused] = useState(false);
   const display = type === "date" && !editing ? fmtDate(value) : value;
 
   return (
-    <div>
+    <div style={{ minWidth: 0 }}>
       {label && <label style={S.label}>{label}</label>}
       {editing ? (
         <div>
           <input
             type={type}
             value={value}
-            onChange={(e) => !disabled && onChange(e.target.value)} // ✅
+            onChange={(e) => !disabled && onChange(e.target.value)}
             placeholder={placeholder || ""}
-            disabled={disabled} // ✅
+            disabled={disabled}
             onFocus={() => {
               if (!disabled) setFocused(true);
-            }} // ✅
+            }}
             onBlur={() => setFocused(false)}
             style={{
               width: "100%",
@@ -83,39 +102,24 @@ export function FInput({
               outline: "none",
               boxSizing: "border-box" as const,
               fontFamily: mono ? "monospace" : "inherit",
-              transition: "border-color .15s",
-              color: disabled ? "#94a3b8" : "#1e293b", // ✅
+              transition: "border-color .15s, background .15s",
+              color: disabled ? "#94a3b8" : "#1e293b",
               background: disabled
                 ? "#f8fafc"
                 : fieldError
                   ? "#fff5f5"
-                  : "white", // ✅
-              cursor: disabled ? "not-allowed" : "text", // ✅
+                  : "white",
+              cursor: disabled ? "not-allowed" : "text",
               border: fieldError
                 ? "1.5px solid #ef4444"
                 : disabled
-                  ? "1.5px solid #f1f5f9" // ✅
+                  ? "1.5px solid #f1f5f9"
                   : focused
-                    ? "1.5px solid #6366f1"
+                    ? "1.5px solid #0072BC"
                     : "1.5px solid #e2e8f0",
             }}
           />
-          {fieldError && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                marginTop: 4,
-              }}
-            >
-              <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
-              <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 500 }}>
-                {fieldError}
-              </span>
-            </div>
-          )}
-          {/* ✅ disabled бол түгжээний тайлбар */}
+          <FieldError msg={fieldError} />
           {disabled && (
             <div style={{ fontSize: 10, color: "#b0bec5", marginTop: 3 }}>
               🔒 Өөрчлөх боломжгүй
@@ -141,6 +145,9 @@ export function FInput({
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// FSelect
+// ─────────────────────────────────────────────────────────────
 export function FSelect({
   label,
   value,
@@ -148,9 +155,10 @@ export function FSelect({
   options,
   placeholder,
   editing,
+  fieldError,
 }: any) {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState(""); // ✅ хайлт
+  const [search, setSearch] = useState("");
   const [coords, setCoords] = useState({
     top: 0,
     left: 0,
@@ -159,7 +167,7 @@ export function FSelect({
   });
   const btnRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null); // ✅ хайлтын input ref
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const handleOpen = () => {
     if (btnRef.current) {
@@ -172,11 +180,10 @@ export function FSelect({
         dropUp,
       });
     }
-    setSearch(""); // ✅ нээхэд хайлт цэвэрлэнэ
+    setSearch("");
     setOpen((p) => !p);
   };
 
-  // ✅ нээгдэхэд хайлтын input-д фокус өгнө
   useEffect(() => {
     if (open && searchRef.current) {
       setTimeout(() => searchRef.current?.focus(), 50);
@@ -196,7 +203,6 @@ export function FSelect({
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  // ✅ хайлтаар шүүнэ
   const filtered = options.filter((o: any) => {
     const l = (o.label ?? o) as string;
     return l.toLowerCase().includes(search.toLowerCase());
@@ -212,7 +218,7 @@ export function FSelect({
     return found?.label ?? found;
   };
   const displayLabel = getDisplayLabel();
-  const showSearch = options.length > 10; // ✅ 10-аас их үед хайлт харуулна
+  const showSearch = options.length > 10;
 
   return (
     <div data-fselect="true" style={{ minWidth: 0 }}>
@@ -227,8 +233,12 @@ export function FSelect({
               width: "100%",
               padding: "9px 32px 9px 12px",
               borderRadius: 10,
-              border: open ? "1.5px solid #6366f1" : "1.5px solid #e2e8f0",
-              background: "white",
+              border: fieldError
+                ? "1.5px solid #ef4444"
+                : open
+                  ? "1.5px solid #0072BC"
+                  : "1.5px solid #e2e8f0",
+              background: fieldError ? "#fff5f5" : "white",
               fontSize: 13,
               color: value ? "#0f172a" : "#94a3b8",
               textAlign: "left" as const,
@@ -238,7 +248,8 @@ export function FSelect({
               alignItems: "center",
               justifyContent: "space-between",
               boxSizing: "border-box" as const,
-              overflow: "hidden", // ✅ энэ л нэмэгдэнэ
+              overflow: "hidden",
+              transition: "border-color .15s, background .15s",
             }}
           >
             <span
@@ -262,6 +273,7 @@ export function FSelect({
               }}
             />
           </button>
+          <FieldError msg={fieldError} />
 
           {open &&
             typeof window !== "undefined" &&
@@ -276,7 +288,7 @@ export function FSelect({
                     : "auto",
                   left: coords.left,
                   width: coords.width,
-                  maxWidth: "min(90vw, 480px)", // ✅ хэт ирт болохгүй
+                  maxWidth: "min(90vw, 480px)",
                   zIndex: 99999,
                   background: "white",
                   borderRadius: 10,
@@ -287,7 +299,6 @@ export function FSelect({
                   maxHeight: 300,
                 }}
               >
-                {/* ✅ Хайлт — 10-аас их option үед */}
                 {showSearch && (
                   <div
                     style={{
@@ -332,7 +343,7 @@ export function FSelect({
                           fontFamily: "inherit",
                         }}
                         onFocus={(e) =>
-                          (e.target.style.borderColor = "#6366f1")
+                          (e.target.style.borderColor = "#0072BC")
                         }
                         onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
                       />
@@ -369,7 +380,6 @@ export function FSelect({
                   </div>
                 )}
 
-                {/* ✅ Option жагсаалт — scroll */}
                 <div style={{ overflowY: "auto", flex: 1 }}>
                   {placeholder && (
                     <button
@@ -424,9 +434,9 @@ export function FSelect({
                             width: "100%",
                             padding: "9px 14px",
                             border: "none",
-                            background: isSel ? "#eef2ff" : "transparent",
+                            background: isSel ? "#e6f2fa" : "transparent",
                             fontSize: 13,
-                            color: isSel ? "#4f46e5" : "#0f172a",
+                            color: isSel ? "#0072BC" : "#0f172a",
                             textAlign: "left" as const,
                             cursor: "pointer",
                             fontFamily: "inherit",
@@ -452,7 +462,7 @@ export function FSelect({
                             <span
                               style={{
                                 fontSize: 12,
-                                color: "#6366f1",
+                                color: "#0072BC",
                                 flexShrink: 0,
                               }}
                             >
@@ -465,7 +475,6 @@ export function FSelect({
                   )}
                 </div>
 
-                {/* ✅ Хайлтын үр дүн тоо */}
                 {showSearch && search && (
                   <div
                     style={{
@@ -504,6 +513,9 @@ export function FSelect({
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// RadioGroup
+// ─────────────────────────────────────────────────────────────
 export function RadioGroup({ label, options, value, onChange, editing }: any) {
   return (
     <div>

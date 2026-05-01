@@ -57,9 +57,12 @@ const BLANK_PERM = {
 
 const REQUIRED_FIELDS = [
   { key: "company_name", label: "Байгууллагын нэр" },
+  { key: "company_name_en", label: "Байгууллагын нэр (англи)" },
   { key: "register_number", label: "Регистрийн дугаар" },
+  { key: "established_date", label: "Үүсгэн байгуулагдсан огноо" },
   { key: "aimag_niislel", label: "Аймаг / Нийслэл" },
   { key: "sum_duureg", label: "Сум / Дүүрэг" },
+  { key: "bag_horoo", label: "Баг / Хороо" },
   { key: "address", label: "Дэлгэрэнгүй хаяг" },
 ];
 
@@ -71,7 +74,10 @@ function buildForm(u: any) {
     company_name_en: u.company_name_en || "",
     company_type: u.company_type || "ХХК",
     established_date: u.established_date?.slice(0, 10) || "",
-    is_vat_payer: u.is_vat_payer || false,
+    is_vat_payer:
+      u.is_vat_payer === true || u.is_vat_payer === false
+        ? u.is_vat_payer
+        : undefined,
     is_iso_certified: u.is_iso_certified || false,
     employee_count: u.employee_count?.toString() || "",
     has_special_permission: u.has_special_permission || false,
@@ -292,12 +298,51 @@ export default function CompanyProfilePage() {
 
   const getMissingFields = () => {
     const missing = REQUIRED_FIELDS.filter((f) => !form[f.key]);
+
+    // НӨАТ төлөгч (true/false хоёрын аль нэг сонгогдсон байх)
+    if (form.is_vat_payer !== true && form.is_vat_payer !== false)
+      missing.push({ key: "is_vat_payer", label: "НӨАТ төлөгч эсэх" });
+
+    // Үйл ажиллагааны чиглэл
     if (selDirs.length === 0)
       missing.push({ key: "activity_directions", label: "Үйл ажиллагааны чиглэл" });
+    if (!form.supply_direction)
+      missing.push({ key: "supply_direction", label: "Нийлүүлэх төрөл" });
+
+    // Гүйцэтгэх захирал
+    const d0 = directors[0];
+    if (!d0?.last_name?.trim() || !d0?.first_name?.trim() || !d0?.phone?.trim())
+      missing.push({ key: "directors", label: "Гүйцэтгэх захирлын мэдээлэл" });
+
+    // Эзэмшигч (1-р буюу үндсэн)
+    const o0 = owners[0];
+    if (
+      !o0?.last_name?.trim() ||
+      !o0?.first_name?.trim() ||
+      !o0?.gender ||
+      !o0?.position?.trim() ||
+      !o0?.phone?.trim()
+    )
+      missing.push({ key: "owners", label: "Эзэмшигчийн мэдээлэл" });
+
+    // Баримт бичиг (3 заавал)
     if (!previews.doc_state_registry)
       missing.push({ key: "doc_state_registry", label: "Улсын бүртгэлийн гэрчилгээ" });
-    if (!owners[0]?.last_name || !owners[0]?.first_name)
-      missing.push({ key: "owners", label: "Эзэмшигчийн мэдээлэл" });
+    if (!previews.doc_vat_certificate)
+      missing.push({ key: "doc_vat_certificate", label: "НӨАТ-ын гэрчилгээ" });
+    if (form.has_special_permission && !previews.doc_special_permission)
+      missing.push({ key: "doc_special_permission", label: "Тусгай зөвшөөрлийн файл" });
+
+    // Санхүү
+    if (!form.bank_name?.trim())
+      missing.push({ key: "bank_name", label: "Банкны нэр" });
+    if (!form.bank_account_number?.trim())
+      missing.push({ key: "bank_account_number", label: "Дансны дугаар" });
+
+    // Мэдэгдэл
+    if (!form.notification_preference)
+      missing.push({ key: "notification_preference", label: "Мэдэгдэл хүлээн авах хэлбэр" });
+
     return missing;
   };
 
@@ -464,59 +509,251 @@ export default function CompanyProfilePage() {
     }
   };
 
-  // Validation хийсэн хадгалах (currently unused but kept for future)
-  const handleSave = async () => {
-    if (form.company_name !== snapshot.company_name && !isMongolian(form.company_name)) {
-      setFieldErrors((p) => ({ ...p, company_name: "Крилл үсгээр бичнэ үү" }));
-      setError("Байгууллагын нэр монгол үсгээр бичнэ үү");
-      return;
+  // ── Validation ────────────────────────────────────────────
+  // Returns the first error message (or "" if everything is valid).
+  // Sets all field-level errors so the user can see them inline.
+  const runValidation = (): string => {
+    const newFieldErrors: Record<string, string> = {};
+    const newDirErrors: Record<string, string> = {};
+    let firstError = "";
+
+    // ── 1. Үндсэн мэдээлэл ────────────────────────────────
+    if (!form.company_name?.trim()) {
+      newFieldErrors.company_name = "Заавал бөглөх";
+      firstError ||= "Байгууллагын нэр заавал";
+    } else if (
+      form.company_name !== snapshot.company_name &&
+      !isMongolian(form.company_name)
+    ) {
+      newFieldErrors.company_name = "Крилл үсгээр бичнэ үү";
+      firstError ||= "Байгууллагын нэр монгол үсгээр бичнэ үү";
     }
-    if (form.register_number && form.register_number.length !== 7) {
-      setFieldErrors((p) => ({ ...p, register_number: "7 оронтой тоо оруулна уу" }));
-      setError("Регистрийн дугаар 7 оронтой байх ёстой");
-      return;
+    if (!form.register_number?.trim()) {
+      newFieldErrors.register_number = "Заавал бөглөх";
+      firstError ||= "Регистрийн дугаар заавал";
+    } else if (form.register_number.length !== 7) {
+      newFieldErrors.register_number = "7 оронтой тоо оруулна уу";
+      firstError ||= "Регистрийн дугаар 7 оронтой байх ёстой";
     }
+
+    // Байгууллагын нэр (англи) — заавал + латин үсэг + тоо/тэмдэгт
+    if (!form.company_name_en?.trim()) {
+      newFieldErrors.company_name_en = "Заавал бөглөх";
+      firstError ||= "Англи нэр оруулаагүй";
+    } else if (!/^[A-Za-z0-9\s\-\.,&/()'"]+$/.test(form.company_name_en)) {
+      newFieldErrors.company_name_en = "Латин үсгээр бичнэ үү";
+      firstError ||= "Англи нэр латин үсгээр байх ёстой";
+    }
+
+    // НӨАТ төлөгч — заавал сонгох (true/false хоёрын аль нэг)
+    if (form.is_vat_payer !== true && form.is_vat_payer !== false) {
+      newFieldErrors.is_vat_payer = "Заавал сонгох";
+      firstError ||= "НӨАТ төлөгч эсэхийг сонгоно уу";
+    }
+
+    // Үүсгэн байгуулагдсан огноо — заавал + ирээдүйн огноо байж болохгүй
+    if (!form.established_date?.trim()) {
+      newFieldErrors.established_date = "Заавал бөглөх";
+      firstError ||= "Үүсгэн байгуулагдсан огноо оруулаагүй";
+    } else {
+      const d = new Date(form.established_date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (Number.isNaN(d.getTime())) {
+        newFieldErrors.established_date = "Огноо буруу байна";
+        firstError ||= "Үүсгэн байгуулагдсан огноо буруу";
+      } else if (d > today) {
+        newFieldErrors.established_date = "Ирээдүйн огноо байж болохгүй";
+        firstError ||= "Үүсгэн байгуулагдсан огноо ирээдүйнх байх ёсгүй";
+      }
+    }
+
+    // General Mongolian validator (for other Mongolian-text fields)
     const errs = validateMongolianForm(form, [
       "sum_duureg",
       ...(form.aimag_niislel !== "Улаанбаатар" ? ["bag_horoo" as const] : []),
     ]);
-    if (Object.keys(errs).length > 0) {
-      setFieldErrors(errs);
-      setError(Object.values(errs)[0]);
-      return;
-    }
-    const ownerErrs = validateOwnersMongolian(owners);
-    if (Object.keys(ownerErrs).length > 0) {
-      setOwnerFieldErrors(ownerErrs);
-      return;
-    }
-    const dirErrors: Record<string, string> = {};
+    Object.assign(newFieldErrors, errs);
+    if (Object.keys(errs).length > 0) firstError ||= Object.values(errs)[0];
+
+    // ── 2. Гүйцэтгэх захирал (заавал) ────────────────────
     directors.forEach((d: any, idx: number) => {
-      if (d.position && !/^[\u0400-\u04FF\s\-]+$/.test(d.position))
-        dirErrors[`${idx}_position`] = "Крилл үсгээр бичнэ үү";
-      if (d.last_name && !/^[\u0400-\u04FF\s\-]+$/.test(d.last_name))
-        dirErrors[`${idx}_last_name`] = "Крилл үсгээр бичнэ үү";
-      if (d.first_name && !/^[\u0400-\u04FF\s\-]+$/.test(d.first_name))
-        dirErrors[`${idx}_first_name`] = "Крилл үсгээр бичнэ үү";
-      if (d.phone && (!/^\d+$/.test(d.phone) || d.phone.length !== 8))
-        dirErrors[`${idx}_phone`] = "8 оронтой тоо оруулна уу";
+      // Position
+      if (idx === 0 && !d.position?.trim())
+        newDirErrors[`${idx}_position`] = "Албан тушаал заавал";
+      else if (d.position && !/^[\u0400-\u04FF\s\-]+$/.test(d.position))
+        newDirErrors[`${idx}_position`] = "Крилл үсгээр бичнэ үү";
+
+      // Last name — required
+      if (!d.last_name?.trim())
+        newDirErrors[`${idx}_last_name`] = "Овог заавал";
+      else if (!/^[\u0400-\u04FF\s\-]+$/.test(d.last_name))
+        newDirErrors[`${idx}_last_name`] = "Крилл үсгээр бичнэ үү";
+
+      // First name — required
+      if (!d.first_name?.trim())
+        newDirErrors[`${idx}_first_name`] = "Нэр заавал";
+      else if (!/^[\u0400-\u04FF\s\-]+$/.test(d.first_name))
+        newDirErrors[`${idx}_first_name`] = "Крилл үсгээр бичнэ үү";
+
+      // Phone — required + 8 digits
+      if (!d.phone?.trim())
+        newDirErrors[`${idx}_phone`] = "Утас заавал";
+      else if (!/^\d+$/.test(d.phone) || d.phone.length !== 8)
+        newDirErrors[`${idx}_phone`] = "8 оронтой тоо оруулна уу";
+
+      // Email — optional but if filled, must be valid
       if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email))
-        dirErrors[`${idx}_email`] = "И-мэйл хаяг буруу байна";
+        newDirErrors[`${idx}_email`] = "И-мэйл хаяг буруу байна";
     });
-    if (Object.keys(dirErrors).length > 0) {
-      setDirectorFieldErrors(dirErrors);
-      setError("Гүйцэтгэх захирлын мэдээлэл буруу байна");
-      return;
+    if (Object.keys(newDirErrors).length > 0)
+      firstError ||= "Гүйцэтгэх захирлын мэдээлэл буруу байна";
+
+    // ── 3. Үйл ажиллагааны чиглэл (заавал) ───────────────
+    if (selDirs.length === 0) {
+      newFieldErrors.activity_directions = "Дор хаяж нэг чиглэл сонгоно уу";
+      firstError ||= "Үйл ажиллагааны чиглэл сонгогдоогүй";
     }
-    setOwnerFieldErrors({});
-    setFieldErrors({});
-    setDirectorFieldErrors({});
-    setError("");
+    if (!form.supply_direction) {
+      newFieldErrors.supply_direction = "Заавал сонгох";
+      firstError ||= "Нийлүүлэх төрөл сонгогдоогүй";
+    }
+
+    // ── 4. Хаяг (заавал) ─────────────────────────────────
+    if (!form.aimag_niislel?.trim()) {
+      newFieldErrors.aimag_niislel = "Заавал сонгох";
+      firstError ||= "Аймаг / Нийслэл сонгогдоогүй";
+    }
+    if (!form.sum_duureg?.trim()) {
+      newFieldErrors.sum_duureg = "Заавал сонгох";
+      firstError ||=
+        form.aimag_niislel === "Улаанбаатар"
+          ? "Дүүрэг сонгогдоогүй"
+          : "Сум сонгогдоогүй";
+    }
+    if (!form.bag_horoo?.trim()) {
+      newFieldErrors.bag_horoo = "Заавал бөглөх";
+      firstError ||=
+        form.aimag_niislel === "Улаанбаатар"
+          ? "Хороо сонгогдоогүй"
+          : "Баг / Хороо оруулаагүй";
+    }
+    if (!form.address?.trim()) {
+      newFieldErrors.address = "Заавал бөглөх";
+      firstError ||= "Дэлгэрэнгүй хаяг оруулаагүй";
+    }
+
+    // ── 5. Эзэмшигч (1-р эзэмшигч заавал) ────────────────
+    const newOwnerErrs: Record<string, string> = {};
+    const o0 = owners[0];
+    if (!o0?.last_name?.trim())
+      newOwnerErrs[`0_last_name`] = "Овог заавал";
+    else if (!/^[\u0400-\u04FF\s\-]+$/.test(o0.last_name))
+      newOwnerErrs[`0_last_name`] = "Крилл үсгээр бичнэ үү";
+
+    if (!o0?.first_name?.trim())
+      newOwnerErrs[`0_first_name`] = "Нэр заавал";
+    else if (!/^[\u0400-\u04FF\s\-]+$/.test(o0.first_name))
+      newOwnerErrs[`0_first_name`] = "Крилл үсгээр бичнэ үү";
+
+    if (!o0?.gender)
+      newOwnerErrs[`0_gender`] = "Хүйс заавал";
+
+    if (!o0?.position?.trim())
+      newOwnerErrs[`0_position`] = "Албан тушаал заавал";
+    else if (!/^[\u0400-\u04FF\s\-]+$/.test(o0.position))
+      newOwnerErrs[`0_position`] = "Крилл үсгээр бичнэ үү";
+
+    if (!o0?.phone?.trim())
+      newOwnerErrs[`0_phone`] = "Утас заавал";
+    else if (!/^\d+$/.test(o0.phone) || o0.phone.length !== 8)
+      newOwnerErrs[`0_phone`] = "8 оронтой тоо оруулна уу";
+
+    // Бусад эзэмшигчид (2-оос эхлэн): зөвхөн овог/нэр шалгана
+    owners.slice(1).forEach((o: any, i: number) => {
+      const idx = i + 1;
+      if (o.last_name && !/^[\u0400-\u04FF\s\-]+$/.test(o.last_name))
+        newOwnerErrs[`${idx}_last_name`] = "Крилл үсгээр бичнэ үү";
+      if (o.first_name && !/^[\u0400-\u04FF\s\-]+$/.test(o.first_name))
+        newOwnerErrs[`${idx}_first_name`] = "Крилл үсгээр бичнэ үү";
+    });
+
+    // Merge with existing Mongolian-text validator (validateOwnersMongolian)
+    const extraOwnerErrs = validateOwnersMongolian(owners);
+    Object.entries(extraOwnerErrs).forEach(([k, v]) => {
+      if (!newOwnerErrs[k]) newOwnerErrs[k] = v;
+    });
+
+    setOwnerFieldErrors(newOwnerErrs);
+    if (Object.keys(newOwnerErrs).length > 0)
+      firstError ||= "Эзэмшигчийн мэдээлэл буруу байна";
+
+    // ── 6. Баримт бичиг (заавал) ─────────────────────────
+    if (!previews.doc_state_registry) {
+      newFieldErrors.doc_state_registry = "Файл оруулна уу";
+      firstError ||= "Улсын бүртгэлийн гэрчилгээ оруулаагүй";
+    }
+    if (!previews.doc_vat_certificate) {
+      newFieldErrors.doc_vat_certificate = "Файл оруулна уу";
+      firstError ||= "НӨАТ-ын гэрчилгээ оруулаагүй";
+    }
+    if (form.has_special_permission && !previews.doc_special_permission) {
+      newFieldErrors.doc_special_permission = "Файл оруулна уу";
+      firstError ||= "Тусгай зөвшөөрлийн файл оруулаагүй";
+    }
+
+    // ── 6. Санхүү (заавал) ───────────────────────────────
+    if (!form.bank_name?.trim()) {
+      newFieldErrors.bank_name = "Заавал бөглөх";
+      firstError ||= "Банкны нэр оруулаагүй";
+    }
+    if (!form.bank_account_number?.trim()) {
+      newFieldErrors.bank_account_number = "Заавал бөглөх";
+      firstError ||= "Дансны дугаар оруулаагүй";
+    }
+
+    // ── 7. Мэдэгдлийн тохиргоо ───────────────────────────
+    if (!form.notification_preference) {
+      newFieldErrors.notification_preference = "Заавал сонгох";
+      firstError ||= "Мэдэгдэл хүлээн авах хэлбэр сонгогдоогүй";
+    }
+
+    // Apply errors
+    setFieldErrors(newFieldErrors);
+    setDirectorFieldErrors(newDirErrors);
+    // NOTE: we no longer set the top-level `error` banner for validation —
+    // validation messages live next to their fields. `error` is reserved for
+    // network / server-level errors only.
+
+    // Scroll to the first invalid field (instead of top of page)
+    if (firstError && typeof window !== "undefined") {
+      setTimeout(() => {
+        const el =
+          document.querySelector<HTMLElement>("[data-error='true']") ||
+          document.querySelector<HTMLElement>(".has-error");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
+    }
+
+    return firstError;
+  };
+
+  // "Хадгалах" — validation + save (NOT submit)
+  const handleSaveDraft = async () => {
+    const err = runValidation();
+    if (err) return;
     await doSave();
   };
 
-  const handleSaveDraft = () => doSave();
-  const handleSubmitClick = () => setShowSubmitModal(true);
+  // "Илгээх" — validation first, then open confirm modal
+  const handleSubmitClick = () => {
+    const err = runValidation();
+    if (err) return;
+    setShowSubmitModal(true);
+  };
+
   const handleConfirmSubmit = () => doSave({ status: "pending" });
 
   const isNewUser = !profile?.company_name;
@@ -720,10 +957,21 @@ export default function CompanyProfilePage() {
             fieldError={fieldErrors.company_name}
           />
           <FInput
-            label="Байгууллагын нэр англи"
+            label="Байгууллагын нэр (англи) *"
             value={form.company_name_en}
             editing={editing}
-            onChange={(v: string) => F("company_name_en", v)}
+            onChange={(v: string) => {
+              F("company_name_en", v);
+              setFieldErrors((p) => ({
+                ...p,
+                company_name_en:
+                  v && !/^[A-Za-z0-9\s\-\.,&/()'"]+$/.test(v)
+                    ? "Латин үсгээр бичнэ үү"
+                    : "",
+              }));
+            }}
+            placeholder="Жишээ: Bodi Group LLC"
+            fieldError={fieldErrors.company_name_en}
           />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
@@ -750,22 +998,51 @@ export default function CompanyProfilePage() {
             onChange={(v: string) => F("company_type", v)}
             options={["ХХК", "ХХК/ГХО", "ХК", "Холбоо", "Хоршоо", "ТББ", "Сан", "Нөхөрлөл"]}
           />
-          <RadioGroup
-            label="НӨАТ төлөгч"
-            value={form.is_vat_payer}
-            editing={editing}
-            onChange={(v: any) => F("is_vat_payer", v)}
-            options={[
-              { value: true, label: "Тийм" },
-              { value: false, label: "Үгүй" },
-            ]}
-          />
+          <div>
+            <RadioGroup
+              label="НӨАТ төлөгч *"
+              value={form.is_vat_payer}
+              editing={editing}
+              onChange={(v: any) => {
+                F("is_vat_payer", v);
+                setFieldErrors((p) => ({ ...p, is_vat_payer: "" }));
+              }}
+              options={[
+                { value: true, label: "Тийм" },
+                { value: false, label: "Үгүй" },
+              ]}
+            />
+            {fieldErrors.is_vat_payer && (
+              <div
+                data-error="true"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 5,
+                  padding: "3px 8px",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderRadius: 6,
+                }}
+              >
+                <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
+                <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
+                  {fieldErrors.is_vat_payer}
+                </span>
+              </div>
+            )}
+          </div>
           <FInput
-            label="Үүсгэн байгуулагдсан огноо"
+            label="Үүсгэн байгуулагдсан огноо *"
             value={form.established_date}
             editing={editing}
-            onChange={(v: string) => F("established_date", v)}
+            onChange={(v: string) => {
+              F("established_date", v);
+              setFieldErrors((p) => ({ ...p, established_date: "" }));
+            }}
             type="date"
+            fieldError={fieldErrors.established_date}
           />
         </div>
       </Section>
@@ -793,7 +1070,7 @@ export default function CompanyProfilePage() {
               marginBottom: 10,
             }}
           >
-            Үйл ажиллагааны чиглэл
+            Үйл ажиллагааны чиглэл <span style={{ color: "#ef4444" }}>*</span>
           </label>
           <DirectionPicker
             dirs={dirs}
@@ -802,6 +1079,26 @@ export default function CompanyProfilePage() {
             toggleMain={toggleMain}
             toggleSub={toggleSub}
           />
+          {fieldErrors.activity_directions && (
+            <div
+              data-error="true"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                marginTop: 6,
+                padding: "3px 8px",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 6,
+              }}
+            >
+              <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
+              <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
+                {fieldErrors.activity_directions}
+              </span>
+            </div>
+          )}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: g3, gap: 14, marginBottom: 14 }}>
           <div style={{ marginBottom: 14 }}>
@@ -809,13 +1106,17 @@ export default function CompanyProfilePage() {
               label="Нийлүүлэх төрөл *"
               value={form.supply_direction}
               editing={editing}
-              onChange={(v: string) => F("supply_direction", v)}
+              onChange={(v: string) => {
+                F("supply_direction", v);
+                setFieldErrors((p) => ({ ...p, supply_direction: "" }));
+              }}
               options={[
                 { value: "goods", label: "Бараа" },
                 { value: "service", label: "Үйлчилгээ" },
                 { value: "both", label: "Аль аль нь" },
               ]}
               placeholder="Сонгоно уу"
+              fieldError={fieldErrors.supply_direction}
             />
           </div>
           <FInput
@@ -918,38 +1219,47 @@ export default function CompanyProfilePage() {
       <Section icon={MapPin} title="ХАЯГИЙН МЭДЭЭЛЭЛ">
         <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
           <FSelect
-            label="Аймаг / Нийслэл"
+            label="Аймаг / Нийслэл *"
             value={form.aimag_niislel}
             editing={editing}
             onChange={(v: string) => {
               F("aimag_niislel", v);
               F("sum_duureg", "");
               F("bag_horoo", "");
-              setFieldErrors((p) => ({ ...p, sum_duureg: "", bag_horoo: "" }));
+              setFieldErrors((p) => ({
+                ...p,
+                aimag_niislel: "",
+                sum_duureg: "",
+                bag_horoo: "",
+              }));
             }}
             options={AIMAG}
             placeholder="Сонгох"
+            fieldError={fieldErrors.aimag_niislel}
           />
           {form.aimag_niislel === "Улаанбаатар" ? (
             <FSelect
-              label="Дүүрэг"
+              label="Дүүрэг *"
               value={form.sum_duureg}
               editing={editing}
               onChange={(v: string) => {
                 F("sum_duureg", v);
                 F("bag_horoo", "");
+                setFieldErrors((p) => ({ ...p, sum_duureg: "", bag_horoo: "" }));
               }}
               options={Object.keys(UB_DUUREG)}
               placeholder="Дүүрэг сонгох"
+              fieldError={fieldErrors.sum_duureg}
             />
           ) : (
             <FSelect
-              label="Сум"
+              label="Сум *"
               value={form.sum_duureg}
               editing={editing}
               onChange={(v: string) => {
                 F("sum_duureg", v);
                 F("bag_horoo", "");
+                setFieldErrors((p) => ({ ...p, sum_duureg: "", bag_horoo: "" }));
               }}
               options={
                 form.aimag_niislel && AIMAG_SUM[form.aimag_niislel]
@@ -957,6 +1267,7 @@ export default function CompanyProfilePage() {
                   : []
               }
               placeholder={form.aimag_niislel ? "Сум сонгох" : "Эхлээд аймаг сонгоно уу"}
+              fieldError={fieldErrors.sum_duureg}
             />
           )}
         </div>
@@ -965,16 +1276,20 @@ export default function CompanyProfilePage() {
           form.sum_duureg &&
           UB_DUUREG[form.sum_duureg] ? (
             <FSelect
-              label="Хороо"
+              label="Хороо *"
               value={form.bag_horoo}
               editing={editing}
-              onChange={(v: string) => F("bag_horoo", v)}
+              onChange={(v: string) => {
+                F("bag_horoo", v);
+                setFieldErrors((p) => ({ ...p, bag_horoo: "" }));
+              }}
               options={UB_DUUREG[form.sum_duureg]}
               placeholder="Хороо сонгох"
+              fieldError={fieldErrors.bag_horoo}
             />
           ) : (
             <FInput
-              label="Баг / Хороо"
+              label="Баг / Хороо *"
               value={form.bag_horoo}
               editing={editing}
               onChange={(v: string) => {
@@ -991,10 +1306,14 @@ export default function CompanyProfilePage() {
             />
           )}
           <FInput
-            label="Дэлгэрэнгүй хаяг"
+            label="Дэлгэрэнгүй хаяг *"
             value={form.address}
             editing={editing}
-            onChange={(v: string) => F("address", v)}
+            onChange={(v: string) => {
+              F("address", v);
+              setFieldErrors((p) => ({ ...p, address: "" }));
+            }}
+            fieldError={fieldErrors.address}
           />
         </div>
       </Section>
@@ -1011,33 +1330,110 @@ export default function CompanyProfilePage() {
       {/* 6. Баримт бичиг */}
       <Section icon={FileText} title="КОМПАНИЙН БАРИМТ БИЧГИЙН ХУУЛБАР">
         <div style={{ display: "grid", gridTemplateColumns: gDoc, gap: 14, marginBottom: 14 }}>
-          <DocUpload
-            label="Улсын бүртгэлийн гэрчилгээ"
-            fieldKey="doc_state_registry"
-            preview={previews.doc_state_registry}
-            onFile={onFile}
-            editing={editing}
-            accept=".pdf,image/*"
-            required
-          />
-          <DocUpload
-            label="НӨАТ-ын гэрчилгээ"
-            fieldKey="doc_vat_certificate"
-            preview={previews.doc_vat_certificate}
-            onFile={onFile}
-            editing={editing}
-            accept=".pdf,image/*"
-            required
-          />
-          <DocUpload
-            label="Тусгай зөвшөөрөл"
-            fieldKey="doc_special_permission"
-            preview={previews.doc_special_permission}
-            onFile={onFile}
-            editing={editing}
-            accept=".pdf,image/*"
-            required
-          />
+          <div>
+            <DocUpload
+              label="Улсын бүртгэлийн гэрчилгээ"
+              fieldKey="doc_state_registry"
+              preview={previews.doc_state_registry}
+              onFile={(k: string, f: File) => {
+                onFile(k, f);
+                setFieldErrors((p) => ({ ...p, doc_state_registry: "" }));
+              }}
+              editing={editing}
+              accept=".pdf,image/*"
+              required
+            />
+            {fieldErrors.doc_state_registry && (
+              <div
+                data-error="true"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 6,
+                  padding: "3px 8px",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderRadius: 6,
+                }}
+              >
+                <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
+                <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
+                  {fieldErrors.doc_state_registry}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <DocUpload
+              label="НӨАТ-ын гэрчилгээ"
+              fieldKey="doc_vat_certificate"
+              preview={previews.doc_vat_certificate}
+              onFile={(k: string, f: File) => {
+                onFile(k, f);
+                setFieldErrors((p) => ({ ...p, doc_vat_certificate: "" }));
+              }}
+              editing={editing}
+              accept=".pdf,image/*"
+              required
+            />
+            {fieldErrors.doc_vat_certificate && (
+              <div
+                data-error="true"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 6,
+                  padding: "3px 8px",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderRadius: 6,
+                }}
+              >
+                <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
+                <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
+                  {fieldErrors.doc_vat_certificate}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <DocUpload
+              label="Тусгай зөвшөөрөл"
+              fieldKey="doc_special_permission"
+              preview={previews.doc_special_permission}
+              onFile={(k: string, f: File) => {
+                onFile(k, f);
+                setFieldErrors((p) => ({ ...p, doc_special_permission: "" }));
+              }}
+              editing={editing}
+              accept=".pdf,image/*"
+              required={form.has_special_permission}
+            />
+            {fieldErrors.doc_special_permission && (
+              <div
+                data-error="true"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 6,
+                  padding: "3px 8px",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderRadius: 6,
+                }}
+              >
+                <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
+                <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
+                  {fieldErrors.doc_special_permission}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14 }}>
@@ -1232,16 +1628,24 @@ export default function CompanyProfilePage() {
       <Section icon={CreditCard} title="САНХҮҮГИЙН МЭДЭЭЛЭЛ">
         <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
           <FInput
-            label="Банкны нэр"
+            label="Банкны нэр *"
             value={form.bank_name}
             editing={editing}
-            onChange={(v: string) => F("bank_name", v)}
+            onChange={(v: string) => {
+              F("bank_name", v);
+              setFieldErrors((p) => ({ ...p, bank_name: "" }));
+            }}
+            fieldError={fieldErrors.bank_name}
           />
           <FInput
-            label="Дансны дугаар"
+            label="Дансны дугаар *"
             value={form.bank_account_number}
             editing={editing}
-            onChange={(v: string) => F("bank_account_number", v)}
+            onChange={(v: string) => {
+              F("bank_account_number", v);
+              setFieldErrors((p) => ({ ...p, bank_account_number: "" }));
+            }}
+            fieldError={fieldErrors.bank_account_number}
             mono
           />
         </div>
@@ -1295,8 +1699,28 @@ export default function CompanyProfilePage() {
               marginBottom: 12,
             }}
           >
-            Худалдан авалтын зарын мэдэгдэл хүлээн авах
+            Худалдан авалтын зарын мэдэгдэл хүлээн авах <span style={{ color: "#ef4444" }}>*</span>
           </label>
+          {fieldErrors.notification_preference && (
+            <div
+              data-error="true"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                marginBottom: 8,
+                padding: "3px 8px",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 6,
+              }}
+            >
+              <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
+              <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
+                {fieldErrors.notification_preference}
+              </span>
+            </div>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[
               {
@@ -1316,7 +1740,11 @@ export default function CompanyProfilePage() {
               return (
                 <div
                   key={opt.value}
-                  onClick={() => editing && F("notification_preference", opt.value)}
+                  onClick={() => {
+                    if (!editing) return;
+                    F("notification_preference", opt.value);
+                    setFieldErrors((p) => ({ ...p, notification_preference: "" }));
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "flex-start",

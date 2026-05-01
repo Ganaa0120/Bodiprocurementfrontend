@@ -16,6 +16,51 @@ function useW() {
   return w;
 }
 
+// Strip non-Cyrillic chars and report to fieldErrors if anything was removed.
+// Returns the cleaned value (always Cyrillic-only).
+function filterCyrillic(
+  raw: string,
+  errKey: string,
+  setFieldErrors: any,
+): string {
+  const cleaned = raw.replace(/[^\u0400-\u04FF\s\-]/g, "");
+  if (raw !== cleaned) {
+    // User typed/pasted non-Cyrillic chars — show warning
+    setFieldErrors?.((p: any) => ({
+      ...p,
+      [errKey]: "Крилл үсгээр бичнэ үү",
+    }));
+  } else {
+    // Clear any earlier "wrong char" warning
+    setFieldErrors?.((p: any) => ({ ...p, [errKey]: "" }));
+  }
+  return cleaned;
+}
+
+// Same idea for digits-only fields (phone)
+function filterDigits(
+  raw: string,
+  errKey: string,
+  setFieldErrors: any,
+  maxLen = 8,
+): string {
+  const cleaned = raw.replace(/\D/g, "").slice(0, maxLen);
+  if (raw.replace(/\s/g, "") !== cleaned) {
+    setFieldErrors?.((p: any) => ({
+      ...p,
+      [errKey]: "Зөвхөн тоо оруулна уу",
+    }));
+  } else if (cleaned && cleaned.length < maxLen) {
+    setFieldErrors?.((p: any) => ({
+      ...p,
+      [errKey]: `${maxLen} оронтой тоо оруулна уу`,
+    }));
+  } else {
+    setFieldErrors?.((p: any) => ({ ...p, [errKey]: "" }));
+  }
+  return cleaned;
+}
+
 function AddBtn({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button
@@ -39,10 +84,10 @@ function AddBtn({ onClick, label }: { onClick: () => void; label: string }) {
         fontFamily: "inherit",
       }}
       onMouseEnter={(e) =>
-        ((e.currentTarget as HTMLElement).style.background = "#e0e7ff")
+        ((e.currentTarget as HTMLElement).style.background = "#cce4f4")
       }
       onMouseLeave={(e) =>
-        ((e.currentTarget as HTMLElement).style.background = "#eef2ff")
+        ((e.currentTarget as HTMLElement).style.background = "#0072BC1A")
       }
     >
       + {label}
@@ -64,6 +109,9 @@ function OwnerCard({
   const isMobile = w > 0 && w < 640;
   const isTablet = w > 0 && w < 1024;
   const isFirst = idx === 0;
+
+  // Required-only on first (primary) owner
+  const star = isFirst ? " *" : "";
 
   const gOwner = isFirst
     ? isMobile
@@ -126,6 +174,49 @@ function OwnerCard({
         {isFirst ? (
           <>
             <FInput
+              label={`Овог${star}`}
+              value={owner.last_name}
+              editing={editing}
+              onChange={(v: string) => onUpdate(idx, "last_name", v)}
+              fieldError={fieldErrors?.[`${idx}_last_name`]}
+            />
+            <FInput
+              label={`Нэр${star}`}
+              value={owner.first_name}
+              editing={editing}
+              onChange={(v: string) => onUpdate(idx, "first_name", v)}
+              fieldError={fieldErrors?.[`${idx}_first_name`]}
+            />
+            <FSelect
+              label={`Хүйс${star}`}
+              value={owner.gender}
+              editing={editing}
+              onChange={(v: string) => onUpdate(idx, "gender", v)}
+              options={[
+                { value: "male", label: "Эрэгтэй" },
+                { value: "female", label: "Эмэгтэй" },
+              ]}
+              placeholder="Сонгох"
+              fieldError={fieldErrors?.[`${idx}_gender`]}
+            />
+            <FInput
+              label={`Албан тушаал${star}`}
+              value={owner.position}
+              editing={editing}
+              onChange={(v: string) => onUpdate(idx, "position", v)}
+              fieldError={fieldErrors?.[`${idx}_position`]}
+            />
+            <FInput
+              label={`Утас${star}`}
+              value={owner.phone}
+              editing={editing}
+              onChange={(v: string) => onUpdate(idx, "phone", v)}
+              fieldError={fieldErrors?.[`${idx}_phone`]}
+            />
+          </>
+        ) : (
+          <>
+            <FInput
               label="Овог"
               value={owner.last_name}
               editing={editing}
@@ -138,47 +229,6 @@ function OwnerCard({
               editing={editing}
               onChange={(v: string) => onUpdate(idx, "first_name", v)}
               fieldError={fieldErrors?.[`${idx}_first_name`]}
-            />
-            <FSelect
-              label="Хүйс"
-              value={owner.gender}
-              editing={editing}
-              onChange={(v: string) => onUpdate(idx, "gender", v)}
-              options={[
-                { value: "male", label: "Эрэгтэй" },
-                { value: "female", label: "Эмэгтэй" },
-              ]}
-              placeholder="Сонгох"
-            />
-            <FInput
-              label="Албан тушаал"
-              value={owner.position}
-              editing={editing}
-              onChange={(v: string) => onUpdate(idx, "position", v)}
-            />
-            <FInput
-              label="Утас"
-              value={owner.phone}
-              editing={editing}
-              onChange={(v: string) =>
-                onUpdate(idx, "phone", v.replace(/\D/g, "").slice(0, 8))
-              }
-              fieldError={fieldErrors?.[`${idx}_phone`]}
-            />
-          </>
-        ) : (
-          <>
-            <FInput
-              label="Овог"
-              value={owner.last_name}
-              editing={editing}
-              onChange={(v: string) => onUpdate(idx, "last_name", v)}
-            />
-            <FInput
-              label="Нэр"
-              value={owner.first_name}
-              editing={editing}
-              onChange={(v: string) => onUpdate(idx, "first_name", v)}
             />
           </>
         )}
@@ -194,10 +244,35 @@ export function OwnersSection({
   fieldErrors,
   setFieldErrors,
 }: any) {
-  const update = (idx: number, key: string, val: string) =>
+  // Updater receives the RAW user input. We filter & warn here so the user
+  // sees an immediate "Англиар биш, крилл үсгээр бичнэ үү" message when they
+  // try to type a digit or Latin letter into a Cyrillic-only field.
+  const update = (idx: number, key: string, raw: string) => {
+    let value = raw;
+    const errKey = `${idx}_${key}`;
+
+    if (["last_name", "first_name", "position"].includes(key)) {
+      value = filterCyrillic(raw, errKey, setFieldErrors);
+    } else if (key === "phone") {
+      value = filterDigits(raw, errKey, setFieldErrors, 8);
+    } else if (key === "email") {
+      value = raw;
+      if (setFieldErrors) {
+        const msg =
+          raw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)
+            ? "И-мэйл хаяг буруу байна"
+            : "";
+        setFieldErrors((p: any) => ({ ...p, [errKey]: msg }));
+      }
+    } else if (setFieldErrors) {
+      // gender / other selects — clear any error
+      setFieldErrors((p: any) => ({ ...p, [errKey]: "" }));
+    }
+
     setOwners((p: any[]) =>
-      p.map((o, i) => (i === idx ? { ...o, [key]: val } : o)),
+      p.map((o, i) => (i === idx ? { ...o, [key]: value } : o)),
     );
+  };
 
   return (
     <Section icon={User} title="ӨМЧЛӨГЧИЙН МЭДЭЭЛЭЛ">
@@ -240,124 +315,130 @@ export function ExecutiveDirectorsSection({
   const isTablet = w > 0 && w < 1024;
   const gDir = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr";
 
-  const update = (idx: number, key: string, val: string) => {
-    setDirectors((p: any[]) =>
-      p.map((o, i) => (i === idx ? { ...o, [key]: val } : o)),
-    );
-    const k = `${idx}_${key}`;
-    let msg = "";
+  // Updater receives RAW input. Filter & warn happens centrally.
+  const update = (idx: number, key: string, raw: string) => {
+    let value = raw;
+    const errKey = `${idx}_${key}`;
+
     if (["position", "last_name", "first_name"].includes(key)) {
-      if (val && !/^[\u0400-\u04FF\s\-]+$/.test(val))
-        msg = "Крилл үсгээр бичнэ үү";
+      value = filterCyrillic(raw, errKey, setFieldErrors);
+    } else if (key === "phone") {
+      value = filterDigits(raw, errKey, setFieldErrors, 8);
+    } else if (key === "email") {
+      value = raw;
+      const msg =
+        raw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)
+          ? "И-мэйл хаяг буруу байна"
+          : "";
+      setFieldErrors?.((p: any) => ({ ...p, [errKey]: msg }));
     }
-    if (key === "phone") {
-      if (val && (!/^\d+$/.test(val) || val.length !== 8))
-        msg = "8 оронтой тоо оруулна уу";
-    }
-    if (key === "email") {
-      if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val))
-        msg = "И-мэйл хаяг буруу байна";
-    }
-    setFieldErrors?.((p: any) => ({ ...p, [k]: msg }));
+
+    setDirectors((p: any[]) =>
+      p.map((o, i) => (i === idx ? { ...o, [key]: value } : o)),
+    );
   };
 
   return (
     <Section icon={User} title="ГҮЙЦЭТГЭХ ЗАХИРАЛ">
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {directors.map((d: any, idx: number) => (
-          <div
-            key={idx}
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              background: idx % 2 === 0 ? "#f8fafc" : "#f1f5f9",
-              border: "1px solid #e2e8f0",
-            }}
-          >
+        {directors.map((d: any, idx: number) => {
+          const isFirst = idx === 0;
+          const star = isFirst ? " *" : "";
+          return (
             <div
+              key={idx}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 12,
+                padding: 16,
+                borderRadius: 12,
+                background: idx % 2 === 0 ? "#f8fafc" : "#f1f5f9",
+                border: "1px solid #e2e8f0",
               }}
             >
-              <span
+              <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#0072BC",
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase" as const,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 12,
                 }}
               >
-                {idx === 0 ? "Гүйцэтгэх захирал" : ""}
-              </span>
-              {directors.length > 1 && editing && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDirectors((p: any[]) => p.filter((_, i) => i !== idx))
-                  }
+                <span
                   style={{
                     fontSize: 11,
-                    color: "#ef4444",
-                    background: "rgba(239,68,68,0.08)",
-                    border: "1px solid rgba(239,68,68,0.2)",
-                    borderRadius: 8,
-                    padding: "3px 10px",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
+                    fontWeight: 700,
+                    color: "#0072BC",
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase" as const,
                   }}
                 >
-                  Устгах
-                </button>
-              )}
+                  {idx === 0 ? "Гүйцэтгэх захирал" : `${idx + 1}-р мөр`}
+                </span>
+                {directors.length > 1 && editing && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDirectors((p: any[]) =>
+                        p.filter((_, i) => i !== idx),
+                      )
+                    }
+                    style={{
+                      fontSize: 11,
+                      color: "#ef4444",
+                      background: "rgba(239,68,68,0.08)",
+                      border: "1px solid rgba(239,68,68,0.2)",
+                      borderRadius: 8,
+                      padding: "3px 10px",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Устгах
+                  </button>
+                )}
+              </div>
+              <div
+                style={{ display: "grid", gridTemplateColumns: gDir, gap: 14 }}
+              >
+                <FInput
+                  label={`Албан тушаал${star}`}
+                  value={d.position}
+                  editing={editing}
+                  onChange={(v: string) => update(idx, "position", v)}
+                  fieldError={fieldErrors[`${idx}_position`]}
+                  disabled={isFirst}
+                />
+                <FInput
+                  label={`Овог${star}`}
+                  value={d.last_name}
+                  editing={editing}
+                  onChange={(v: string) => update(idx, "last_name", v)}
+                  fieldError={fieldErrors[`${idx}_last_name`]}
+                />
+                <FInput
+                  label={`Нэр${star}`}
+                  value={d.first_name}
+                  editing={editing}
+                  onChange={(v: string) => update(idx, "first_name", v)}
+                  fieldError={fieldErrors[`${idx}_first_name`]}
+                />
+                <FInput
+                  label={`Утас${star}`}
+                  value={d.phone}
+                  editing={editing}
+                  onChange={(v: string) => update(idx, "phone", v)}
+                  fieldError={fieldErrors[`${idx}_phone`]}
+                />
+                <FInput
+                  label="И-мэйл хаяг"
+                  value={d.email}
+                  editing={editing}
+                  onChange={(v: string) => update(idx, "email", v)}
+                  fieldError={fieldErrors[`${idx}_email`]}
+                />
+              </div>
             </div>
-            <div
-              style={{ display: "grid", gridTemplateColumns: gDir, gap: 14 }}
-            >
-              <FInput
-                label="Албан тушаал"
-                value={d.position}
-                editing={editing}
-                onChange={(v: string) => update(idx, "position", v)}
-                fieldError={fieldErrors[`${idx}_position`]}
-                disabled={idx === 0}
-              />
-              <FInput
-                label="Овог"
-                value={d.last_name}
-                editing={editing}
-                onChange={(v: string) => update(idx, "last_name", v)}
-                fieldError={fieldErrors[`${idx}_last_name`]}
-              />
-              <FInput
-                label="Нэр"
-                value={d.first_name}
-                editing={editing}
-                onChange={(v: string) => update(idx, "first_name", v)}
-                fieldError={fieldErrors[`${idx}_first_name`]}
-              />
-              <FInput
-                label="Утас"
-                value={d.phone}
-                editing={editing}
-                onChange={(v: string) =>
-                  update(idx, "phone", v.replace(/\D/g, "").slice(0, 8))
-                }
-                fieldError={fieldErrors[`${idx}_phone`]}
-              />
-              <FInput
-                label="И-мэйл хаяг"
-                value={d.email}
-                editing={editing}
-                onChange={(v: string) => update(idx, "email", v)}
-                fieldError={fieldErrors[`${idx}_email`]}
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {editing && (
           <AddBtn
             onClick={() =>

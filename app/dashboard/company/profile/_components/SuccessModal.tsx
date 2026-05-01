@@ -2,7 +2,6 @@
 
 import { useBreakpoint } from "./useW";
 
-
 interface Props {
   onClose: () => void;
 }
@@ -51,19 +50,41 @@ export function SuccessModal({ onClose }: Props) {
         >
           ✅
         </div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 10px" }}>
+        <h2
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: "#0f172a",
+            margin: "0 0 10px",
+          }}
+        >
           Бүртгэл амжилттай!
         </h2>
-        <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7, margin: "0 0 24px" }}>
-          Таны бүртгэл амжилттай дууслаа.
+        <p
+          style={{
+            fontSize: 14,
+            color: "#64748b",
+            lineHeight: 1.7,
+            margin: "0 0 24px",
+          }}
+        >
+          Бүртгэл амжилттай илгээгдлээ.
           <br />
-          Администратор таны бүртгэлийг хянах болно.
-          <br />
-          Удахгүй буцаад хариу өгнө.
+          Таны мэдээллийг 24 цагийн дотор шалгаж, баталгаажуулна.
         </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 8,
+            marginBottom: 24,
+          }}
+        >
           {["Бүртгэл", "Хянагдаж байна", "Баталгаажна"].map((step, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              key={i}
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
               <div
                 style={{
                   display: "flex",
@@ -77,7 +98,8 @@ export function SuccessModal({ onClose }: Props) {
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
-                    background: i === 0 ? "#10b981" : i === 1 ? "#f59e0b" : "#e2e8f0",
+                    background:
+                      i === 0 ? "#10b981" : i === 1 ? "#f59e0b" : "#e2e8f0",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -91,7 +113,8 @@ export function SuccessModal({ onClose }: Props) {
                 <span
                   style={{
                     fontSize: 10,
-                    color: i === 0 ? "#10b981" : i === 1 ? "#f59e0b" : "#94a3b8",
+                    color:
+                      i === 0 ? "#10b981" : i === 1 ? "#f59e0b" : "#94a3b8",
                     fontWeight: 500,
                   }}
                 >
