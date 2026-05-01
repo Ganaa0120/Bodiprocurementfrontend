@@ -5,10 +5,6 @@ import {
   Building2,
   MapPin,
   Briefcase,
-  FileText,
-  CreditCard,
-  Plus,
-  Bell,
   Send,
 } from "lucide-react";
 import {
@@ -20,7 +16,7 @@ import {
 } from "./_components/constants";
 import { HeroCard, Alert } from "./_components/HeroCard";
 import { FInput, FSelect, RadioGroup } from "./_components/FormFields";
-import { Section, DocUpload } from "./_components/Section";
+import { Section } from "./_components/Section";
 import {
   OwnersSection,
   ExecutiveDirectorsSection,
@@ -39,6 +35,9 @@ import { SuccessModal } from "./_components/SuccessModal";
 import { SaveBar } from "./_components/SaveBar";
 import { DirectionPicker } from "./_components/DirectionPicker";
 import { SpecialPermissionsSection } from "./_components/SpecialPermissionsSection";
+import { FinanceSection } from "./_components/FinanceSection";
+import { NotificationSection } from "./_components/NotificationSection";
+import { DocumentsSection } from "./_components/DocumentsSection";
 
 const BLANK_EXEC = {
   position: "Гүйцэтгэх захирал",
@@ -333,11 +332,7 @@ export default function CompanyProfilePage() {
     if (form.has_special_permission && !previews.doc_special_permission)
       missing.push({ key: "doc_special_permission", label: "Тусгай зөвшөөрлийн файл" });
 
-    // Санхүү
-    if (!form.bank_name?.trim())
-      missing.push({ key: "bank_name", label: "Банкны нэр" });
-    if (!form.bank_account_number?.trim())
-      missing.push({ key: "bank_account_number", label: "Дансны дугаар" });
+    // Санхүү — заавал биш
 
     // Мэдэгдэл
     if (!form.notification_preference)
@@ -702,15 +697,7 @@ export default function CompanyProfilePage() {
       firstError ||= "Тусгай зөвшөөрлийн файл оруулаагүй";
     }
 
-    // ── 6. Санхүү (заавал) ───────────────────────────────
-    if (!form.bank_name?.trim()) {
-      newFieldErrors.bank_name = "Заавал бөглөх";
-      firstError ||= "Банкны нэр оруулаагүй";
-    }
-    if (!form.bank_account_number?.trim()) {
-      newFieldErrors.bank_account_number = "Заавал бөглөх";
-      firstError ||= "Дансны дугаар оруулаагүй";
-    }
+    // ── 6. Санхүү — validation байхгүй (заавал биш) ─────
 
     // ── 7. Мэдэгдлийн тохиргоо ───────────────────────────
     if (!form.notification_preference) {
@@ -1328,547 +1315,33 @@ export default function CompanyProfilePage() {
       />
 
       {/* 6. Баримт бичиг */}
-      <Section icon={FileText} title="КОМПАНИЙН БАРИМТ БИЧГИЙН ХУУЛБАР">
-        <div style={{ display: "grid", gridTemplateColumns: gDoc, gap: 14, marginBottom: 14 }}>
-          <div>
-            <DocUpload
-              label="Улсын бүртгэлийн гэрчилгээ"
-              fieldKey="doc_state_registry"
-              preview={previews.doc_state_registry}
-              onFile={(k: string, f: File) => {
-                onFile(k, f);
-                setFieldErrors((p) => ({ ...p, doc_state_registry: "" }));
-              }}
-              editing={editing}
-              accept=".pdf,image/*"
-              required
-            />
-            {fieldErrors.doc_state_registry && (
-              <div
-                data-error="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  marginTop: 6,
-                  padding: "3px 8px",
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: 6,
-                }}
-              >
-                <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
-                <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
-                  {fieldErrors.doc_state_registry}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <DocUpload
-              label="НӨАТ-ын гэрчилгээ"
-              fieldKey="doc_vat_certificate"
-              preview={previews.doc_vat_certificate}
-              onFile={(k: string, f: File) => {
-                onFile(k, f);
-                setFieldErrors((p) => ({ ...p, doc_vat_certificate: "" }));
-              }}
-              editing={editing}
-              accept=".pdf,image/*"
-              required
-            />
-            {fieldErrors.doc_vat_certificate && (
-              <div
-                data-error="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  marginTop: 6,
-                  padding: "3px 8px",
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: 6,
-                }}
-              >
-                <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
-                <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
-                  {fieldErrors.doc_vat_certificate}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <DocUpload
-              label="Тусгай зөвшөөрөл"
-              fieldKey="doc_special_permission"
-              preview={previews.doc_special_permission}
-              onFile={(k: string, f: File) => {
-                onFile(k, f);
-                setFieldErrors((p) => ({ ...p, doc_special_permission: "" }));
-              }}
-              editing={editing}
-              accept=".pdf,image/*"
-              required={form.has_special_permission}
-            />
-            {fieldErrors.doc_special_permission && (
-              <div
-                data-error="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  marginTop: 6,
-                  padding: "3px 8px",
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: 6,
-                }}
-              >
-                <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
-                <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
-                  {fieldErrors.doc_special_permission}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14 }}>
-          <label
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "#64748b",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase" as const,
-              display: "block",
-              marginBottom: 10,
-            }}
-          >
-            Нэмэлт баримт бичиг
-          </label>
-          {extraFileUrls.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-              {extraFileUrls.map((url, i) => {
-                const name = decodeURIComponent(
-                  url.split("/").pop()?.split("?")[0] || `Файл ${i + 1}`,
-                );
-                return (
-                  <div
-                    key={`url-${i}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "8px 12px",
-                      borderRadius: 10,
-                      background: "#f0fdf4",
-                      border: "1px solid #a7f3d0",
-                    }}
-                  >
-                    <FileText size={14} style={{ color: "#059669", flexShrink: 0 }} />
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        fontSize: 12,
-                        color: "#059669",
-                        flex: 1,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap" as const,
-                        textDecoration: "none",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {name}
-                    </a>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "#6ee7b7",
-                        fontWeight: 600,
-                        whiteSpace: "nowrap" as const,
-                      }}
-                    >
-                      ✓ Хадгалагдсан
-                    </span>
-                    {editing && (
-                      <button
-                        type="button"
-                        onClick={() => setExtraFileUrls((p) => p.filter((_, j) => j !== i))}
-                        style={{
-                          background: "rgba(239,68,68,0.08)",
-                          border: "1px solid rgba(239,68,68,0.2)",
-                          borderRadius: 6,
-                          padding: "3px 8px",
-                          cursor: "pointer",
-                          fontSize: 11,
-                          color: "#ef4444",
-                          fontFamily: "inherit",
-                          whiteSpace: "nowrap" as const,
-                        }}
-                      >
-                        Хасах
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {extraFiles.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-              {extraFiles.map((f, i) => (
-                <div
-                  key={`new-${i}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "8px 12px",
-                    borderRadius: 10,
-                    background: "#fffbeb",
-                    border: "1px solid #fde68a",
-                  }}
-                >
-                  <FileText size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: "#1e293b",
-                      flex: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap" as const,
-                    }}
-                  >
-                    {f.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: "#f59e0b",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap" as const,
-                    }}
-                  >
-                    {(f.size / 1024).toFixed(0)} KB · Хадгалагдаагүй
-                  </span>
-                  {editing && (
-                    <button
-                      type="button"
-                      onClick={() => setExtraFiles((p) => p.filter((_, j) => j !== i))}
-                      style={{
-                        background: "rgba(239,68,68,0.08)",
-                        border: "1px solid rgba(239,68,68,0.2)",
-                        borderRadius: 6,
-                        padding: "3px 8px",
-                        cursor: "pointer",
-                        fontSize: 11,
-                        color: "#ef4444",
-                        fontFamily: "inherit",
-                        whiteSpace: "nowrap" as const,
-                      }}
-                    >
-                      Хасах
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {editing && (
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                padding: "12px",
-                borderRadius: 12,
-                border: "1.5px dashed #0072BC",
-                background: "#0072BC1A",
-                cursor: "pointer",
-                transition: "all .15s",
-              }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#cce4f4")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "#0072BC1A")}
-            >
-              <Plus size={14} style={{ color: "#0072BC" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#0072BC" }}>Файл нэмэх</span>
-              <input
-                type="file"
-                multiple
-                style={{ display: "none" }}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,image/*"
-                onChange={(e) => {
-                  const newFiles = Array.from(e.target.files || []);
-                  if (newFiles.some((f) => f.size > 10 * 1024 * 1024)) {
-                    alert("10MB-аас хэтэрсэн файл байна");
-                    return;
-                  }
-                  setExtraFiles((p) => [...p, ...newFiles]);
-                  e.target.value = "";
-                }}
-              />
-            </label>
-          )}
-          {!editing && extraFileUrls.length === 0 && extraFiles.length === 0 && (
-            <div style={{ fontSize: 13, color: "#cbd5e1" }}>—</div>
-          )}
-        </div>
-      </Section>
+      <DocumentsSection
+        form={form}
+        previews={previews}
+        onFile={onFile}
+        editing={editing}
+        fieldErrors={fieldErrors}
+        setFieldErrors={setFieldErrors}
+        extraFiles={extraFiles}
+        setExtraFiles={setExtraFiles}
+        extraFileUrls={extraFileUrls}
+        setExtraFileUrls={setExtraFileUrls}
+      />
 
       {/* 7. Санхүү */}
-      <Section icon={CreditCard} title="САНХҮҮГИЙН МЭДЭЭЛЭЛ">
-        <div style={{ display: "grid", gridTemplateColumns: g2, gap: 14, marginBottom: 14 }}>
-          <FInput
-            label="Банкны нэр *"
-            value={form.bank_name}
-            editing={editing}
-            onChange={(v: string) => {
-              F("bank_name", v);
-              setFieldErrors((p) => ({ ...p, bank_name: "" }));
-            }}
-            fieldError={fieldErrors.bank_name}
-          />
-          <FInput
-            label="Дансны дугаар *"
-            value={form.bank_account_number}
-            editing={editing}
-            onChange={(v: string) => {
-              F("bank_account_number", v);
-              setFieldErrors((p) => ({ ...p, bank_account_number: "" }));
-            }}
-            fieldError={fieldErrors.bank_account_number}
-            mono
-          />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: g4, gap: 14 }}>
-          <FInput
-            label="НӨАТ дугаар"
-            value={form.vat_number}
-            editing={editing}
-            onChange={(v: string) => F("vat_number", v)}
-            mono
-          />
-          <FInput
-            label="SWIFT код"
-            value={form.swift_code}
-            editing={editing}
-            onChange={(v: string) => F("swift_code", v)}
-            mono
-          />
-          <FInput
-            label="IBAN"
-            value={form.iban}
-            editing={editing}
-            onChange={(v: string) => F("iban", v)}
-            mono
-          />
-          <FSelect
-            label="Валют"
-            value={form.currency}
-            editing={editing}
-            onChange={(v: string) => F("currency", v)}
-            options={[
-              { value: "MNT", label: "₮ Төгрөг" },
-              { value: "USD", label: "$ Доллар" },
-              { value: "EUR", label: "€ Евро" },
-            ]}
-          />
-        </div>
-      </Section>
+      <FinanceSection form={form} F={F} editing={editing} />
 
       {/* 8. Мэдэгдэл */}
-      <Section icon={Bell} title="МЭДЭГДЭЛ ХҮЛЭЭН АВАХ ХЭЛБЭР">
-        <div style={{ marginBottom: 16 }}>
-          <label
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "#64748b",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase" as const,
-              display: "block",
-              marginBottom: 12,
-            }}
-          >
-            Худалдан авалтын зарын мэдэгдэл хүлээн авах <span style={{ color: "#ef4444" }}>*</span>
-          </label>
-          {fieldErrors.notification_preference && (
-            <div
-              data-error="true"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                marginBottom: 8,
-                padding: "3px 8px",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                borderRadius: 6,
-              }}
-            >
-              <span style={{ fontSize: 10, color: "#ef4444" }}>✕</span>
-              <span style={{ fontSize: 11, color: "#dc2626", fontWeight: 500 }}>
-                {fieldErrors.notification_preference}
-              </span>
-            </div>
-          )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {[
-              {
-                value: "all",
-                icon: "🔔",
-                label: "Бүх үйл ажиллагааны чиглэлээр хүлээн авах",
-                desc: "Системд нийтлэгдсэн бүх зарын мэдэгдлийг хүлээн авна",
-              },
-              {
-                value: "selected_dirs",
-                icon: "🎯",
-                label: "Сонгосон үйл ажиллагааны чиглэлээр хүлээн авах",
-                desc: "Үйл ажиллагааны чиглэлтээс сонгосон зарын мэдэгдлийг л хүлээн авна",
-              },
-            ].map((opt) => {
-              const isOn = form.notification_preference === opt.value;
-              return (
-                <div
-                  key={opt.value}
-                  onClick={() => {
-                    if (!editing) return;
-                    F("notification_preference", opt.value);
-                    setFieldErrors((p) => ({ ...p, notification_preference: "" }));
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 12,
-                    padding: "14px 16px",
-                    borderRadius: 12,
-                    cursor: editing ? "pointer" : "default",
-                    border: isOn ? "1.5px solid #0072BC" : "1.5px solid #0072BC33",
-                    background: isOn ? "#0072BC1A" : "white",
-                    transition: "all .15s",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      flexShrink: 0,
-                      marginTop: 1,
-                      border: isOn ? "2px solid #0072BC" : "2px solid #e2e8f0",
-                      background: isOn ? "#0072BC" : "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {isOn && (
-                      <div
-                        style={{ width: 6, height: 6, borderRadius: "50%", background: "white" }}
-                      />
-                    )}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                      <span style={{ fontSize: 15 }}>{opt.icon}</span>
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: isOn ? "#0072BC" : "#0f172a",
-                        }}
-                      >
-                        {opt.label}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5 }}>{opt.desc}</div>
-                    {opt.value === "selected_dirs" && isOn && (
-                      <div
-                        style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 5 }}
-                      >
-                        {selDirs.length === 0 ? (
-                          <span
-                            style={{ fontSize: 11, color: "#f59e0b", fontWeight: 500 }}
-                          >
-                            ⚠️ Үйл ажиллагааны чиглэл сонгоогүй байна
-                          </span>
-                        ) : (
-                          selDirs.map((sel) => {
-                            const main = dirs.find(
-                              (d) => Number(d.id) === Number(sel.main_id),
-                            );
-                            return main ? (
-                              <span
-                                key={sel.main_id}
-                                style={{
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  color: "#0072BC",
-                                  background: "#e6f2fa",
-                                  border: "1px solid #bae0f3",
-                                  padding: "2px 8px",
-                                  borderRadius: 99,
-                                }}
-                              >
-                                {main.label}
-                              </span>
-                            ) : null;
-                          })
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div
-          style={{
-            padding: "12px 16px",
-            borderRadius: 12,
-            background: "#f8fafc",
-            border: "1px solid #f1f5f9",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 18 }}>📧</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
-                И-мэйл мэдэгдэл
-              </div>
-              <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                {profile?.email || "И-мэйл хаяг байхгүй"}
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              padding: "3px 10px",
-              borderRadius: 99,
-              background: "#dcfce7",
-              color: "#166534",
-            }}
-          >
-            Идэвхтэй
-          </div>
-        </div>
-      </Section>
+      <NotificationSection
+        form={form}
+        F={F}
+        editing={editing}
+        dirs={dirs}
+        selDirs={selDirs}
+        profile={profile}
+        fieldErrors={fieldErrors}
+        setFieldErrors={setFieldErrors}
+      />
 
       {/* Bottom save bar */}
       {editing && (
