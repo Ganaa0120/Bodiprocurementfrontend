@@ -61,7 +61,6 @@ export default function PersonAnnouncementsPage() {
       const res = await fetch(`${API}/api/announcements/${selected.id}/bids`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token || ""}` },
-        // ✅ body байхгүй — supplier info backend-аас авна
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Алдаа гарлаа");
@@ -94,7 +93,6 @@ export default function PersonAnnouncementsPage() {
   };
 
   useEffect(() => {
-    // ✅ user нэмэх
     const u = localStorage.getItem("user");
     if (u) {
       try {
@@ -119,7 +117,6 @@ export default function PersonAnnouncementsPage() {
     }
   };
 
-  // Tab counts
   const counts = {
     all: anns.length,
     open: anns.filter((a) => a.ann_type === "open").length,
@@ -153,9 +150,213 @@ export default function PersonAnnouncementsPage() {
           to{opacity:1;transform:scale(1) translateY(0)}
         }
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        
+        /* ✅ Responsive container */
+        .announcements-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 16px;
+        }
+        
+        /* ✅ Responsive breakpoints */
+        @media (min-width: 768px) {
+          .announcements-container {
+            padding: 0 24px;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .announcements-container {
+            padding: 0 32px;
+          }
+        }
+        
+        /* ✅ Cards grid для tablet/desktop */
+        @media (min-width: 768px) {
+          .announcements-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .announcements-list {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+          }
+        }
+        
+        /* ✅ Card styling responsive */
+        .announcement-card {
+          background: white;
+          border-radius: 16px;
+          padding: 16px;
+          transition: all 0.15s;
+          cursor: pointer;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        
+        @media (min-width: 768px) {
+          .announcement-card {
+            padding: 18px;
+          }
+        }
+        
+        /* ✅ Tab bar responsive */
+        .tabs-wrapper {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+        }
+        
+        .search-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+        
+        @media (min-width: 640px) {
+  .search-wrapper {
+    margin-top: 0;
+  }
+}}
+
+.refresh-btn {
+  transition: all 0.15s ease;
+}
+
+.refresh-btn:hover {
+  background: #f8fafc;
+  border-color: #6366f1;
+  transform: rotate(0deg);
+}
+
+.refresh-btn:active {
+  transform: scale(0.96);
+}
+        
+        .header-section {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+        
+        @media (min-width: 768px) {
+          .header-section {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+          }
+        }
+        
+        /* ✅ Modal responsive */
+        .modal-content {
+          width: 100%;
+          max-width: 640px;
+          margin: 16px;
+        }
+        
+        @media (min-width: 768px) {
+          .modal-content {
+            max-width: 720px;
+            margin: 20px;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .modal-content {
+            max-width: 800px;
+          }
+        }
+        
+        /* ✅ RFQ grid responsive */
+        .rfq-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        
+        @media (min-width: 640px) {
+          .rfq-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        
+        /* ✅ Activity directions responsive */
+        .activity-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        
+        /* ✅ Card content responsive */
+        .card-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        
+        @media (min-width: 768px) {
+          .card-header {
+            gap: 14px;
+          }
+        }
+        
+        .card-right {
+          flex-shrink: 0;
+          text-align: right;
+          display: none;
+        }
+        
+        @media (min-width: 640px) {
+          .card-right {
+            display: block;
+          }
+        }
+        
+        /* ✅ Truncate title for mobile */
+        .card-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 5px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        @media (min-width: 768px) {
+          .card-title {
+            font-size: 15px;
+          }
+        }
+        
+        /* ✅ Description clamp */
+        .card-description {
+          font-size: 12px;
+          color: #64748b;
+          margin: 0 0 6px;
+          line-height: 1.5;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+        
+        @media (min-width: 768px) {
+          .card-description {
+            -webkit-line-clamp: 1;
+          }
+        }
       `}</style>
 
-      {/* ── Detail Modal ──────────────────────────────────────── */}
+      {/* ── Detail Modal (responsive) ──────────────────────────────────────── */}
       {(selected || detLoading) && (
         <div
           style={{
@@ -175,9 +376,8 @@ export default function PersonAnnouncementsPage() {
           }}
         >
           <div
+            className="modal-content"
             style={{
-              width: "100%",
-              maxWidth: 640,
               background: "white",
               borderRadius: 24,
               boxShadow: "0 32px 80px rgba(0,0,0,0.25)",
@@ -187,6 +387,7 @@ export default function PersonAnnouncementsPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal content (өөрчлөлтгүй) */}
             {detLoading ? (
               <div
                 style={{
@@ -214,10 +415,9 @@ export default function PersonAnnouncementsPage() {
                 const tc = TYPE_CFG[selected.ann_type] ?? TYPE_CFG.open;
                 return (
                   <>
-                    {/* Modal header */}
                     <div
                       style={{
-                        padding: "22px 24px 18px",
+                        padding: "20px 20px 16px",
                         borderBottom: "1px solid #f1f5f9",
                       }}
                     >
@@ -225,14 +425,14 @@ export default function PersonAnnouncementsPage() {
                         style={{
                           display: "flex",
                           alignItems: "flex-start",
-                          gap: 14,
+                          gap: 12,
                           marginBottom: 12,
                         }}
                       >
                         <div
                           style={{
-                            width: 48,
-                            height: 48,
+                            width: 44,
+                            height: 44,
                             borderRadius: 14,
                             flexShrink: 0,
                             background: tc.bg,
@@ -240,7 +440,7 @@ export default function PersonAnnouncementsPage() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            fontSize: 22,
+                            fontSize: 20,
                           }}
                         >
                           {tc.emoji}
@@ -248,7 +448,7 @@ export default function PersonAnnouncementsPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <h2
                             style={{
-                              fontSize: 17,
+                              fontSize: "clamp(16px, 5vw, 17px)",
                               fontWeight: 700,
                               color: "#0f172a",
                               margin: "0 0 6px",
@@ -261,7 +461,7 @@ export default function PersonAnnouncementsPage() {
                             style={{
                               display: "flex",
                               gap: 6,
-                              flexWrap: "wrap" as const,
+                              flexWrap: "wrap",
                             }}
                           >
                             <span
@@ -292,20 +492,6 @@ export default function PersonAnnouncementsPage() {
                                 ⚡ Яаралтай
                               </span>
                             )}
-                            {selected.category_name && (
-                              <span
-                                style={{
-                                  fontSize: 11,
-                                  padding: "2px 9px",
-                                  borderRadius: 99,
-                                  background: "#f8fafc",
-                                  color: "#64748b",
-                                  border: "1px solid #f1f5f9",
-                                }}
-                              >
-                                📁 {selected.category_name}
-                              </span>
-                            )}
                           </div>
                         </div>
                         <button
@@ -324,12 +510,11 @@ export default function PersonAnnouncementsPage() {
                         </button>
                       </div>
 
-                      {/* Meta row */}
                       <div
                         style={{
                           display: "flex",
-                          gap: 16,
-                          flexWrap: "wrap" as const,
+                          gap: 12,
+                          flexWrap: "wrap",
                         }}
                       >
                         {selected.deadline && (
@@ -361,24 +546,17 @@ export default function PersonAnnouncementsPage() {
                             {selected.currency ?? "MNT"}
                           </span>
                         )}
-                        {selected.view_count !== undefined && (
-                          <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                            👁 {selected.view_count} үзсэн
-                          </span>
-                        )}
                       </div>
                     </div>
 
-                    {/* Modal body */}
                     <div
                       style={{
-                        padding: "20px 24px",
+                        padding: "20px",
                         display: "flex",
-                        flexDirection: "column" as const,
+                        flexDirection: "column",
                         gap: 18,
                       }}
                     >
-                      {/* Description */}
                       {selected.description && (
                         <div>
                           <div
@@ -386,7 +564,7 @@ export default function PersonAnnouncementsPage() {
                               fontSize: 10,
                               fontWeight: 700,
                               letterSpacing: "0.08em",
-                              textTransform: "uppercase" as const,
+                              textTransform: "uppercase",
                               color: "#94a3b8",
                               marginBottom: 10,
                             }}
@@ -404,7 +582,6 @@ export default function PersonAnnouncementsPage() {
                               border: "1px solid #f1f5f9",
                             }}
                           >
-                            {/* ✅ <li> болон бусад HTML tag-тай байвал ul wrapper-д оруулах */}
                             {/^<(li|ul|ol|p|div|h[1-6]|strong|em|br|table)/i.test(
                               selected.description.trim(),
                             ) ? (
@@ -422,7 +599,7 @@ export default function PersonAnnouncementsPage() {
                               <p
                                 style={{
                                   margin: 0,
-                                  whiteSpace: "pre-wrap" as const,
+                                  whiteSpace: "pre-wrap",
                                 }}
                               >
                                 {selected.description}
@@ -432,7 +609,6 @@ export default function PersonAnnouncementsPage() {
                         </div>
                       )}
 
-                      {/* Requirements */}
                       {selected.requirements && (
                         <div>
                           <div
@@ -440,7 +616,7 @@ export default function PersonAnnouncementsPage() {
                               fontSize: 10,
                               fontWeight: 700,
                               letterSpacing: "0.08em",
-                              textTransform: "uppercase" as const,
+                              textTransform: "uppercase",
                               color: "#94a3b8",
                               marginBottom: 10,
                             }}
@@ -458,11 +634,9 @@ export default function PersonAnnouncementsPage() {
                               border: "1px solid #f1f5f9",
                             }}
                           >
-                            {/* ✅ \n → мөр, тоо баримт → highlight */}
                             {selected.requirements
                               .split("\n")
                               .map((line: string, i: number) => {
-                                // "Хамгийн ..." гэсэн мөрүүдийг тусгайлан харуулах
                                 const isHighlight =
                                   /хамгийн|өсөлт|эцэст|эхэнд|доод|өндөр/i.test(
                                     line,
@@ -511,7 +685,7 @@ export default function PersonAnnouncementsPage() {
                           </div>
                         </div>
                       )}
-                      {/* RFQ details */}
+
                       {selected.ann_type === "rfq" &&
                         (selected.rfq_quantity ||
                           selected.rfq_delivery_place ||
@@ -522,21 +696,14 @@ export default function PersonAnnouncementsPage() {
                                 fontSize: 10,
                                 fontWeight: 700,
                                 letterSpacing: "0.08em",
-                                textTransform: "uppercase" as const,
+                                textTransform: "uppercase",
                                 color: tc.color,
                                 marginBottom: 10,
                               }}
                             >
                               Үнийн санал — дэлгэрэнгүй
                             </div>
-                            <div
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "1fr 1fr",
-                                gap: 10,
-                                marginBottom: 10,
-                              }}
-                            >
+                            <div className="rfq-grid">
                               {selected.rfq_quantity && (
                                 <div
                                   style={{
@@ -636,7 +803,8 @@ export default function PersonAnnouncementsPage() {
                                   borderRadius: 12,
                                   padding: "14px 16px",
                                   border: "1px solid #f1f5f9",
-                                  whiteSpace: "pre-wrap" as const,
+                                  whiteSpace: "pre-wrap",
+                                  marginTop: 10,
                                 }}
                               >
                                 {selected.rfq_specs}
@@ -645,7 +813,6 @@ export default function PersonAnnouncementsPage() {
                           </div>
                         )}
 
-                      {/* Activity directions */}
                       {(selected.activity_directions ?? []).length > 0 && (
                         <div>
                           <div
@@ -653,20 +820,14 @@ export default function PersonAnnouncementsPage() {
                               fontSize: 10,
                               fontWeight: 700,
                               letterSpacing: "0.08em",
-                              textTransform: "uppercase" as const,
+                              textTransform: "uppercase",
                               color: "#94a3b8",
                               marginBottom: 8,
                             }}
                           >
                             Үйл ажиллагааны чиглэл
                           </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              flexWrap: "wrap" as const,
-                              gap: 6,
-                            }}
-                          >
+                          <div className="activity-tags">
                             {(selected.activity_directions ?? []).map(
                               (d: string) => (
                                 <span
@@ -689,7 +850,6 @@ export default function PersonAnnouncementsPage() {
                         </div>
                       )}
 
-                      {/* Creator */}
                       <div
                         style={{
                           paddingTop: 14,
@@ -744,56 +904,63 @@ export default function PersonAnnouncementsPage() {
 
                     <div
                       style={{
-                        padding: "0 24px 22px",
+                        padding: "0 20px 20px",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                         gap: 10,
+                        flexDirection: "column-reverse",
                       }}
                     >
-                      <button
-                        onClick={() => setSelected(null)}
-                        style={{
-                          padding: "9px 18px",
-                          borderRadius: 10,
-                          border: "1px solid #e2e8f0",
-                          background: "white",
-                          color: "#64748b",
-                          fontSize: 13,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                      >
-                        <ArrowLeft size={14} /> Буцах
-                      </button>
+                      <div style={{ display: "flex", gap: 10, width: "100%" }}>
+                        <button
+                          onClick={() => setSelected(null)}
+                          style={{
+                            flex: 1,
+                            padding: "9px 18px",
+                            borderRadius: 10,
+                            border: "1px solid #e2e8f0",
+                            background: "white",
+                            color: "#64748b",
+                            fontSize: 13,
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <ArrowLeft size={14} /> Буцах
+                        </button>
 
-                      {/* ✅ Бүх зарлалд хүсэлт гаргах боломжтой */}
-                      <button
-                        onClick={() => {
-                          setBidModal(true);
-                          setBidError("");
-                        }}
-                        style={{
-                          padding: "9px 22px",
-                          borderRadius: 10,
-                          border: "none",
-                          background: "linear-gradient(135deg,#4f46e5,#6366f1)",
-                          color: "white",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 7,
-                        }}
-                      >
-                        📨 Хүсэлт гаргах
-                      </button>
+                        <button
+                          onClick={() => {
+                            setBidModal(true);
+                            setBidError("");
+                          }}
+                          style={{
+                            flex: 2,
+                            padding: "9px 22px",
+                            borderRadius: 10,
+                            border: "none",
+                            background:
+                              "linear-gradient(135deg,#4f46e5,#6366f1)",
+                            color: "white",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 7,
+                          }}
+                        >
+                          📨 Хүсэлт гаргах
+                        </button>
+                      </div>
                     </div>
                   </>
                 );
@@ -802,6 +969,8 @@ export default function PersonAnnouncementsPage() {
           </div>
         </div>
       )}
+
+      {/* Bid Modal (өөрчлөлтгүй) */}
       {bidModal && selected && (
         <div
           style={{
@@ -828,7 +997,6 @@ export default function PersonAnnouncementsPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div
               style={{
                 padding: "20px 22px",
@@ -865,7 +1033,7 @@ export default function PersonAnnouncementsPage() {
                     marginTop: 1,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    whiteSpace: "nowrap" as const,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {selected.title}
@@ -888,9 +1056,7 @@ export default function PersonAnnouncementsPage() {
 
             <div style={{ padding: "20px 22px" }}>
               {bidDone ? (
-                <div
-                  style={{ textAlign: "center" as const, padding: "24px 0" }}
-                >
+                <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <div style={{ fontSize: 48, marginBottom: 14 }}>✅</div>
                   <div
                     style={{
@@ -924,7 +1090,6 @@ export default function PersonAnnouncementsPage() {
                     </div>
                   )}
 
-                  {/* ✅ Танай мэдээлэл автоматаар явна гэж мэдэгдэх */}
                   <div
                     style={{
                       padding: "14px 16px",
@@ -940,7 +1105,7 @@ export default function PersonAnnouncementsPage() {
                         fontWeight: 700,
                         color: "#94a3b8",
                         letterSpacing: "0.08em",
-                        textTransform: "uppercase" as const,
+                        textTransform: "uppercase",
                         marginBottom: 10,
                       }}
                     >
@@ -949,7 +1114,7 @@ export default function PersonAnnouncementsPage() {
                     <div
                       style={{
                         display: "flex",
-                        flexDirection: "column" as const,
+                        flexDirection: "column",
                         gap: 6,
                       }}
                     >
@@ -1066,387 +1231,379 @@ export default function PersonAnnouncementsPage() {
           </div>
         </div>
       )}
-      {/* ── Page header ───────────────────────────────────────── */}
-      <div style={{ marginBottom: 20 }}>
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: "#0f172a",
-            margin: "0 0 4px",
-          }}
-        >
-          Зарлалууд
-        </h1>
-        <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
-          Нийт нийтлэгдсэн худалдан авалтын зарлалууд
-        </p>
-      </div>
 
-      {/* ── Tabs ─────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          gap: 6,
-          marginBottom: 16,
-          flexWrap: "wrap" as const,
-        }}
-      >
-        {TABS.map(({ key, label }) => {
-          const tc = key === "all" ? null : TYPE_CFG[key];
-          const cnt = counts[key as keyof typeof counts];
-          const active = typeF === key;
-          return (
-            <button
-              key={key}
-              onClick={() => setTypeF(key)}
+      {/* ── MAIN CONTENT (responsive layout) ───────────────────────── */}
+      <div className="announcements-container">
+        <div className="header-section">
+          <div>
+            <h1
               style={{
-                padding: "8px 14px",
-                borderRadius: 10,
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 500,
-                fontFamily: "inherit",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                border: active
-                  ? `1.5px solid ${tc?.color ?? "#6366f1"}`
-                  : "1.5px solid #e2e8f0",
-                background: active ? `${tc?.color ?? "#6366f1"}10` : "white",
-                color: active ? (tc?.color ?? "#6366f1") : "#64748b",
+                fontSize: "clamp(18px, 5vw, 20px)",
+                fontWeight: 700,
+                color: "#0f172a",
+                margin: "0 0 4px",
               }}
             >
-              {tc && <span>{tc.emoji}</span>}
-              {label}
-              {/* ✅ Count badge */}
-              {cnt > 0 && (
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "1px 6px",
-                    borderRadius: 99,
-                    lineHeight: "16px",
-                    background: active ? (tc?.color ?? "#6366f1") : "#f1f5f9",
-                    color: active ? "white" : "#64748b",
-                  }}
-                >
-                  {cnt}
-                </span>
-              )}
-            </button>
-          );
-        })}
-
-        {/* Search + Refresh */}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-          <div style={{ position: "relative" }}>
-            <Search
-              size={13}
+              Зарлалууд
+            </h1>
+            <p
               style={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
+                fontSize: "clamp(12px, 4vw, 13px)",
                 color: "#94a3b8",
+                margin: 0,
               }}
-            />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Хайх..."
+            >
+              Нийт нийтлэгдсэн худалдан авалтын зарлалууд
+            </p>
+          </div>
+
+          {/* ✅ Search + Refresh - хэвтээ байрлалтай, refresh нь дөрвөлжин */}
+          <div className="search-wrapper">
+            <div
+              style={{ position: "relative", width: "100%", minWidth: "180px" }}
+            >
+              <Search
+                size={13}
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#94a3b8",
+                }}
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Хайх..."
+                style={{
+                  padding: "8px 12px 8px 32px",
+                  borderRadius: 10,
+                  border: "1.5px solid #e2e8f0",
+                  fontSize: 12,
+                  outline: "none",
+                  background: "white",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+                onFocus={(e) =>
+                  ((e.target as HTMLElement).style.borderColor = "#6366f1")
+                }
+                onBlur={(e) =>
+                  ((e.target as HTMLElement).style.borderColor = "#e2e8f0")
+                }
+              />
+            </div>
+
+            {/* ✅ Refresh button - дөрвөлжин хэлбэртэй */}
+            <button
+              onClick={load}
               style={{
-                padding: "8px 12px 8px 32px",
+                width: 34,
+                height: 34,
                 borderRadius: 10,
                 border: "1.5px solid #e2e8f0",
-                fontSize: 12,
-                outline: "none",
                 background: "white",
-                width: 180,
-                boxSizing: "border-box" as const,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                transition: "all 0.15s",
               }}
-              onFocus={(e) =>
-                ((e.target as HTMLElement).style.borderColor = "#6366f1")
-              }
-              onBlur={(e) =>
-                ((e.target as HTMLElement).style.borderColor = "#e2e8f0")
-              }
-            />
-          </div>
-          <button
-            onClick={load}
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: "1px solid #e2e8f0",
-              background: "white",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <RefreshCw
-              size={13}
-              style={{
-                color: "#64748b",
-                animation: loading ? "spin 1s linear infinite" : undefined,
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLElement;
+                el.style.background = "#f8fafc";
+                el.style.borderColor = "#6366f1";
               }}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* ── List ─────────────────────────────────────────────── */}
-      {loading ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: 56,
-            gap: 10,
-          }}
-        >
-          <Loader2
-            size={20}
-            style={{ color: "#6366f1", animation: "spin .8s linear infinite" }}
-          />
-          <span style={{ fontSize: 13, color: "#94a3b8" }}>
-            Ачаалж байна...
-          </span>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center" as const,
-            padding: "56px 0",
-            background: "white",
-            borderRadius: 18,
-            border: "1px solid #f1f5f9",
-          }}
-        >
-          <FileText
-            size={32}
-            style={{
-              color: "#e2e8f0",
-              display: "block",
-              margin: "0 auto 12px",
-            }}
-          />
-          <p style={{ fontSize: 13, color: "#cbd5e1", margin: 0 }}>
-            {search
-              ? "Хайлтад тохирох зарлал олдсонгүй"
-              : "Зарлал байхгүй байна"}
-          </p>
-        </div>
-      ) : (
-        <div
-          style={{ display: "flex", flexDirection: "column" as const, gap: 10 }}
-        >
-          {filtered.map((a) => {
-            const tc = TYPE_CFG[a.ann_type] ?? TYPE_CFG.open;
-            return (
-              <div
-                key={a.id}
-                onClick={() => openDetail(a.id)}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLElement;
+                el.style.background = "white";
+                el.style.borderColor = "#e2e8f0";
+              }}
+            >
+              <RefreshCw
+                size={14}
                 style={{
-                  background: "white",
-                  borderRadius: 16,
-                  padding: "18px 20px",
-                  border: `1px solid ${tc.border}`,
-                  borderLeft: `3px solid ${tc.color}`,
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+                  color: "#64748b",
+                  animation: loading ? "spin 1s linear infinite" : undefined,
+                }}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="tabs-wrapper">
+          {TABS.map(({ key, label }) => {
+            const tc = key === "all" ? null : TYPE_CFG[key];
+            const cnt = counts[key as keyof typeof counts];
+            const active = typeF === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setTypeF(key)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 10,
                   cursor: "pointer",
-                  transition: "all .15s",
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.boxShadow = "0 6px 20px rgba(0,0,0,0.09)";
-                  el.style.transform = "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
-                  el.style.transform = "translateY(0)";
+                  fontSize: "clamp(11px, 3vw, 12px)",
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  border: active
+                    ? `1.5px solid ${tc?.color ?? "#6366f1"}`
+                    : "1.5px solid #e2e8f0",
+                  background: active ? `${tc?.color ?? "#6366f1"}10` : "white",
+                  color: active ? (tc?.color ?? "#6366f1") : "#64748b",
+                  whiteSpace: "nowrap",
                 }}
               >
-                <div
-                  style={{ display: "flex", alignItems: "flex-start", gap: 14 }}
-                >
-                  <div
+                {tc && <span>{tc.emoji}</span>}
+                {label}
+                {cnt > 0 && (
+                  <span
                     style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 12,
-                      flexShrink: 0,
-                      background: tc.bg,
-                      border: `1px solid ${tc.border}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 20,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "1px 6px",
+                      borderRadius: 99,
+                      lineHeight: "16px",
+                      background: active ? (tc?.color ?? "#6366f1") : "#f1f5f9",
+                      color: active ? "white" : "#64748b",
                     }}
                   >
-                    {tc.emoji}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 6,
-                        flexWrap: "wrap" as const,
-                        marginBottom: 5,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          padding: "2px 8px",
-                          borderRadius: 99,
-                          background: tc.bg,
-                          color: tc.color,
-                          border: `1px solid ${tc.border}`,
-                        }}
-                      >
-                        {tc.label}
-                      </span>
-                      {a.is_urgent && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            padding: "2px 8px",
-                            borderRadius: 99,
-                            background: "#fef2f2",
-                            color: "#ef4444",
-                            border: "1px solid #fecaca",
-                          }}
-                        >
-                          ⚡ Яаралтай
-                        </span>
-                      )}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "#0f172a",
-                        marginBottom: 5,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap" as const,
-                      }}
-                    >
-                      {a.title}
-                    </div>
-
-                    {a.description && (
-                      <p
-                        style={{
-                          fontSize: 12,
-                          color: "#64748b",
-                          margin: "0 0 6px",
-                          lineHeight: 1.5,
-                          overflow: "hidden",
-                          display: "-webkit-box" as const,
-                          WebkitLineClamp: 1,
-                          WebkitBoxOrient: "vertical" as const,
-                        }}
-                      >
-                        {/* ✅ HTML strip + plain text харуулах */}
-                        {a.description
-                          .replace(/<[^>]*>/g, " ")
-                          .replace(/\s+/g, " ")
-                          .trim()
-                          .slice(0, 120)}
-                      </p>
-                    )}
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 14,
-                        flexWrap: "wrap" as const,
-                      }}
-                    >
-                      {a.category_name && (
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                          📁 {a.category_name}
-                        </span>
-                      )}
-                      {(a.budget_from || a.budget_to) && (
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                          💰 {a.budget_from?.toLocaleString()}
-                          {a.budget_to
-                            ? ` — ${a.budget_to.toLocaleString()}`
-                            : ""}{" "}
-                          {a.currency}
-                        </span>
-                      )}
-                      {a.deadline && (
-                        <span
-                          style={{
-                            fontSize: 11,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 3,
-                            color:
-                              new Date(a.deadline) < new Date()
-                                ? "#ef4444"
-                                : "#94a3b8",
-                          }}
-                        >
-                          <Clock size={10} />
-                          {new Date(a.deadline).toLocaleDateString("mn-MN")}
-                        </span>
-                      )}
-                      {a.ann_type === "rfq" && a.rfq_quantity && (
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                          📦 {a.rfq_quantity} {a.rfq_unit}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ flexShrink: 0, textAlign: "right" as const }}>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "#94a3b8",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {new Date(a.created_at).toLocaleDateString("mn-MN")}
-                    </div>
-                    {a.created_by_name && (
-                      <div style={{ fontSize: 10, color: "#cbd5e1" }}>
-                        {a.created_by_name}
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        marginTop: 8,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: tc.color,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      Харах →
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    {cnt}
+                  </span>
+                )}
+              </button>
             );
           })}
         </div>
-      )}
+
+        {/* ── List (Grid responsive) ── */}
+        {loading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: 56,
+              gap: 10,
+            }}
+          >
+            <Loader2
+              size={20}
+              style={{
+                color: "#6366f1",
+                animation: "spin .8s linear infinite",
+              }}
+            />
+            <span style={{ fontSize: 13, color: "#94a3b8" }}>
+              Ачаалж байна...
+            </span>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "56px 0",
+              background: "white",
+              borderRadius: 18,
+              border: "1px solid #f1f5f9",
+            }}
+          >
+            <FileText
+              size={32}
+              style={{
+                color: "#e2e8f0",
+                display: "block",
+                margin: "0 auto 12px",
+              }}
+            />
+            <p style={{ fontSize: 13, color: "#cbd5e1", margin: 0 }}>
+              {search
+                ? "Хайлтад тохирох зарлал олдсонгүй"
+                : "Зарлал байхгүй байна"}
+            </p>
+          </div>
+        ) : (
+          <div
+            className="announcements-list"
+            style={{ display: "grid", gap: "12px" }}
+          >
+            {filtered.map((a) => {
+              const tc = TYPE_CFG[a.ann_type] ?? TYPE_CFG.open;
+              return (
+                <div
+                  key={a.id}
+                  className="announcement-card"
+                  onClick={() => openDetail(a.id)}
+                  style={{
+                    border: `1px solid ${tc.border}`,
+                    borderLeft: `3px solid ${tc.color}`,
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.boxShadow = "0 6px 20px rgba(0,0,0,0.09)";
+                    el.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
+                    el.style.transform = "translateY(0)";
+                  }}
+                >
+                  <div className="card-header">
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        flexShrink: 0,
+                        background: tc.bg,
+                        border: `1px solid ${tc.border}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 18,
+                      }}
+                    >
+                      {tc.emoji}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          flexWrap: "wrap",
+                          marginBottom: 5,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: "2px 8px",
+                            borderRadius: 99,
+                            background: tc.bg,
+                            color: tc.color,
+                            border: `1px solid ${tc.border}`,
+                          }}
+                        >
+                          {tc.label}
+                        </span>
+                        {a.is_urgent && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: "2px 8px",
+                              borderRadius: 99,
+                              background: "#fef2f2",
+                              color: "#ef4444",
+                              border: "1px solid #fecaca",
+                            }}
+                          >
+                            ⚡ Яаралтай
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="card-title">{a.title}</div>
+
+                      {a.description && (
+                        <p className="card-description">
+                          {a.description
+                            .replace(/<[^>]*>/g, " ")
+                            .replace(/\s+/g, " ")
+                            .trim()
+                            .slice(0, 120)}
+                        </p>
+                      )}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 10,
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                        }}
+                      >
+                        {a.category_name && (
+                          <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                            📁 {a.category_name}
+                          </span>
+                        )}
+                        {(a.budget_from || a.budget_to) && (
+                          <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                            💰 {a.budget_from?.toLocaleString()}
+                            {a.budget_to
+                              ? ` — ${a.budget_to.toLocaleString()}`
+                              : ""}{" "}
+                            {a.currency}
+                          </span>
+                        )}
+                        {a.deadline && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 3,
+                              color:
+                                new Date(a.deadline) < new Date()
+                                  ? "#ef4444"
+                                  : "#94a3b8",
+                            }}
+                          >
+                            <Clock size={10} />
+                            {new Date(a.deadline).toLocaleDateString("mn-MN")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="card-right">
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: "#94a3b8",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {new Date(a.created_at).toLocaleDateString("mn-MN")}
+                      </div>
+                      {a.created_by_name && (
+                        <div style={{ fontSize: 10, color: "#cbd5e1" }}>
+                          {a.created_by_name}
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          marginTop: 8,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: tc.color,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 3,
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        Харах →
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

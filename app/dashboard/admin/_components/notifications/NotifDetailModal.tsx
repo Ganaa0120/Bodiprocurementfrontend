@@ -1,8 +1,11 @@
 "use client";
-import { useState, useRef } from "react";
-import { X, Loader2, Send, Pencil, Image as ImageIcon } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { X, Loader2, Send, Pencil, Image as ImageIcon, Filter, Target } from "lucide-react";
 import { API, getToken } from "./constants";
-import { recipientLabel, type Notif } from "./types";
+import { recipientLabel, type Notif, type DirGroup } from "./types";
+
+const labelOf = (n: any, fallback: string | number = "") =>
+  n?.label_mn ?? n?.label ?? n?.name_mn ?? n?.name ?? n?.main_label ?? n?.sub_label ?? `#${fallback}`;
 
 export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
   notif: Notif; onClose: () => void;
@@ -15,9 +18,24 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
   const [message,      setMessage]      = useState(notif.message ?? "");
   const [imageFile,    setImageFile]    = useState<File|null>(null);
   const [imagePreview, setImagePreview] = useState(notif.image_url ?? "");
+  const [directions,   setDirections]   = useState<any[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const rl = recipientLabel(notif.recipient_type);
+  const dirFilter = (notif.direction_filter ?? []) as DirGroup[];
+
+  /* Чиглэлүүдийг хайхын тулд каталог татах (хадгалагдсан filter-ийн label руу хөрвүүлэхэд хэрэгтэй) */
+  useEffect(() => {
+    if (dirFilter.length === 0) return;
+    fetch(`${API}/api/activity-directions`)
+      .then(r => r.json())
+      .then(d => setDirections(d.directions ?? []))
+      .catch(() => {});
+  }, [dirFilter.length]);
+
+  const findById = (id: number): any =>
+    directions.find(d => d?.id === id) ||
+    directions.flatMap(d => d?.subs ?? d?.children ?? []).find((s: any) => s?.id === id);
 
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
@@ -48,6 +66,8 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
           title, message: message || null,
           recipient_type: notif.recipient_type,
           recipient_ids: [],
+          // ⭐ Дахин илгээхэд анхны filter-ийг хадгална
+          direction_filter: dirFilter.length > 0 ? dirFilter : null,
           image_url: image_url || null,
         }),
       });
@@ -71,6 +91,13 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
     display:"block" as const, marginBottom:5,
   };
 
+  /* Resend mode-ийн товч тайлбар */
+  const resendHint = dirFilter.length > 0
+    ? `${notif.recipient_type === "all" ? "Нийлүүлэгчид" : notif.recipient_type === "individual" ? "Хувь хүн" : "Байгууллага"} (${dirFilter.length} чиглэлээр шүүгдсэн) рүү дахин илгээгдэнэ`
+    : notif.recipient_type === "all" ? "Бүх нийлүүлэгчдэд дахин илгээгдэнэ"
+    : notif.recipient_type === "individual" ? "Бүх хувь хүнд дахин илгээгдэнэ"
+    : "Бүх байгууллагад дахин илгээгдэнэ";
+
   return (
     <div style={{ position:"fixed",inset:0,zIndex:250,display:"flex",alignItems:"flex-start",
       justifyContent:"center",background:"rgba(0,0,0,0.82)",backdropFilter:"blur(10px)",
@@ -90,7 +117,7 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
             </div>
           </div>
           <div style={{ display:"flex",gap:6,alignItems:"center" }}>
-            {!editing && (
+            {!editing && canEdit && (
               <button onClick={() => setEditing(true)}
                 style={{ background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:9,padding:"6px 12px",cursor:"pointer",color:"#60a5fa",fontSize:12,fontFamily:"inherit",display:"flex",alignItems:"center",gap:5 }}>
                 <Pencil size={12}/> Засах
@@ -107,13 +134,18 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
           <span style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:99,background:rl.bg,fontSize:11,fontWeight:600,color:rl.color }}>
             <span style={{ width:5,height:5,borderRadius:"50%",background:rl.color }}/>{rl.l}
           </span>
+          {dirFilter.length > 0 && (
+            <span style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:600,background:"rgba(59,130,246,0.12)",color:"#60a5fa" }}>
+              <Filter size={10}/>{dirFilter.length} чиглэлээр шүүсэн
+            </span>
+          )}
           <span style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:600,background:notif.is_active?"rgba(16,185,129,0.1)":"rgba(148,163,184,0.08)",color:notif.is_active?"#10b981":"rgba(148,163,184,0.5)" }}>
             <span style={{ width:5,height:5,borderRadius:"50%",background:notif.is_active?"#10b981":"rgba(148,163,184,0.4)" }}/>
             {notif.is_active ? "Идэвхтэй" : "Идэвхгүй"}
           </span>
-          {notif.sent_by_name && (
-            <span style={{ fontSize:11,color:"rgba(148,163,184,0.4)",padding:"3px 10px",borderRadius:99,background:"rgba(255,255,255,0.03)" }}>
-              👤 {notif.sent_by_name}
+          {typeof notif.sent_count === "number" && (
+            <span style={{ fontSize:11,color:"rgba(148,163,184,0.6)",padding:"3px 10px",borderRadius:99,background:"rgba(255,255,255,0.03)" }}>
+              📤 {notif.sent_count} илгээгдсэн
             </span>
           )}
         </div>
@@ -136,6 +168,59 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
                   <span style={{ fontSize:10,padding:"3px 10px",borderRadius:99,fontWeight:600,flexShrink:0,background:notif.sent_by_role==="super_admin"?"rgba(239,68,68,0.1)":"rgba(59,130,246,0.1)",color:notif.sent_by_role==="super_admin"?"#f87171":"#60a5fa" }}>
                     {notif.sent_by_role === "super_admin" ? "Super Admin" : "Мини Админ"}
                   </span>
+                </div>
+              </div>
+            )}
+
+            {/* ⭐ ШИНЭ: Хадгалагдсан чиглэлийн шүүлтүүр */}
+            {dirFilter.length > 0 && (
+              <div style={{ padding:"14px 16px",borderRadius:14,
+                background:"rgba(59,130,246,0.05)",border:"1px solid rgba(59,130,246,0.18)" }}>
+                <div style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",
+                  textTransform:"uppercase" as const,color:"rgba(96,165,250,0.7)",
+                  marginBottom:10,display:"flex",alignItems:"center",gap:6 }}>
+                  <Target size={11}/> Илгээсэн чиглэл (шүүлтүүр)
+                </div>
+                <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                  {dirFilter.map(g => {
+                    const main = findById(g.main_id);
+                    const subs = (g.sub_ids ?? []).map(sid => {
+                      const sub = (main?.subs ?? main?.children ?? []).find?.((s: any) => s?.id === sid)
+                                ?? findById(sid);
+                      return { id: sid, label: labelOf(sub, sid) };
+                    });
+                    return (
+                      <div key={g.main_id}
+                        style={{ background:"rgba(59,130,246,0.06)",
+                          border:"1px solid rgba(59,130,246,0.15)",
+                          borderRadius:9,padding:"8px 11px" }}>
+                        <div style={{ fontSize:12,fontWeight:600,color:"#bfdbfe",
+                          marginBottom: subs.length>0 ? 6 : 0,
+                          display:"flex",alignItems:"center",gap:6 }}>
+                          <span style={{ width:4,height:4,borderRadius:"50%",background:"#60a5fa" }}/>
+                          {labelOf(main, g.main_id)}
+                          {subs.length === 0 && (
+                            <span style={{ fontSize:9,padding:"2px 6px",borderRadius:99,
+                              background:"rgba(59,130,246,0.15)",color:"#60a5fa",fontWeight:700 }}>
+                              Бүх дэд
+                            </span>
+                          )}
+                        </div>
+                        {subs.length > 0 && (
+                          <div style={{ display:"flex",flexWrap:"wrap",gap:4,paddingLeft:10 }}>
+                            {subs.map(s => (
+                              <span key={s.id} style={{ fontSize:10,padding:"2px 7px",
+                                borderRadius:5,background:"rgba(255,255,255,0.05)",
+                                color:"rgba(255,255,255,0.7)",
+                                border:"1px solid rgba(255,255,255,0.07)" }}>
+                                {s.label}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -218,7 +303,7 @@ export function NotifDetailModal({ notif, onClose, onResend, showToast }: {
             </div>
             <div style={{ padding:"10px 14px",borderRadius:10,background:"rgba(59,130,246,0.05)",border:"1px solid rgba(59,130,246,0.12)" }}>
               <div style={{ fontSize:11,color:"rgba(96,165,250,0.7)" }}>
-                📤 {notif.recipient_type==="all" ? "Бүх нийлүүлэгчдэд дахин илгээгдэнэ" : notif.recipient_type==="individual" ? "Хувь хүн нийлүүлэгчдэд дахин илгээгдэнэ" : "Байгууллага нийлүүлэгчдэд дахин илгээгдэнэ"}
+                📤 {resendHint}
               </div>
             </div>
             <div style={{ display:"flex",gap:10 }}>

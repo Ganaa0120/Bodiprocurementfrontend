@@ -1814,7 +1814,7 @@ export default function PersonProfilePage() {
   };
 
   // Хадгалах — validation хийхгүй, draft хадгална
-  const handleSaveDraft = () => doSave();
+  const handleSaveDraft = () => doSave({ status: "pending" });
 
   // Илгээх товч дарах
   const handleSubmitClick = () => setShowSubmitModal(true);

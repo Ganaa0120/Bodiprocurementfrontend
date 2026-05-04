@@ -1,10 +1,11 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
-import { RefreshCw, Eye, Search } from "lucide-react";
+import { RefreshCw, Eye, Search, Download } from "lucide-react";
 import { API, ORG_COLORS } from "./constants";
 import { getStatus, fmtDate } from "./utils";
 import { OrgAvatar } from "./LogoComponents";
 import { DetailModal } from "./DetailModal";
+import { ExcelExportModal } from "../ExcelImportModal";
 
 function Badge({ status }: { status: string }) {
   const c = getStatus(status);
@@ -58,6 +59,7 @@ function Th({ h }: { h: string }) {
 export function CompaniesTab({ data }: { data: any }) {
   const [search, setSearch] = useState("");
   const [detailOrg, setDetailOrg] = useState<any>(null);
+  const [showExport, setShowExport] = useState(false);
   const [permTypes, setPermTypes] = useState<{ id: number; label: string }[]>(
     [],
   );
@@ -148,7 +150,7 @@ export function CompaniesTab({ data }: { data: any }) {
         <DetailModal
           org={detailOrg}
           dirs={dirs}
-          permTypes={permTypes} // ✅ нэмнэ
+          permTypes={permTypes}
           onClose={() => setDetailOrg(null)}
           onStatusChange={handleStatusChange}
           onDeleted={(id) => {
@@ -161,6 +163,16 @@ export function CompaniesTab({ data }: { data: any }) {
         />
       )}
 
+      {/* Excel татах — зөвхөн байгууллага */}
+      {showExport && (
+        <ExcelExportModal
+          type="companies"
+          totalCount={(data.companies ?? []).length}
+          onClose={() => setShowExport(false)}
+          showToast={showToast}
+        />
+      )}
+
       <div
         className="page-in"
         style={{ display: "flex", flexDirection: "column", gap: 16 }}
@@ -170,6 +182,8 @@ export function CompaniesTab({ data }: { data: any }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexWrap: "wrap",
+            gap: 10,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -198,32 +212,55 @@ export function CompaniesTab({ data }: { data: any }) {
                 : `${filtered.length} / ${(data.companies ?? []).length} компани`}
             </span>
           </div>
-          <button
-            onClick={data.fetchCompanies}
-            style={{
-              padding: "9px 14px",
-              borderRadius: 10,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              color: "rgba(148,163,184,0.6)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 12,
-              fontFamily: "inherit",
-            }}
-          >
-            <RefreshCw
-              size={13}
+
+          {/* Action buttons — Excel татах + Дахин ачаалах */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => setShowExport(true)}
               style={{
-                animation: data.companiesLoading
-                  ? "spin 1s linear infinite"
-                  : undefined,
+                padding: "9px 14px",
+                borderRadius: 10,
+                background: "rgba(167,139,250,0.08)",
+                border: "1px solid rgba(167,139,250,0.22)",
+                color: "#a78bfa",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "inherit",
               }}
-            />
-            Дахин ачаалах
-          </button>
+            >
+              <Download size={13} /> Excel татах
+            </button>
+            <button
+              onClick={data.fetchCompanies}
+              style={{
+                padding: "9px 14px",
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                color: "rgba(148,163,184,0.6)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontFamily: "inherit",
+              }}
+            >
+              <RefreshCw
+                size={13}
+                style={{
+                  animation: data.companiesLoading
+                    ? "spin 1s linear infinite"
+                    : undefined,
+                }}
+              />
+              Дахин ачаалах
+            </button>
+          </div>
         </div>
 
         <div

@@ -15,7 +15,6 @@ import {
   ClipboardList,
   Megaphone,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -88,7 +87,6 @@ export default function PersonLayout({
         setUser(parsed);
       } catch {
         router.push("/login");
-        return;
       }
     }
 
@@ -136,11 +134,11 @@ export default function PersonLayout({
 
     const interval = setInterval(refreshUser, 30 * 60 * 1000);
     window.addEventListener("focus", refreshUser);
-    window.addEventListener("user-updated", refreshUser); // ✅
+    window.addEventListener("user-updated", refreshUser);
     return () => {
       clearInterval(interval);
       window.removeEventListener("focus", refreshUser);
-      window.removeEventListener("user-updated", refreshUser); // ✅
+      window.removeEventListener("user-updated", refreshUser);
     };
   }, []);
 
@@ -154,36 +152,11 @@ export default function PersonLayout({
       .toUpperCase() || "?";
 
   const NAV = [
-    {
-      href: "/dashboard/person",
-      label: "Хянах самбар",
-      icon: LayoutDashboard,
-      badge: 0,
-    },
-    {
-      href: "/dashboard/person/announcements",
-      label: "Зарлалууд",
-      icon: Megaphone,
-      badge: 0,
-    },
-    {
-      href: "/dashboard/person/applications",
-      label: "Миний хүсэлтүүд",
-      icon: ClipboardList,
-      badge: 0,
-    },
-    {
-      href: "/dashboard/person/notifications",
-      label: "Мэдэгдэл",
-      icon: Bell,
-      badge: unreadCount,
-    },
-    {
-      href: "/dashboard/person/profile",
-      label: "Хувийн мэдээлэл",
-      icon: User,
-      badge: 0,
-    },
+    { href: "/dashboard/person", label: "Хянах самбар", icon: LayoutDashboard, badge: 0 },
+    { href: "/dashboard/person/announcements", label: "Зарлалууд", icon: Megaphone, badge: 0 },
+    { href: "/dashboard/person/applications", label: "Миний хүсэлтүүд", icon: ClipboardList, badge: 0 },
+    { href: "/dashboard/person/notifications", label: "Мэдэгдэл", icon: Bell, badge: unreadCount },
+    { href: "/dashboard/person/profile", label: "Хувийн мэдээлэл", icon: User, badge: 0 },
   ];
 
   const logout = () => {
@@ -195,7 +168,7 @@ export default function PersonLayout({
   const currentPage = NAV.find(
     (n) =>
       pathname === n.href ||
-      (n.href !== "/dashboard/person" && pathname.startsWith(n.href)),
+      (n.href !== "/dashboard/person" && pathname.startsWith(n.href))
   );
 
   return (
@@ -203,39 +176,107 @@ export default function PersonLayout({
       style={{
         minHeight: "100vh",
         display: "flex",
-        background: "#f8f9fc",
-        fontFamily: "'Inter',sans-serif",
+        background: "#f5f6f8",
+        fontFamily:
+          "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        *{box-sizing:border-box;font-family:'Inter',sans-serif}
-        ::-webkit-scrollbar{width:4px}
-        ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:99px}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-        .nav-lnk{
-          display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
-          text-decoration:none;font-size:13px;font-weight:500;color:#64748b;
-          transition:all .15s;margin-bottom:2px;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+        
+        * {
+          box-sizing: border-box;
         }
-        .nav-lnk:hover{background:#f1f5f9;color:#1e293b;}
-        .nav-lnk.active{
-          background:linear-gradient(135deg,#6366f1,#818cf8);color:white;
-          box-shadow:0 4px 12px rgba(99,102,241,0.3);
+        
+        ::-webkit-scrollbar {
+          width: 4px;
         }
-        .sidebar-wrap{
-          position:fixed;top:0;left:0;bottom:0;width:240px;
-          background:white;border-right:1px solid #f1f5f9;
-          display:flex;flex-direction:column;z-index:40;
-          transition:transform .3s;box-shadow:4px 0 24px rgba(0,0,0,0.04);
+        
+        ::-webkit-scrollbar-track {
+          background: #eef2f6;
         }
-        .mob-btn{display:none}
-        .main-wrap{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;}
-        @media(max-width:1024px){
-          .sidebar-wrap{transform:translateX(-100%)}
-          .sidebar-wrap.open{transform:translateX(0)}
-          .mob-btn{display:flex!important}
-          .main-wrap{margin-left:0!important}
+        
+        ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 99px;
+        }
+        
+        /* Minimal nav link */
+        .nav-link {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 12px;
+          margin: 2px 0;
+          border-radius: 10px;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 500;
+          color: #5a6874;
+          transition: all 0.15s ease;
+        }
+        
+        .nav-link:hover {
+          background: #f0f2f5;
+          color: #1e2a3a;
+        }
+        
+        .nav-link.active {
+          background: #eef2ff;
+          color: #4f46e5;
+        }
+        
+        .nav-link.active svg {
+          color: #4f46e5;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          width: 260px;
+          background: white;
+          border-right: 1px solid #e8edf2;
+          display: flex;
+          flex-direction: column;
+          z-index: 40;
+          transition: transform 0.2s ease;
+        }
+        
+        .mobile-menu-btn {
+          display: none;
+        }
+        
+        .main-area {
+          flex: 1;
+          margin-left: 260px;
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+        }
+        
+        @media (max-width: 1024px) {
+          .sidebar {
+            transform: translateX(-100%);
+          }
+          .sidebar.open {
+            transform: translateX(0);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+          }
+          .mobile-menu-btn {
+            display: flex !important;
+          }
+          .main-area {
+            margin-left: 0 !important;
+          }
+        }
+        
+        /* Topbar minimal */
+        .topbar {
+          background: white;
+          border-bottom: 1px solid #e8edf2;
         }
       `}</style>
 
@@ -246,81 +287,87 @@ export default function PersonLayout({
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 30,
-            background: "rgba(0,0,0,0.2)",
-            backdropFilter: "blur(4px)",
+            zIndex: 35,
+            background: "rgba(0, 0, 0, 0.3)",
           }}
         />
       )}
 
-      {/* ── Sidebar ── */}
-      <aside className={`sidebar-wrap ${open ? "open" : ""}`}>
+      {/* ── Sidebar (Minimal) ── */}
+      <aside className={`sidebar ${open ? "open" : ""}`}>
         {/* Logo */}
         <div
           style={{
             padding: "20px 20px 16px",
-            borderBottom: "1px solid #f8fafc",
+            borderBottom: "1px solid #eef2f6",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div
               style={{
-                width: 34,
-                height: 34,
+                width: 32,
+                height: 32,
                 borderRadius: 10,
-                flexShrink: 0,
-                background: "linear-gradient(135deg,#6366f1,#818cf8)",
+                background: "#4f46e5",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Building2 size={16} color="white" />
+              <Building2 size={15} color="white" />
             </div>
             <div>
               <p
                 style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  color: "#0f172a",
+                  color: "#1e2a3a",
                   margin: 0,
                 }}
               >
                 Bodi Group
               </p>
-              <p style={{ fontSize: 10, color: "#94a3b8", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: 10,
+                  color: "#8a99a8",
+                  margin: 0,
+                }}
+              >
                 Нийлүүлэгч портал
               </p>
             </div>
           </div>
         </div>
 
-        {/* User card */}
+        {/* User info - minimal card */}
         <div
-          style={{ padding: "14px 20px", borderBottom: "1px solid #f8fafc" }}
+          style={{
+            padding: "16px 20px",
+            borderBottom: "1px solid #eef2f6",
+          }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
+              gap: 12,
               marginBottom: 8,
             }}
           >
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                flexShrink: 0,
-                overflow: "hidden",
-                background: "linear-gradient(135deg,#e0e7ff,#c7d2fe)",
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: "#eef2ff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 13,
-                fontWeight: 700,
-                color: "#6366f1",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#4f46e5",
+                overflow: "hidden",
               }}
             >
               {user?.profile_photo_url ? (
@@ -338,39 +385,37 @@ export default function PersonLayout({
                 style={{
                   fontSize: 13,
                   fontWeight: 600,
-                  color: "#0f172a",
+                  color: "#1e2a3a",
                   margin: 0,
+                  whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
                 }}
               >
-                {[user?.last_name, user?.first_name]
-                  .filter(Boolean)
-                  .join(" ") || "Хэрэглэгч"}
+                {[user?.last_name, user?.first_name].filter(Boolean).join(" ") ||
+                  "Хэрэглэгч"}
               </p>
               <p
                 style={{
                   fontSize: 10,
-                  color: "#94a3b8",
-                  margin: 0,
-                  fontFamily: "monospace",
+                  color: "#8a99a8",
+                  margin: "2px 0 0",
                 }}
               >
-                {user?.supplier_number || user?.email || "—"}
+                {user?.supplier_number || "—"}
               </p>
             </div>
           </div>
 
-          {/* Status */}
-          <span
+          {/* Status badge */}
+          <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 5,
               padding: "3px 10px",
               borderRadius: 99,
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 500,
               background: pStatus.bg,
               color: pStatus.color,
@@ -382,52 +427,42 @@ export default function PersonLayout({
                 height: 5,
                 borderRadius: "50%",
                 background: pStatus.dot,
-                animation:
-                  user?.status === "pending" ? "pulse 1.5s infinite" : "none",
               }}
             />
             {pStatus.label}
-          </span>
+          </div>
 
-          {/* Буцаасан шалтгаан */}
+          {/* Return reason */}
           {isReturned && user?.return_reason && (
             <div
               style={{
-                marginTop: 8,
-                padding: "7px 10px",
+                marginTop: 10,
+                padding: "6px 10px",
                 borderRadius: 8,
                 background: "#fef2f2",
-                border: "1px solid #fecaca",
+                fontSize: 10,
+                color: "#dc2626",
+                lineHeight: 1.4,
               }}
             >
-              <p
-                style={{
-                  fontSize: 10,
-                  color: "#dc2626",
-                  margin: 0,
-                  lineHeight: 1.5,
-                }}
-              >
-                ⚠️ {user.return_reason}
-              </p>
+              ⚠️ {user.return_reason}
             </div>
           )}
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "12px", overflowY: "auto" }}>
+        {/* Navigation */}
+        <nav style={{ flex: 1, padding: "16px 12px", overflowY: "auto" }}>
           <p
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: "#cbd5e1",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase" as const,
+              color: "#8a99a8",
+              letterSpacing: "0.5px",
               padding: "0 8px",
-              marginBottom: 6,
+              marginBottom: 8,
             }}
           >
-            Үндсэн
+            ЦЭС
           </p>
           {NAV.map(({ href, label, icon: Icon, badge }) => {
             const active =
@@ -438,206 +473,181 @@ export default function PersonLayout({
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className={`nav-lnk ${active ? "active" : ""}`}
+                className={`nav-link ${active ? "active" : ""}`}
               >
-                <Icon size={15} style={{ flexShrink: 0 }} />
+                <Icon size={16} style={{ flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{label}</span>
-                {badge > 0 ? (
+                {badge > 0 && (
                   <span
                     style={{
                       fontSize: 10,
-                      fontWeight: 800,
-                      padding: "1px 7px",
+                      fontWeight: 600,
+                      padding: "1px 6px",
                       borderRadius: 99,
-                      background: active ? "rgba(255,255,255,0.3)" : "#ef4444",
+                      background: "#ef4444",
                       color: "white",
-                      lineHeight: "16px",
                     }}
                   >
                     {badge > 99 ? "99+" : badge}
                   </span>
-                ) : active ? (
-                  <ChevronRight size={13} />
-                ) : null}
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* Logout */}
-        <div style={{ padding: "12px", borderTop: "1px solid #f8fafc" }}>
+        <div
+          style={{
+            padding: "16px 12px 20px",
+            borderTop: "1px solid #eef2f6",
+          }}
+        >
           <button
             onClick={logout}
             style={{
               width: "100%",
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              padding: "9px 12px",
+              gap: 12,
+              padding: "8px 12px",
               borderRadius: 10,
               border: "none",
-              background: "none",
+              background: "transparent",
               cursor: "pointer",
               fontSize: 13,
-              color: "#94a3b8",
-              transition: "all .15s",
-              fontFamily: "inherit",
+              fontWeight: 500,
+              color: "#8a99a8",
+              transition: "all 0.15s",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "#fef2f2";
-              (e.currentTarget as HTMLElement).style.color = "#ef4444";
+              const el = e.currentTarget as HTMLElement;
+              el.style.background = "#fef2f2";
+              el.style.color = "#dc2626";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "none";
-              (e.currentTarget as HTMLElement).style.color = "#94a3b8";
+              const el = e.currentTarget as HTMLElement;
+              el.style.background = "transparent";
+              el.style.color = "#8a99a8";
             }}
           >
-            <LogOut size={15} /> Системээс гарах
+            <LogOut size={16} />
+            <span>Гарах</span>
           </button>
         </div>
       </aside>
 
-      {/* ── Main ── */}
-      <div className="main-wrap">
+      {/* ── Main Content ── */}
+      <div className="main-area">
         {/* Topbar */}
         <header
+          className="topbar"
           style={{
             height: 56,
-            background: "white",
-            borderBottom: "1px solid #f1f5f9",
             padding: "0 24px",
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: 16,
             position: "sticky",
             top: 0,
             zIndex: 20,
-            boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
           }}
         >
-          {/* Mobile menu button */}
           <button
-            className="mob-btn"
+            className="mobile-menu-btn"
             onClick={() => setOpen(!open)}
             style={{
               padding: 6,
               borderRadius: 8,
-              border: "none",
-              background: "none",
+              border: "1px solid #e2e8f0",
+              background: "white",
               cursor: "pointer",
+              display: "none",
               alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            {open ? (
-              <X size={18} style={{ color: "#64748b" }} />
-            ) : (
-              <Menu size={18} style={{ color: "#64748b" }} />
-            )}
+            {open ? <X size={16} /> : <Menu size={16} />}
           </button>
 
           <div style={{ flex: 1 }}>
             <p
               style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: "#0f172a",
+                fontSize: 15,
+                fontWeight: 600,
+                color: "#1e2a3a",
                 margin: 0,
-                letterSpacing: "-0.01em",
               }}
             >
               {currentPage?.label || "Хянах самбар"}
             </p>
           </div>
 
-          {/* Буцаагдсан badge */}
           {isReturned && (
             <Link
               href="/dashboard/person/profile"
-              style={{ textDecoration: "none" }}
+              style={{
+                padding: "4px 12px",
+                borderRadius: 99,
+                background: "#fef2f2",
+                fontSize: 11,
+                fontWeight: 500,
+                color: "#dc2626",
+                textDecoration: "none",
+              }}
             >
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "5px 12px",
-                  borderRadius: 99,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  background: "#fef2f2",
-                  color: "#dc2626",
-                  border: "1px solid #fecaca",
-                }}
-              >
-                ⚠️ Буцаагдсан — профайл засах
-              </span>
+              ⚠️ Профайл засах
             </Link>
           )}
 
-          {/* Bell */}
           <Link
             href="/dashboard/person/notifications"
             style={{
-              padding: "7px",
-              borderRadius: 9,
-              border: "1px solid #f1f5f9",
-              background: "#fafafa",
+              padding: 6,
+              borderRadius: 8,
+              border: "1px solid #e2e8f0",
+              background: "white",
               display: "flex",
-              textDecoration: "none",
               position: "relative",
             }}
           >
-            <Bell size={16} style={{ color: "#64748b" }} />
+            <Bell size={16} style={{ color: "#5a6874" }} />
             {unreadCount > 0 && (
               <span
                 style={{
                   position: "absolute",
-                  top: 4,
-                  right: 4,
+                  top: -2,
+                  right: -2,
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
                   background: "#ef4444",
-                  border: "2px solid white",
                 }}
               />
             )}
           </Link>
 
-          {/* Avatar */}
-          <Link
-            href="/dashboard/person/profile"
-            style={{ textDecoration: "none" }}
-          >
+          <Link href="/dashboard/person/profile">
             <div
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 9,
-                overflow: "hidden",
-                background: "linear-gradient(135deg,#6366f1,#818cf8)",
+                borderRadius: 10,
+                background: "#eef2ff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 12,
-                fontWeight: 700,
-                color: "white",
+                fontWeight: 600,
+                color: "#4f46e5",
               }}
             >
-              {user?.profile_photo_url ? (
-                <img
-                  src={user.profile_photo_url}
-                  alt=""
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              ) : (
-                initials
-              )}
+              {initials}
             </div>
           </Link>
         </header>
 
-        <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
+        <main style={{ flex: 1, padding: "24px", overflowY: "auto" }}>
           {children}
         </main>
       </div>

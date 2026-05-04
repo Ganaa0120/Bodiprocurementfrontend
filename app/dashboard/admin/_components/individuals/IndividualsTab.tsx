@@ -1,11 +1,12 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
-import { RefreshCw, Eye, Search } from "lucide-react";
+import { RefreshCw, Eye, Search, Download } from "lucide-react";
 import { API, AVATAR_COLORS } from "./constants";
 import { getStatus, fmtDate, getDirLabels } from "./utils";
 import { Avatar } from "./AvatarComponents";
 import { DetailModal } from "./DetailModal";
 import type { IndividualsTabProps } from "./types";
+import { ExcelExportModal } from "../ExcelImportModal";
 
 const getToken = () =>
   localStorage.getItem("super_admin_token") || localStorage.getItem("token") || "";
@@ -40,6 +41,7 @@ export function IndividualsTab({
   const canDelete     = data.canDelete     !== false;
   const [detailPerson, setDetailPerson] = useState<any>(null);
   const [localPersons, setLocalPersons] = useState<any[] | null>(null);
+  const [showExport,   setShowExport]   = useState(false);
   const isOpening = useRef(false);
   const showToast = data.showToast ?? (() => {});
   const persons   = localPersons ?? data.persons ?? [];
@@ -97,10 +99,21 @@ export function IndividualsTab({
           onStatusChange={handleStatusChange}
           onDeleted={handleDeleted}
           showToast={showToast}
-          dirs={dirs}  // ✅ dirs дамжуулна
+          dirs={dirs}
           canEditStatus={canEditStatus}
           canEdit={canEdit}
           canDelete={canDelete}
+        />
+      )}
+
+      {/* Excel татах — зөвхөн хувь хүн */}
+      {showExport && (
+        <ExcelExportModal
+          type="persons"
+          totalCount={persons.length}
+          currentStatus={status}
+          onClose={() => setShowExport(false)}
+          showToast={showToast}
         />
       )}
 
@@ -128,13 +141,26 @@ export function IndividualsTab({
               {data.personsLoading ? "..." : `${filtered.length} / ${persons.length} хувь хүн`}
             </span>
           </div>
-          <button onClick={() => data.fetchPersons?.(status)}
-            style={{ padding:"9px 14px",borderRadius:10,background:"rgba(255,255,255,0.04)",
-              border:"1px solid rgba(255,255,255,0.07)",color:"rgba(148,163,184,0.6)",
-              cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:12,fontFamily:"inherit" }}>
-            <RefreshCw size={13} style={{ animation:data.personsLoading?"spin 1s linear infinite":undefined }}/>
-            Дахин ачаалах
-          </button>
+
+          {/* Action buttons — Excel татах + Дахин ачаалах */}
+          <div style={{ display:"flex",gap:8 }}>
+            <button onClick={() => setShowExport(true)}
+              style={{ padding:"9px 14px",borderRadius:10,
+                background:"rgba(59,130,246,0.08)",
+                border:"1px solid rgba(59,130,246,0.22)",
+                color:"#60a5fa",cursor:"pointer",
+                display:"flex",alignItems:"center",gap:6,
+                fontSize:12,fontWeight:600,fontFamily:"inherit" }}>
+              <Download size={13}/> Excel татах
+            </button>
+            <button onClick={() => data.fetchPersons?.(status)}
+              style={{ padding:"9px 14px",borderRadius:10,background:"rgba(255,255,255,0.04)",
+                border:"1px solid rgba(255,255,255,0.07)",color:"rgba(148,163,184,0.6)",
+                cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:12,fontFamily:"inherit" }}>
+              <RefreshCw size={13} style={{ animation:data.personsLoading?"spin 1s linear infinite":undefined }}/>
+              Дахин ачаалах
+            </button>
+          </div>
         </div>
 
         <div style={{ background:"#0d1526",border:"1px solid rgba(255,255,255,0.06)",
@@ -164,7 +190,6 @@ export function IndividualsTab({
                   </tr>
                 ) : filtered.map((p: any) => {
                   const nm = [p.last_name, p.first_name].filter(Boolean).join(" ") || "—";
-                  // ✅ Хүснэгтийн мөрт label харуулна
                   const rowDirLabels = getDirLabels(p.activity_directions ?? [], dirs);
                   return (
                     <tr key={p.id} className="ind-row"
