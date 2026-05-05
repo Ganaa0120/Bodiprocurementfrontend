@@ -20,13 +20,13 @@ const S = {
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase" as const,
-    color: "#94a3b8",
+    color: "#475569",  // ✅ илүү тодорхой
     display: "block" as const,
     marginBottom: 6,
   } as React.CSSProperties,
 };
 
-// ── Compact field error pill ─────────────────────────────────
+// Field error pill
 function FieldError({ msg }: { msg: string }) {
   if (!msg) return null;
   return (
@@ -103,7 +103,7 @@ export function FInput({
               boxSizing: "border-box" as const,
               fontFamily: mono ? "monospace" : "inherit",
               transition: "border-color .15s, background .15s",
-              color: disabled ? "#94a3b8" : "#1e293b",
+              color: disabled ? "#94a3b8" : "#0f172a",  // ✅ илүү тод
               background: disabled
                 ? "#f8fafc"
                 : fieldError
@@ -113,15 +113,24 @@ export function FInput({
               border: fieldError
                 ? "1.5px solid #ef4444"
                 : disabled
-                  ? "1.5px solid #f1f5f9"
+                  ? "1.5px solid #e2e8f0"
                   : focused
-                    ? "1.5px solid #0072BC"
-                    : "1.5px solid #e2e8f0",
+                    ? "1.5px solid #4f46e5"  // ✅ indigo focus
+                    : "1.5px solid #cbd5e1",  // ✅ илүү цайвар border
             }}
           />
+          {/* ✅ Placeholder өнгө CSS-ээр */}
+          <style>{`
+            input::placeholder {
+              color: #a0aec0 !important;
+              font-size: 12px;
+              font-weight: 400;
+              opacity: 1;
+            }
+          `}</style>
           <FieldError msg={fieldError} />
           {disabled && (
-            <div style={{ fontSize: 10, color: "#b0bec5", marginTop: 3 }}>
+            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
               🔒 Өөрчлөх боломжгүй
             </div>
           )}
@@ -130,9 +139,9 @@ export function FInput({
         <div
           style={{
             fontSize: 13,
-            color: display ? "#1e293b" : "#cbd5e1",
+            color: display ? "#0f172a" : "#94a3b8",
             padding: "10px 0",
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid #e2e8f0",
             fontWeight: display ? 500 : 400,
             fontFamily: mono ? "monospace" : "inherit",
             wordBreak: "break-word",
@@ -156,6 +165,7 @@ export function FSelect({
   placeholder,
   editing,
   fieldError,
+  disabled,
 }: any) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -170,6 +180,7 @@ export function FSelect({
   const searchRef = useRef<HTMLInputElement>(null);
 
   const handleOpen = () => {
+    if (disabled) return;
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
       const dropUp = r.bottom + 280 > window.innerHeight;
@@ -222,13 +233,14 @@ export function FSelect({
 
   return (
     <div data-fselect="true" style={{ minWidth: 0 }}>
-      {label && <label style={lbl}>{label}</label>}
+      {label && <label style={S.label}>{label}</label>}
       {editing ? (
         <>
           <button
             ref={btnRef}
             type="button"
             onClick={handleOpen}
+            disabled={disabled}
             style={{
               width: "100%",
               padding: "9px 32px 9px 12px",
@@ -236,13 +248,17 @@ export function FSelect({
               border: fieldError
                 ? "1.5px solid #ef4444"
                 : open
-                  ? "1.5px solid #0072BC"
-                  : "1.5px solid #e2e8f0",
-              background: fieldError ? "#fff5f5" : "white",
+                  ? "1.5px solid #4f46e5"
+                  : "1.5px solid #cbd5e1",  // ✅ илүү цайвар border
+              background: fieldError
+                ? "#fff5f5"
+                : disabled
+                  ? "#f8fafc"
+                  : "white",
               fontSize: 13,
               color: value ? "#0f172a" : "#94a3b8",
               textAlign: "left" as const,
-              cursor: "pointer",
+              cursor: disabled ? "not-allowed" : "pointer",
               fontFamily: "inherit",
               display: "flex",
               alignItems: "center",
@@ -250,6 +266,7 @@ export function FSelect({
               boxSizing: "border-box" as const,
               overflow: "hidden",
               transition: "border-color .15s, background .15s",
+              opacity: disabled ? 0.6 : 1,
             }}
           >
             <span
@@ -274,8 +291,14 @@ export function FSelect({
             />
           </button>
           <FieldError msg={fieldError} />
+          {disabled && (
+            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
+              🔒 Өөрчлөх боломжгүй
+            </div>
+          )}
 
           {open &&
+            !disabled &&
             typeof window !== "undefined" &&
             createPortal(
               <div
@@ -291,8 +314,8 @@ export function FSelect({
                   maxWidth: "min(90vw, 480px)",
                   zIndex: 99999,
                   background: "white",
-                  borderRadius: 10,
-                  border: "1.5px solid #e2e8f0",
+                  borderRadius: 12,
+                  border: "1px solid #e2e8f0",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
                   display: "flex",
                   flexDirection: "column",
@@ -343,7 +366,7 @@ export function FSelect({
                           fontFamily: "inherit",
                         }}
                         onFocus={(e) =>
-                          (e.target.style.borderColor = "#0072BC")
+                          (e.target.style.borderColor = "#4f46e5")
                         }
                         onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
                       />
@@ -377,6 +400,12 @@ export function FSelect({
                         </button>
                       )}
                     </div>
+                    <style>{`
+                      input::placeholder {
+                        color: #a0aec0 !important;
+                        font-size: 11px;
+                      }
+                    `}</style>
                   </div>
                 )}
 
@@ -434,9 +463,9 @@ export function FSelect({
                             width: "100%",
                             padding: "9px 14px",
                             border: "none",
-                            background: isSel ? "#e6f2fa" : "transparent",
+                            background: isSel ? "#eef2ff" : "transparent",
                             fontSize: 13,
-                            color: isSel ? "#0072BC" : "#0f172a",
+                            color: isSel ? "#4f46e5" : "#0f172a",
                             textAlign: "left" as const,
                             cursor: "pointer",
                             fontFamily: "inherit",
@@ -445,6 +474,16 @@ export function FSelect({
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSel) {
+                              e.currentTarget.style.background = "#f8fafc";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSel) {
+                              e.currentTarget.style.background = "transparent";
+                            }
                           }}
                         >
                           <span
@@ -462,7 +501,7 @@ export function FSelect({
                             <span
                               style={{
                                 fontSize: 12,
-                                color: "#0072BC",
+                                color: "#4f46e5",
                                 flexShrink: 0,
                               }}
                             >
@@ -496,9 +535,9 @@ export function FSelect({
         <div
           style={{
             fontSize: 13,
-            color: value ? "#0f172a" : "#cbd5e1",
+            color: value ? "#0f172a" : "#94a3b8",
             padding: "10px 0",
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid #e2e8f0",
             fontWeight: value ? 500 : 400,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -535,15 +574,15 @@ export function RadioGroup({ label, options, value, onChange, editing }: any) {
               fontWeight: 500,
               border:
                 value === o.value
-                  ? "1.5px solid #0072BC"
-                  : "1.5px solid #0072BC33",
+                  ? "1.5px solid #4f46e5"
+                  : "1.5px solid #cbd5e1",
               background:
                 value === o.value
-                  ? "#0072BC0A"
+                  ? "#eef2ff"
                   : editing
                     ? "white"
                     : "transparent",
-              color: value === o.value ? "#0072BC" : "#64748b",
+              color: value === o.value ? "#4f46e5" : "#64748b",
               cursor: editing ? "pointer" : "default",
               transition: "all .15s",
             }}

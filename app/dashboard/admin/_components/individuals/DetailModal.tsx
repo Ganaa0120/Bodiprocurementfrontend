@@ -21,11 +21,10 @@ const getToken = () =>
 const NOTIF_LABELS: Record<string, { label: string; hint?: string }> = {
   all:      { label:"Бүх үйл ажиллагааны чиглэлээр",     hint:"Системд нийтлэгдсэн бүх зарын мэдэгдлийг хүлээн авна" },
   selected: { label:"Сонгосон үйл ажиллагааны чиглэлээр", hint:"Дээр сонгосон чиглэлтэй холбоотой зарын мэдэгдлийг л хүлээн авна" },
-  // backend-аас өөр утга ирвэл fallback
-  email:    { label:"И-мэйл",         hint:"Channel value (legacy)" },
-  sms:      { label:"SMS",            hint:"Channel value (legacy)" },
-  both:     { label:"И-мэйл & SMS",   hint:"Channel value (legacy)" },
-  push:     { label:"Push мэдэгдэл",  hint:"Channel value (legacy)" },
+  email:    { label:"И-мэйл" },
+  sms:      { label:"SMS" },
+  both:     { label:"И-мэйл & SMS" },
+  push:     { label:"Push мэдэгдэл" },
   none:     { label:"Хүлээн авахгүй" },
 };
 const notifLabel = (v?: string | null) =>
@@ -143,11 +142,7 @@ function Section({ icon: Icon, label, children }: { icon: any; label: string; ch
 
 /** Registration form-ын radio card-той ижил харагдац */
 function NotifChoice({ value }: { value?: string | null }) {
-  const known = value && NOTIF_LABELS[value];
-  const isUnknown = !!value && !known;
-  const isEmpty = !value;
-
-  if (isEmpty) {
+  if (!value) {
     return (
       <div style={{ padding:"14px",borderRadius:12,
         background:"rgba(255,255,255,0.025)",
@@ -158,23 +153,20 @@ function NotifChoice({ value }: { value?: string | null }) {
     );
   }
 
-  const meta = known || { label: value!, hint: undefined };
-  // Backend-аас "email/sms" гэх мэт scope биш утга ирвэл сэрэмжлүүлэг
-  const tone = isUnknown || ["email","sms","both","push"].includes(value!) ? "warn" : "ok";
-
-  const palette = tone === "ok"
-    ? { bg:"rgba(59,130,246,0.07)", border:"rgba(59,130,246,0.25)", dot:"#60a5fa", title:"#bfdbfe" }
-    : { bg:"rgba(245,158,11,0.06)", border:"rgba(245,158,11,0.22)", dot:"#fbbf24", title:"#fde68a" };
+  const meta = NOTIF_LABELS[value] ?? { label: value, hint: undefined };
 
   return (
-    <div style={{ padding:"14px 16px",borderRadius:12,background:palette.bg,
-      border:`1px solid ${palette.border}`,display:"flex",alignItems:"flex-start",gap:12 }}>
-      <div style={{ width:18,height:18,borderRadius:"50%",border:`2px solid ${palette.dot}`,
+    <div style={{ padding:"14px 16px",borderRadius:12,
+      background:"rgba(59,130,246,0.07)",
+      border:"1px solid rgba(59,130,246,0.25)",
+      display:"flex",alignItems:"flex-start",gap:12 }}>
+      <div style={{ width:18,height:18,borderRadius:"50%",border:"2px solid #60a5fa",
         flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center" }}>
-        <div style={{ width:8,height:8,borderRadius:"50%",background:palette.dot }}/>
+        <div style={{ width:8,height:8,borderRadius:"50%",background:"#60a5fa" }}/>
       </div>
       <div style={{ flex:1,minWidth:0 }}>
-        <div style={{ fontSize:13,fontWeight:600,color:palette.title,marginBottom:meta.hint?4:0 }}>
+        <div style={{ fontSize:13,fontWeight:600,color:"#bfdbfe",
+          marginBottom: meta.hint ? 4 : 0 }}>
           {meta.label}
         </div>
         {meta.hint && (
@@ -182,16 +174,10 @@ function NotifChoice({ value }: { value?: string | null }) {
             {meta.hint}
           </div>
         )}
-        {tone === "warn" && (
-          <div style={{ fontSize:10,color:"#fbbf24",marginTop:6,fontStyle:"italic" as const }}>
-            ⚠ Backend-ээс scope биш channel утга ирж байна — шалгах шаардлагатай
-          </div>
-        )}
       </div>
     </div>
   );
 }
-
 /* ────────────────────────────── Main ────────────────────────────── */
 
 export function DetailModal({ person: init, onClose, onStatusChange, onDeleted, showToast,

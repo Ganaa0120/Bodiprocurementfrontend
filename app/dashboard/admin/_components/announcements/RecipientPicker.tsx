@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { Loader2, ChevronDown, Users, Building2, CheckCircle2 } from "lucide-react";
 import { API, authH } from "./constants";
 
+type DirGroup = { main_id: number; sub_ids: number[] };
+
 export function RecipientPicker({ form, setForm, directions, accentColor, optional }: {
   form: any; setForm: any; directions: any[]; accentColor: string; optional?: boolean;
 }) {
@@ -26,15 +28,71 @@ export function RecipientPicker({ form, setForm, directions, accentColor, option
     setSearch(""); setDirF("");
   }, [form.recipient_type]);
 
+  /* ── activity_directions-аас label жагсаалт авах ── */
+  const getDirLabels = (rawDirs: any): string[] => {
+    if (!Array.isArray(rawDirs) || rawDirs.length === 0) return [];
+
+    // Шинэ формат: [{main_id, sub_ids:[]}]
+    if (typeof rawDirs[0] === "object" && rawDirs[0]?.main_id !== undefined) {
+      return (rawDirs as DirGroup[])
+        .map(g => {
+          const main = directions.find((d: any) => Number(d.id) === Number(g.main_id));
+          return main?.label || `#${g.main_id}`;
+        })
+        .filter(Boolean);
+    }
+
+    // Хуучин формат: ["label1", "label2"]
+    if (typeof rawDirs[0] === "string") {
+      return rawDirs as string[];
+    }
+
+    // Хуучин формат: [number, number]
+    if (typeof rawDirs[0] === "number") {
+      return (rawDirs as number[]).map(id => {
+        const main = directions.find((d: any) => Number(d.id) === Number(id));
+        return main?.label || `#${id}`;
+      });
+    }
+
+    return [];
+  };
+
+  /* ── User filter-ийг шинэ форматтай ажилладаг болгох ── */
+  const userMatchesDir = (item: any, dirLabel: string): boolean => {
+    if (!dirLabel) return true;
+    const userDirs = item.activity_directions;
+    if (!Array.isArray(userDirs) || userDirs.length === 0) return false;
+
+    // Хуучин формат: string[]
+    if (typeof userDirs[0] === "string") return userDirs.includes(dirLabel);
+
+    // Шинэ формат: {main_id, sub_ids:[]}[]
+    if (typeof userDirs[0] === "object" && userDirs[0]?.main_id !== undefined) {
+      // dirLabel-аас main_id олох
+      const matchedMain = directions.find((d: any) => d.label === dirLabel);
+      if (!matchedMain) return false;
+      return userDirs.some((g: DirGroup) => Number(g.main_id) === Number(matchedMain.id));
+    }
+
+    // Number array
+    if (typeof userDirs[0] === "number") {
+      const matchedMain = directions.find((d: any) => d.label === dirLabel);
+      return matchedMain ? userDirs.includes(matchedMain.id) : false;
+    }
+
+    return false;
+  };
+
   const items   = form.recipient_type === "individual" ? persons : companies;
   const getName = (x: any) => form.recipient_type === "individual"
-    ? `${x.last_name ?? ""}${x.first_name ?? " "}`.trim() || x.email
+    ? `${x.last_name ?? ""} ${x.first_name ?? ""}`.trim() || x.email
     : x.company_name || x.email;
 
   const filtered = items.filter(x => {
     const q = search.toLowerCase();
     return (!q || getName(x).toLowerCase().includes(q) || x.email?.toLowerCase().includes(q))
-      && (!dirF || (Array.isArray(x.activity_directions) && x.activity_directions.includes(dirF)));
+      && userMatchesDir(x, dirF);
   });
 
   const toggle    = (id: string) => setForm((p: any) => ({
@@ -120,7 +178,8 @@ export function RecipientPicker({ form, setForm, directions, accentColor, option
           </div>
         ) : filtered.map(item => {
           const checked = form.recipient_ids.includes(item.id);
-          const dirs = Array.isArray(item.activity_directions) ? item.activity_directions : [];
+          // ⭐ Шинэ хувилбар: object-уудыг ч label руу хөрвүүлнэ
+          const dirLabels = getDirLabels(item.activity_directions);
           return (
             <div key={item.id} onClick={() => toggle(item.id)}
               style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 14px",cursor:"pointer",
@@ -138,10 +197,18 @@ export function RecipientPicker({ form, setForm, directions, accentColor, option
                 <div style={{ fontSize:10,color:"rgba(148,163,184,0.35)",
                   display:"flex",gap:5,flexWrap:"wrap",marginTop:1 }}>
                   <span>{item.email}</span>
-                  {dirs.slice(0,2).map((d: string) => (
-                    <span key={d} style={{ padding:"0 5px",borderRadius:99,background:`${ac}15`,color:ac,fontSize:9 }}>{d}</span>
+                  {dirLabels.slice(0,2).map((label, i) => (
+                    <span key={`${item.id}-dir-${i}`}
+                      style={{ padding:"0 5px",borderRadius:99,background:`${ac}15`,
+                        color:ac,fontSize:9 }}>
+                      {label}
+                    </span>
                   ))}
-                  {dirs.length > 2 && <span style={{ fontSize:9,color:"rgba(148,163,184,0.4)" }}>+{dirs.length-2}</span>}
+                  {dirLabels.length > 2 && (
+                    <span style={{ fontSize:9,color:"rgba(148,163,184,0.4)" }}>
+                      +{dirLabels.length - 2}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

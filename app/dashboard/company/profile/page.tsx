@@ -1008,7 +1008,7 @@ export default function CompanyProfilePage() {
                   gap: 4,
                   marginTop: 5,
                   padding: "3px 8px",
-                  background: "#fef2f2",
+                  background: "#0072BC",
                   border: "1px solid #fecaca",
                   borderRadius: 6,
                 }}

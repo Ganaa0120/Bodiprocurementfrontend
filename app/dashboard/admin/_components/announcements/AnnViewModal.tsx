@@ -1,7 +1,7 @@
 "use client";
-import { X } from "lucide-react";
+import { X, Download, FileText, ImageIcon } from "lucide-react";
 import { TYPE, STATUS } from "./constants";
-import type { Ann, AnnType } from "./types";
+import type { Ann, AnnType, AttachedFile } from "./types";
 
 function SBadge({ s }: { s: string }) {
   const c = STATUS[s] ?? STATUS.draft;
@@ -24,8 +24,20 @@ function InfoItem({ label, value, warn }: { label:string; value:string; warn?:bo
   );
 }
 
+const fmtSize = (b: number) =>
+  b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${(b / 1024).toFixed(0)} KB`;
+
+const fileIcon = (t: string) =>
+  t.includes("pdf") ? "📄" :
+  t.includes("word") ? "📝" :
+  t.includes("sheet") || t.includes("excel") ? "📊" : "📎";
+
 export function AnnViewModal({ ann, onClose }: { ann: Ann; onClose: () => void }) {
   const tc = TYPE[ann.ann_type]; const TIcon = tc.icon;
+  const attachments: AttachedFile[] = ann.attachments ?? [];
+  const images   = attachments.filter(a => a.isImage);
+  const docFiles = attachments.filter(a => !a.isImage);
+
   return (
     <div style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"flex-start",
       justifyContent:"center",background:"rgba(0,0,0,0.85)",backdropFilter:"blur(10px)",
@@ -66,18 +78,89 @@ export function AnnViewModal({ ann, onClose }: { ann: Ann; onClose: () => void }
                 dangerouslySetInnerHTML={{ __html: ann.description }}/>
             </div>
           )}
+
           {ann.requirements && (
             <div>
               <div style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"rgba(148,163,184,0.35)",marginBottom:8 }}>Шаардлага</div>
               <div style={{ fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.7,background:"rgba(255,255,255,0.02)",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.05)",whiteSpace:"pre-wrap" as const }}>{ann.requirements}</div>
             </div>
           )}
+
           {(ann.activity_directions ?? []).length > 0 && (
             <div>
               <div style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"rgba(148,163,184,0.35)",marginBottom:8 }}>Үйл ажиллагааны чиглэл</div>
               <div style={{ display:"flex",flexWrap:"wrap",gap:5 }}>
-                {(ann.activity_directions ?? []).map(d => (
-                  <span key={d} style={{ fontSize:11,padding:"3px 10px",borderRadius:99,background:"rgba(59,130,246,0.1)",color:"#60a5fa",border:"1px solid rgba(59,130,246,0.2)" }}>{d}</span>
+                {(ann.activity_directions ?? []).map((d, i) => (
+                  <span key={i} style={{ fontSize:11,padding:"3px 10px",borderRadius:99,background:"rgba(59,130,246,0.1)",color:"#60a5fa",border:"1px solid rgba(59,130,246,0.2)" }}>
+                    {typeof d === "string" ? d : `Чиглэл #${(d as any).main_id || i}`}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ⭐ Зургийн галерей */}
+          {images.length > 0 && (
+            <div>
+              <div style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"rgba(148,163,184,0.35)",marginBottom:8,display:"flex",alignItems:"center",gap:6 }}>
+                <ImageIcon size={11}/> Зураг ({images.length})
+              </div>
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(120px, 1fr))",gap:8 }}>
+                {images.map((img, i) => (
+                  <a key={i} href={img.url} target="_blank" rel="noreferrer"
+                    style={{ position:"relative" as const,paddingBottom:"100%",borderRadius:10,
+                      overflow:"hidden",background:"rgba(255,255,255,0.03)",
+                      border:"1px solid rgba(255,255,255,0.08)",cursor:"pointer",
+                      transition:"transform .15s" }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = "scale(1.03)"}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = "scale(1)"}>
+                    <img src={img.url} alt={img.name}
+                      style={{ position:"absolute",inset:0,width:"100%",height:"100%",
+                        objectFit:"cover" as const }}/>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ⭐ Бусад файлууд */}
+          {docFiles.length > 0 && (
+            <div>
+              <div style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"rgba(148,163,184,0.35)",marginBottom:8,display:"flex",alignItems:"center",gap:6 }}>
+                <FileText size={11}/> Хавсралт ({docFiles.length})
+              </div>
+              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                {docFiles.map((f, i) => (
+                  <a key={i} href={f.url} target="_blank" rel="noreferrer" download
+                    style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+                      background:"rgba(255,255,255,0.03)",
+                      border:"1px solid rgba(255,255,255,0.06)",
+                      borderRadius:10,textDecoration:"none",
+                      transition:"all .15s" }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(59,130,246,0.06)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,130,246,0.2)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
+                    }}>
+                    <div style={{ width:36,height:36,borderRadius:8,flexShrink:0,
+                      background:"rgba(59,130,246,0.1)",display:"flex",
+                      alignItems:"center",justifyContent:"center",fontSize:18 }}>
+                      {fileIcon(f.type)}
+                    </div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <div style={{ fontSize:13,fontWeight:500,color:"rgba(255,255,255,0.85)",
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                        {f.name}
+                      </div>
+                      <div style={{ fontSize:10,color:"rgba(148,163,184,0.45)" }}>
+                        {fmtSize(f.size)}
+                      </div>
+                    </div>
+                    <Download size={14} style={{ color:"rgba(148,163,184,0.5)",flexShrink:0 }}/>
+                  </a>
                 ))}
               </div>
             </div>
