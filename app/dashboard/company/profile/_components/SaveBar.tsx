@@ -6,6 +6,7 @@ interface Props {
   variant: "sticky" | "bottom";
   isNewUser: boolean;
   saving: boolean;
+  savingMode?: "draft" | "submit" | null;
   onCancel: () => void;
   onSaveDraft: () => void;
   onSubmit: () => void;
@@ -15,13 +16,16 @@ export function SaveBar({
   variant,
   isNewUser,
   saving,
+  savingMode,
   onCancel,
   onSaveDraft,
   onSubmit,
 }: Props) {
   const { isMobile } = useBreakpoint();
 
-  // Buttons are shared between both variants — just differ slightly in padding
+  const isDraftSaving = saving && savingMode === "draft";
+  const isSubmitSaving = saving && savingMode === "submit";
+
   const Buttons = (
     <div
       style={{
@@ -59,7 +63,8 @@ export function SaveBar({
             color: "#64748b",
             fontSize: 13,
             fontWeight: 500,
-            cursor: "pointer",
+            cursor: saving ? "not-allowed" : "pointer",
+            opacity: saving ? 0.6 : 1,
             fontFamily: "inherit",
           }}
         >
@@ -87,12 +92,25 @@ export function SaveBar({
           color: "#0f172a",
           fontSize: 13,
           fontWeight: 600,
-          cursor: "pointer",
+          cursor: saving ? "not-allowed" : "pointer",
+          opacity: saving && !isDraftSaving ? 0.5 : 1,
           fontFamily: "inherit",
           flex: variant === "bottom" && isMobile ? 1 : ("none" as const),
         }}
       >
-        <Save size={variant === "sticky" ? 13 : 14} /> Хадгалах
+        {isDraftSaving ? (
+          <>
+            <Loader2
+              size={variant === "sticky" ? 13 : 14}
+              style={{ animation: "spin .8s linear infinite" }}
+            />{" "}
+            Хадгалж байна...
+          </>
+        ) : (
+          <>
+            <Save size={variant === "sticky" ? 13 : 14} /> Хадгалах
+          </>
+        )}
       </button>
 
       <button
@@ -119,13 +137,13 @@ export function SaveBar({
           fontSize: 13,
           fontWeight: 600,
           cursor: saving ? "not-allowed" : "pointer",
-          opacity: saving ? 0.7 : 1,
+          opacity: saving && !isSubmitSaving ? 0.5 : saving ? 0.85 : 1,
           fontFamily: "inherit",
           boxShadow: variant === "bottom" ? "0 4px 14px rgba(0,114,188,0.35)" : "none",
           flex: isMobile ? 1 : ("none" as const),
         }}
       >
-        {saving ? (
+        {isSubmitSaving ? (
           <>
             <Loader2
               size={variant === "sticky" ? 13 : 14}
@@ -149,35 +167,26 @@ export function SaveBar({
         style={{
           position: "sticky",
           top: 0,
-          zIndex: 50,
-          animation: "fadeIn .2s ease",
-          background: "rgba(255,255,255,0.96)",
-          backdropFilter: "blur(12px)",
+          zIndex: 30,
+          background: "white",
+          borderRadius: 12,
           border: "1px solid #e2e8f0",
-          borderRadius: isMobile ? 10 : 14,
-          padding: isMobile ? "10px 12px" : "12px 18px",
+          padding: isMobile ? "8px 12px" : "10px 16px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+          marginTop: -8,
+          marginBottom: 4,
           display: "flex",
-          flexDirection: isMobile ? "column" : ("row" as const),
-          alignItems: isMobile ? "stretch" : "center",
+          alignItems: "center",
           justifyContent: "space-between",
-          gap: 10,
-          boxShadow: "0 4px 20px rgba(0,114,188,0.12)",
+          gap: 12,
+          flexWrap: "wrap" as const,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: "#f59e0b",
-              animation: "pulse 1.5s infinite",
-            }}
-          />
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
-            {isNewUser ? "Мэдээлэл бөглөх" : "Засварлаж байна"}
-          </span>
-        </div>
+        {!isMobile && (
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>
+            Засварын горим идэвхтэй байна
+          </div>
+        )}
         {Buttons}
       </div>
     );
@@ -187,17 +196,27 @@ export function SaveBar({
   return (
     <div
       style={{
-        display: "flex",
-        justifyContent: "flex-end",
-        gap: 10,
-        padding: isMobile ? "12px" : "16px 20px",
+        marginTop: 8,
+        padding: isMobile ? 14 : "16px 20px",
         background: "white",
         borderRadius: 14,
         border: "1px solid #e2e8f0",
-        boxShadow: "0 -4px 20px rgba(0,114,188,0.08)",
-        flexDirection: isMobile ? "column" : ("row" as const),
+        boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        flexDirection: isMobile ? ("column" as const) : ("row" as const),
       }}
     >
+      {!isMobile && (
+        <div style={{ fontSize: 12, color: "#64748b" }}>
+          <strong style={{ color: "#0f172a" }}>Хадгалах</strong> — мэдээллийг
+          хадгална, илгээгдэхгүй ·{" "}
+          <strong style={{ color: "#0072BC" }}>Илгээх</strong> — Бодьд
+          шалгуулахаар явуулна
+        </div>
+      )}
       {Buttons}
     </div>
   );

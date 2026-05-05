@@ -6,13 +6,23 @@ export const fmtDate = (v?: string | null) => {
   if (!v) return null;
   try {
     return new Date(v).toLocaleDateString("mn-MN", {
-      year:"numeric", month:"2-digit", day:"2-digit",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
-  } catch { return v; }
+  } catch {
+    return v;
+  }
 };
 
 export const supply = (v?: string) =>
-  v==="goods"?"Бараа":v==="service"?"Үйлчилгээ":v==="both"?"Аль аль нь":v;
+  v === "goods"
+    ? "Бараа"
+    : v === "service"
+      ? "Үйлчилгээ"
+      : v === "both"
+        ? "Аль аль нь"
+        : v;
 
 export const gender = (v?: string) =>
-  v==="male"?"Эрэгтэй":v==="female"?"Эмэгтэй":v;
+  v === "male" ? "Эрэгтэй" : v === "female" ? "Эмэгтэй" : v;

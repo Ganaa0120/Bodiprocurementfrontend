@@ -21,14 +21,19 @@ function Badge({ status }: { status: string }) {
         fontSize: 11,
         fontWeight: 600,
         color: c.color,
+        border: `1px solid ${c.dot}33`,
       }}
     >
       <span
         style={{
-          width: 5,
-          height: 5,
+          width: 6,
+          height: 6,
           borderRadius: "50%",
-          background: c.color,
+          background: c.dot,
+          animation:
+            status === "new" || status === "pending"
+              ? "pulse 1.5s infinite"
+              : "none",
         }}
       />
       {c.label}
@@ -44,11 +49,11 @@ function Th({ h }: { h: string }) {
         padding: "10px 16px",
         fontSize: 10,
         fontWeight: 700,
-        color: "rgba(148,163,184,0.28)",
-        textTransform: "uppercase" as const,
+        color: "#64748b",
+        textTransform: "uppercase",
         letterSpacing: "0.09em",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        whiteSpace: "nowrap" as const,
+        borderBottom: "1px solid #334155",
+        whiteSpace: "nowrap",
       }}
     >
       {h}
@@ -56,13 +61,20 @@ function Th({ h }: { h: string }) {
   );
 }
 
+const STATUS_FILTERS = [
+  { value: "", label: "Бүгд" },
+  { value: "new", label: "Бүртгэл үүсгэж буй", color: "#0ea5e9" },
+  { value: "pending", label: "Хүсэлт ирсэн", color: "#f59e0b" },
+  { value: "active", label: "Баталгаажсан", color: "#10b981" },
+  { value: "returned", label: "Буцаагдсан", color: "#ef4444" },
+];
+
 export function CompaniesTab({ data }: { data: any }) {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [detailOrg, setDetailOrg] = useState<any>(null);
   const [showExport, setShowExport] = useState(false);
-  const [permTypes, setPermTypes] = useState<{ id: number; label: string }[]>(
-    [],
-  );
+  const [permTypes, setPermTypes] = useState<{ id: number; label: string }[]>([]);
   const showToast = data.showToast ?? (() => {});
   const canEditStatus = data.canEditStatus !== false;
   const canDelete = data.canDelete !== false;
@@ -131,19 +143,32 @@ export function CompaniesTab({ data }: { data: any }) {
     [data, detailOrg],
   );
 
-  const filtered = (data.companies ?? []).filter((c: any) =>
-    `${c.company_name ?? ""} ${c.register_number ?? ""} ${c.company_regnum ?? ""} ${c.email ?? ""}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
+  const filtered = (data.companies ?? [])
+    .filter((c: any) =>
+      `${c.company_name ?? ""} ${c.register_number ?? ""} ${c.company_regnum ?? ""} ${c.email ?? ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+    )
+    .filter((c: any) => !statusFilter || c.status === statusFilter);
+
+  // Status counts (бүх компаниас)
+  const statusCounts = (data.companies ?? []).reduce(
+    (acc: Record<string, number>, c: any) => {
+      acc[c.status || "unknown"] = (acc[c.status || "unknown"] || 0) + 1;
+      return acc;
+    },
+    {},
   );
 
   return (
     <>
       <style>{`
         @keyframes spin { to{transform:rotate(360deg)} }
-        .tr { transition:background .12s; border-bottom:1px solid rgba(255,255,255,0.04); }
-        .tr:hover { background:rgba(255,255,255,0.028); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .tr { transition:background .12s; border-bottom:1px solid #334155; }
+        .tr:hover { background:rgba(255,255,255,0.03); }
         .tr:last-child { border-bottom:none; }
+        input::placeholder { color: #64748b; }
       `}</style>
 
       {detailOrg && (
@@ -163,7 +188,6 @@ export function CompaniesTab({ data }: { data: any }) {
         />
       )}
 
-      {/* Excel татах — зөвхөн байгууллага */}
       {showExport && (
         <ExcelExportModal
           type="companies"
@@ -177,6 +201,7 @@ export function CompaniesTab({ data }: { data: any }) {
         className="page-in"
         style={{ display: "flex", flexDirection: "column", gap: 16 }}
       >
+        {/* Header - Search and Actions */}
         <div
           style={{
             display: "flex",
@@ -195,33 +220,43 @@ export function CompaniesTab({ data }: { data: any }) {
                   left: 12,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "rgba(148,163,184,0.4)",
+                  color: "#64748b",
                 }}
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Нэр, регистр хайх..."
-                className="gi"
-                style={{ width: 240, paddingLeft: 36 }}
+                style={{
+                  width: 240,
+                  padding: "10px 12px 10px 36px",
+                  borderRadius: 10,
+                  border: "1px solid #334155",
+                  fontSize: 13,
+                  outline: "none",
+                  background: "#1e293b",
+                  color: "white",
+                  fontFamily: "inherit",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "#6366f1")}
+                onBlur={(e) => (e.target.style.borderColor = "#334155")}
               />
             </div>
-            <span style={{ fontSize: 12, color: "rgba(148,163,184,0.4)" }}>
+            <span style={{ fontSize: 12, color: "#64748b" }}>
               {data.companiesLoading
                 ? "..."
                 : `${filtered.length} / ${(data.companies ?? []).length} компани`}
             </span>
           </div>
 
-          {/* Action buttons — Excel татах + Дахин ачаалах */}
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={() => setShowExport(true)}
               style={{
                 padding: "9px 14px",
                 borderRadius: 10,
-                background: "rgba(167,139,250,0.08)",
-                border: "1px solid rgba(167,139,250,0.22)",
+                background: "#1e293b",
+                border: "1px solid #334155",
                 color: "#a78bfa",
                 cursor: "pointer",
                 display: "flex",
@@ -230,6 +265,15 @@ export function CompaniesTab({ data }: { data: any }) {
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: "inherit",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#334155";
+                e.currentTarget.style.borderColor = "#a78bfa";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#1e293b";
+                e.currentTarget.style.borderColor = "#334155";
               }}
             >
               <Download size={13} /> Excel татах
@@ -239,15 +283,22 @@ export function CompaniesTab({ data }: { data: any }) {
               style={{
                 padding: "9px 14px",
                 borderRadius: 10,
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                color: "rgba(148,163,184,0.6)",
+                background: "#1e293b",
+                border: "1px solid #334155",
+                color: "#94a3b8",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
                 fontSize: 12,
                 fontFamily: "inherit",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#334155";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#1e293b";
               }}
             >
               <RefreshCw
@@ -263,10 +314,62 @@ export function CompaniesTab({ data }: { data: any }) {
           </div>
         </div>
 
+        {/* Status filter pills */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {STATUS_FILTERS.map((f) => {
+            const isActive = statusFilter === f.value;
+            const count = f.value
+              ? statusCounts[f.value] || 0
+              : (data.companies ?? []).length;
+            return (
+              <button
+                key={f.value}
+                onClick={() => setStatusFilter(f.value)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 99,
+                  border: isActive
+                    ? `1px solid ${f.color || "#6366f1"}`
+                    : "1px solid #334155",
+                  background: isActive
+                    ? `${f.color || "#6366f1"}1A`
+                    : "#1e293b",
+                  color: isActive ? f.color || "#a78bfa" : "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: isActive ? 600 : 500,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                {f.label}
+                <span
+                  style={{
+                    fontSize: 10,
+                    padding: "1px 6px",
+                    borderRadius: 99,
+                    background: isActive
+                      ? f.color || "#6366f1"
+                      : "rgba(255,255,255,0.05)",
+                    color: isActive ? "white" : "#64748b",
+                    fontWeight: 700,
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Table */}
         <div
           style={{
-            background: "#0d1526",
-            border: "1px solid rgba(255,255,255,0.06)",
+            background: "#0f172a",
+            border: "1px solid #334155",
             borderRadius: 18,
             overflow: "hidden",
           }}
@@ -285,20 +388,20 @@ export function CompaniesTab({ data }: { data: any }) {
                 style={{
                   width: 22,
                   height: 22,
-                  border: "2px solid rgba(52,211,153,0.3)",
-                  borderTopColor: "#34d399",
+                  border: "2px solid #334155",
+                  borderTopColor: "#a78bfa",
                   borderRadius: "50%",
                   animation: "spin 0.8s linear infinite",
                 }}
               />
-              <span style={{ fontSize: 13, color: "rgba(148,163,184,0.4)" }}>
+              <span style={{ fontSize: 13, color: "#64748b" }}>
                 Ачаалж байна...
               </span>
             </div>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
+                <tr style={{ background: "#0f172a" }}>
                   <Th h="Байгууллага" />
                   <Th h="Регистр" />
                   <Th h="И-мэйл" />
@@ -317,7 +420,7 @@ export function CompaniesTab({ data }: { data: any }) {
                         padding: "48px 16px",
                         textAlign: "center",
                         fontSize: 13,
-                        color: "rgba(148,163,184,0.3)",
+                        color: "#64748b",
                       }}
                     >
                       {(data.companies ?? []).length === 0
@@ -347,7 +450,7 @@ export function CompaniesTab({ data }: { data: any }) {
                               style={{
                                 fontSize: 13,
                                 fontWeight: 600,
-                                color: "rgba(255,255,255,0.85)",
+                                color: "white",
                               }}
                             >
                               {c.company_name}
@@ -356,7 +459,7 @@ export function CompaniesTab({ data }: { data: any }) {
                               <div
                                 style={{
                                   fontSize: 10,
-                                  color: "rgba(148,163,184,0.4)",
+                                  color: "#64748b",
                                 }}
                               >
                                 {c.company_name_en}
@@ -370,7 +473,7 @@ export function CompaniesTab({ data }: { data: any }) {
                           padding: "12px 16px",
                           fontSize: 11,
                           fontFamily: "monospace",
-                          color: "rgba(148,163,184,0.5)",
+                          color: "#94a3b8",
                           letterSpacing: "0.08em",
                         }}
                       >
@@ -380,7 +483,7 @@ export function CompaniesTab({ data }: { data: any }) {
                         style={{
                           padding: "12px 16px",
                           fontSize: 12,
-                          color: "rgba(148,163,184,0.55)",
+                          color: "#94a3b8",
                         }}
                       >
                         {c.email}
@@ -389,7 +492,7 @@ export function CompaniesTab({ data }: { data: any }) {
                         style={{
                           padding: "12px 16px",
                           fontSize: 12,
-                          color: "rgba(148,163,184,0.5)",
+                          color: "#94a3b8",
                           fontFamily: "monospace",
                         }}
                       >
@@ -402,7 +505,7 @@ export function CompaniesTab({ data }: { data: any }) {
                         style={{
                           padding: "12px 16px",
                           fontSize: 11,
-                          color: "rgba(148,163,184,0.4)",
+                          color: "#64748b",
                         }}
                       >
                         {fmtDate(c.created_at) || "—"}
@@ -414,8 +517,8 @@ export function CompaniesTab({ data }: { data: any }) {
                         <button
                           onClick={() => openDetail(c)}
                           style={{
-                            background: "rgba(59,130,246,0.08)",
-                            border: "1px solid rgba(59,130,246,0.18)",
+                            background: "#1e293b",
+                            border: "1px solid #334155",
                             borderRadius: 8,
                             padding: "6px 10px",
                             cursor: "pointer",
@@ -423,8 +526,19 @@ export function CompaniesTab({ data }: { data: any }) {
                             alignItems: "center",
                             gap: 5,
                             fontSize: 11,
-                            color: "#60a5fa",
+                            color: "#94a3b8",
                             fontFamily: "inherit",
+                            transition: "all 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "#334155";
+                            e.currentTarget.style.borderColor = "#6366f1";
+                            e.currentTarget.style.color = "#a78bfa";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "#1e293b";
+                            e.currentTarget.style.borderColor = "#334155";
+                            e.currentTarget.style.color = "#94a3b8";
                           }}
                         >
                           <Eye size={12} /> Харах

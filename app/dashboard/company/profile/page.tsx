@@ -108,8 +108,9 @@ export default function CompanyProfilePage() {
   const [permTypes, setPermTypes] = useState<PermType[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingMode, setSavingMode] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<string>("");
   const [editing, setEditing] = useState(false);
   const [selDirs, setSelDirs] = useState<SelDir[]>([]);
   const [selDirSnap, setSelDirSnap] = useState<SelDir[]>([]);
@@ -406,6 +407,7 @@ export default function CompanyProfilePage() {
     const token = localStorage.getItem("token");
     if (!token) {
       setSaving(false);
+      setSavingMode(null);
       return;
     }
 
@@ -491,22 +493,26 @@ export default function CompanyProfilePage() {
         window.dispatchEvent(new Event("user-updated"));
       } catch {}
 
-      setSaved(true);
+      // ✅ Хадгалах vs Илгээх — өөр өөр success message
+      setSaved(
+        extraFormFields?.status === "pending"
+          ? "Хүсэлт амжилттай илгээгдлээ"
+          : "Амжилттай хадгалагдлаа",
+      );
       setEditing(false);
       setShowSubmitModal(false);
       setFiles({});
       if (!profile?.company_name && !extraFormFields?.status) setShowSuccessModal(true);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => setSaved(""), 3000);
     } catch (e: any) {
       setError(e.message);
     } finally {
       setSaving(false);
+      setSavingMode(null);
     }
   };
 
   // ── Validation ────────────────────────────────────────────
-  // Returns the first error message (or "" if everything is valid).
-  // Sets all field-level errors so the user can see them inline.
   const runValidation = (): string => {
     const newFieldErrors: Record<string, string> = {};
     const newDirErrors: Record<string, string> = {};
@@ -531,7 +537,6 @@ export default function CompanyProfilePage() {
       firstError ||= "Регистрийн дугаар 7 оронтой байх ёстой";
     }
 
-    // Байгууллагын нэр (англи) — заавал + латин үсэг + тоо/тэмдэгт
     if (!form.company_name_en?.trim()) {
       newFieldErrors.company_name_en = "Заавал бөглөх";
       firstError ||= "Англи нэр оруулаагүй";
@@ -540,13 +545,11 @@ export default function CompanyProfilePage() {
       firstError ||= "Англи нэр латин үсгээр байх ёстой";
     }
 
-    // НӨАТ төлөгч — заавал сонгох (true/false хоёрын аль нэг)
     if (form.is_vat_payer !== true && form.is_vat_payer !== false) {
       newFieldErrors.is_vat_payer = "Заавал сонгох";
       firstError ||= "НӨАТ төлөгч эсэхийг сонгоно уу";
     }
 
-    // Үүсгэн байгуулагдсан огноо — заавал + ирээдүйн огноо байж болохгүй
     if (!form.established_date?.trim()) {
       newFieldErrors.established_date = "Заавал бөглөх";
       firstError ||= "Үүсгэн байгуулагдсан огноо оруулаагүй";
@@ -563,7 +566,6 @@ export default function CompanyProfilePage() {
       }
     }
 
-    // General Mongolian validator (for other Mongolian-text fields)
     const errs = validateMongolianForm(form, [
       "sum_duureg",
       ...(form.aimag_niislel !== "Улаанбаатар" ? ["bag_horoo" as const] : []),
@@ -571,40 +573,35 @@ export default function CompanyProfilePage() {
     Object.assign(newFieldErrors, errs);
     if (Object.keys(errs).length > 0) firstError ||= Object.values(errs)[0];
 
-    // ── 2. Гүйцэтгэх захирал (заавал) ────────────────────
+    // ── 2. Гүйцэтгэх захирал ────────────────────
     directors.forEach((d: any, idx: number) => {
-      // Position
       if (idx === 0 && !d.position?.trim())
         newDirErrors[`${idx}_position`] = "Албан тушаал заавал";
       else if (d.position && !/^[\u0400-\u04FF\s\-]+$/.test(d.position))
         newDirErrors[`${idx}_position`] = "Крилл үсгээр бичнэ үү";
 
-      // Last name — required
       if (!d.last_name?.trim())
         newDirErrors[`${idx}_last_name`] = "Овог заавал";
       else if (!/^[\u0400-\u04FF\s\-]+$/.test(d.last_name))
         newDirErrors[`${idx}_last_name`] = "Крилл үсгээр бичнэ үү";
 
-      // First name — required
       if (!d.first_name?.trim())
         newDirErrors[`${idx}_first_name`] = "Нэр заавал";
       else if (!/^[\u0400-\u04FF\s\-]+$/.test(d.first_name))
         newDirErrors[`${idx}_first_name`] = "Крилл үсгээр бичнэ үү";
 
-      // Phone — required + 8 digits
       if (!d.phone?.trim())
         newDirErrors[`${idx}_phone`] = "Утас заавал";
       else if (!/^\d+$/.test(d.phone) || d.phone.length !== 8)
         newDirErrors[`${idx}_phone`] = "8 оронтой тоо оруулна уу";
 
-      // Email — optional but if filled, must be valid
       if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email))
         newDirErrors[`${idx}_email`] = "И-мэйл хаяг буруу байна";
     });
     if (Object.keys(newDirErrors).length > 0)
       firstError ||= "Гүйцэтгэх захирлын мэдээлэл буруу байна";
 
-    // ── 3. Үйл ажиллагааны чиглэл (заавал) ───────────────
+    // ── 3. Үйл ажиллагааны чиглэл ───────────────
     if (selDirs.length === 0) {
       newFieldErrors.activity_directions = "Дор хаяж нэг чиглэл сонгоно уу";
       firstError ||= "Үйл ажиллагааны чиглэл сонгогдоогүй";
@@ -614,7 +611,7 @@ export default function CompanyProfilePage() {
       firstError ||= "Нийлүүлэх төрөл сонгогдоогүй";
     }
 
-    // ── 4. Хаяг (заавал) ─────────────────────────────────
+    // ── 4. Хаяг ─────────────────────────────────
     if (!form.aimag_niislel?.trim()) {
       newFieldErrors.aimag_niislel = "Заавал сонгох";
       firstError ||= "Аймаг / Нийслэл сонгогдоогүй";
@@ -638,7 +635,7 @@ export default function CompanyProfilePage() {
       firstError ||= "Дэлгэрэнгүй хаяг оруулаагүй";
     }
 
-    // ── 5. Эзэмшигч (1-р эзэмшигч заавал) ────────────────
+    // ── 5. Эзэмшигч ────────────────
     const newOwnerErrs: Record<string, string> = {};
     const o0 = owners[0];
     if (!o0?.last_name?.trim())
@@ -651,8 +648,7 @@ export default function CompanyProfilePage() {
     else if (!/^[\u0400-\u04FF\s\-]+$/.test(o0.first_name))
       newOwnerErrs[`0_first_name`] = "Крилл үсгээр бичнэ үү";
 
-    if (!o0?.gender)
-      newOwnerErrs[`0_gender`] = "Хүйс заавал";
+    if (!o0?.gender) newOwnerErrs[`0_gender`] = "Хүйс заавал";
 
     if (!o0?.position?.trim())
       newOwnerErrs[`0_position`] = "Албан тушаал заавал";
@@ -664,7 +660,6 @@ export default function CompanyProfilePage() {
     else if (!/^\d+$/.test(o0.phone) || o0.phone.length !== 8)
       newOwnerErrs[`0_phone`] = "8 оронтой тоо оруулна уу";
 
-    // Бусад эзэмшигчид (2-оос эхлэн): зөвхөн овог/нэр шалгана
     owners.slice(1).forEach((o: any, i: number) => {
       const idx = i + 1;
       if (o.last_name && !/^[\u0400-\u04FF\s\-]+$/.test(o.last_name))
@@ -673,7 +668,6 @@ export default function CompanyProfilePage() {
         newOwnerErrs[`${idx}_first_name`] = "Крилл үсгээр бичнэ үү";
     });
 
-    // Merge with existing Mongolian-text validator (validateOwnersMongolian)
     const extraOwnerErrs = validateOwnersMongolian(owners);
     Object.entries(extraOwnerErrs).forEach(([k, v]) => {
       if (!newOwnerErrs[k]) newOwnerErrs[k] = v;
@@ -683,7 +677,7 @@ export default function CompanyProfilePage() {
     if (Object.keys(newOwnerErrs).length > 0)
       firstError ||= "Эзэмшигчийн мэдээлэл буруу байна";
 
-    // ── 6. Баримт бичиг (заавал) ─────────────────────────
+    // ── 6. Баримт бичиг ─────────────────────────
     if (!previews.doc_state_registry) {
       newFieldErrors.doc_state_registry = "Файл оруулна уу";
       firstError ||= "Улсын бүртгэлийн гэрчилгээ оруулаагүй";
@@ -697,22 +691,17 @@ export default function CompanyProfilePage() {
       firstError ||= "Тусгай зөвшөөрлийн файл оруулаагүй";
     }
 
-    // ── 6. Санхүү — validation байхгүй (заавал биш) ─────
+    // ── 7. Санхүү — validation байхгүй (заавал биш) ─────
 
-    // ── 7. Мэдэгдлийн тохиргоо ───────────────────────────
+    // ── 8. Мэдэгдэл ───────────────────────────
     if (!form.notification_preference) {
       newFieldErrors.notification_preference = "Заавал сонгох";
       firstError ||= "Мэдэгдэл хүлээн авах хэлбэр сонгогдоогүй";
     }
 
-    // Apply errors
     setFieldErrors(newFieldErrors);
     setDirectorFieldErrors(newDirErrors);
-    // NOTE: we no longer set the top-level `error` banner for validation —
-    // validation messages live next to their fields. `error` is reserved for
-    // network / server-level errors only.
 
-    // Scroll to the first invalid field (instead of top of page)
     if (firstError && typeof window !== "undefined") {
       setTimeout(() => {
         const el =
@@ -731,6 +720,7 @@ export default function CompanyProfilePage() {
   const handleSaveDraft = async () => {
     const err = runValidation();
     if (err) return;
+    setSavingMode("draft");
     await doSave();
   };
 
@@ -741,7 +731,10 @@ export default function CompanyProfilePage() {
     setShowSubmitModal(true);
   };
 
-  const handleConfirmSubmit = () => doSave({ status: "pending" });
+  const handleConfirmSubmit = () => {
+    setSavingMode("submit");
+    return doSave({ status: "pending" });
+  };
 
   const isNewUser = !profile?.company_name;
   const pct = (() => {
@@ -769,8 +762,6 @@ export default function CompanyProfilePage() {
   // Responsive grids
   const g2 = isMobile ? "1fr" : "1fr 1fr";
   const g3 = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr";
-  const g4 = isMobile ? "1fr 1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr 1fr";
-  const gDoc = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(3,1fr)";
   const gAddr = isMobile ? "1fr" : "1fr 2fr";
 
   return (
@@ -813,6 +804,7 @@ export default function CompanyProfilePage() {
           variant="sticky"
           isNewUser={isNewUser}
           saving={saving}
+          savingMode={savingMode}
           onCancel={cancelEdit}
           onSaveDraft={handleSaveDraft}
           onSubmit={handleSubmitClick}
@@ -924,7 +916,7 @@ export default function CompanyProfilePage() {
       )}
 
       {error && <Alert type="error" msg={error} />}
-      {saved && <Alert type="success" msg="Амжилттай хадгаллаа" />}
+      {saved && <Alert type="success" msg={saved} />}
 
       {/* 1. Үндсэн мэдээлэл */}
       <Section icon={Building2} title="БАЙГУУЛЛАГЫН ҮНДСЭН МЭДЭЭЛЭЛ">
@@ -1008,7 +1000,7 @@ export default function CompanyProfilePage() {
                   gap: 4,
                   marginTop: 5,
                   padding: "3px 8px",
-                  background: "#0072BC",
+                  background: "#fef2f2",
                   border: "1px solid #fecaca",
                   borderRadius: 6,
                 }}
@@ -1349,6 +1341,7 @@ export default function CompanyProfilePage() {
           variant="bottom"
           isNewUser={isNewUser}
           saving={saving}
+          savingMode={savingMode}
           onCancel={cancelEdit}
           onSaveDraft={handleSaveDraft}
           onSubmit={handleSubmitClick}
