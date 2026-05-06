@@ -235,7 +235,7 @@ export default function CompanyDashboard() {
               <div>
                 <p style={{ fontWeight: 600, color: "#92400e", margin: 0 }}>Бүртгэл хянагдаж байна</p>
                 <p style={{ margin: "4px 0 0", color: "#d97706", fontSize: 13 }}>
-                  Таны мэдээллийг администратор хянаж байна. Удахгүй мэдэгдэл ирнэ.
+                  Таны мэдээллийг админ хянаж байна. Удахгүй мэдэгдэл ирнэ.
                 </p>
               </div>
             </div>

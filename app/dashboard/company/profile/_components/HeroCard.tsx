@@ -176,7 +176,7 @@ export function HeroCard({
             {profile.company_name_en}
           </p>
         )}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
           {[
             profile?.supplier_number,
             `Рег: ${profile?.register_number || "—"}`,
@@ -188,11 +188,11 @@ export function HeroCard({
                 key={t}
                 style={{
                   fontSize: 11,
-                  padding: "3px 10px",
+                  padding: "4px 12px",
                   borderRadius: 8,
-                  background: "#f8fafc",
+                  background: "#1B3B64",
                   border: "1px solid #f1f5f9",
-                  color: "#64748b",
+                  color: "#ffffff",
                   fontFamily: "monospace",
                 }}
               >

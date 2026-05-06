@@ -863,7 +863,7 @@ export default function CompanyProfilePage() {
                 Бүртгэл буцаагдсан байна
               </div>
               <div style={{ fontSize: 11, color: "#ef4444", marginTop: 1 }}>
-                Доорх шалтгааныг уншаад мэдээллээ засаад хадгална уу
+                Доорх шалтгааныг уншаад мэдээллээ засаад дахин илгээнэ үү.
               </div>
             </div>
           </div>
@@ -907,7 +907,7 @@ export default function CompanyProfilePage() {
               >
                 <span>→</span>
                 <span>
-                  Мэдээллээ засаад <strong>"Хадгалах"</strong> товчийг дарна уу
+                  Мэдээллээ засаад <strong>"Илгээх"</strong> товчийг дарна уу
                 </span>
               </div>
             </div>
@@ -1333,7 +1333,7 @@ export default function CompanyProfilePage() {
         profile={profile}
         fieldErrors={fieldErrors}
         setFieldErrors={setFieldErrors}
-      />
+      /> 
 
       {/* Bottom save bar */}
       {editing && (

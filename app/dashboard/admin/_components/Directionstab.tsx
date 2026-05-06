@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   RefreshCw,
   Plus,
@@ -10,6 +10,10 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Shield,
+  Activity,
+  Calendar,
+  Hash,
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -76,7 +80,7 @@ function DirectionModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? "Алдаа гарлаа");
       showToast(
-        mode === "create" ? "Чиглэл нэмэгдлэа ✓" : "Амжилттай хадгаллаа ✓",
+        mode === "create" ? "Чиглэл нэмэгдлээ ✓" : "Амжилттай хадгаллаа ✓",
       );
       onSave();
     } catch (e: any) {
@@ -88,15 +92,16 @@ function DirectionModal({
 
   const inp: React.CSSProperties = {
     width: "100%",
-    height: 42,
+    height: 44,
     background: "rgba(255,255,255,0.04)",
     border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 9,
-    padding: "0 12px",
+    borderRadius: 12,
+    padding: "0 14px",
     fontSize: 13,
     color: "rgba(255,255,255,0.85)",
     outline: "none",
     fontFamily: "inherit",
+    transition: "all 0.2s",
   };
 
   const sel: React.CSSProperties = {
@@ -115,20 +120,22 @@ function DirectionModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(0,0,0,0.82)",
-        backdropFilter: "blur(10px)",
+        background: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(12px)",
+        animation: "fadeIn 0.2s ease",
       }}
       onClick={onClose}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: 440,
+          maxWidth: 480,
           background: "#0d1526",
           border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 22,
-          padding: 28,
+          borderRadius: 28,
+          padding: 32,
           boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
+          animation: "modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -136,24 +143,25 @@ function DirectionModal({
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginBottom: 22,
+            alignItems: "center",
+            marginBottom: 24,
           }}
         >
           <div>
             <div
               style={{
-                fontSize: 15,
+                fontSize: 18,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.9)",
+                color: "rgba(255,255,255,0.92)",
               }}
             >
               {mode === "create" ? "Шинэ чиглэл нэмэх" : "Чиглэл засах"}
             </div>
             <div
               style={{
-                fontSize: 11,
-                color: "rgba(148,163,184,0.4)",
-                marginTop: 2,
+                fontSize: 12,
+                color: "rgba(148,163,184,0.5)",
+                marginTop: 4,
               }}
             >
               Үйл ажиллагааны чиглэл
@@ -163,46 +171,55 @@ function DirectionModal({
             onClick={onClose}
             style={{
               background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 9,
-              padding: 7,
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              padding: 8,
               cursor: "pointer",
               color: "rgba(148,163,184,0.5)",
               display: "flex",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.color = "white";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+              e.currentTarget.style.color = "rgba(148,163,184,0.5)";
             }}
           >
-            <X size={15} />
+            <X size={18} />
           </button>
         </div>
 
         {error && (
           <div
             style={{
-              padding: "9px 13px",
-              borderRadius: 10,
-              background: "rgba(239,68,68,0.07)",
-              border: "1px solid rgba(239,68,68,0.18)",
-              marginBottom: 16,
+              padding: "12px 16px",
+              borderRadius: 12,
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.2)",
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            <span style={{ fontSize: 12, color: "rgba(239,68,68,0.9)" }}>
-              {error}
-            </span>
+            <span style={{ fontSize: 12, color: "#fca5a5" }}>{error}</span>
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Үндсэн чиглэл сонгох */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
             <label
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: "0.1em",
-                textTransform: "uppercase" as const,
-                color: "rgba(148,163,184,0.45)",
+                textTransform: "uppercase",
+                color: "rgba(148,163,184,0.5)",
                 display: "block",
-                marginBottom: 5,
+                marginBottom: 8,
               }}
             >
               Үндсэн чиглэл
@@ -214,7 +231,7 @@ function DirectionModal({
                 style={sel}
                 onFocus={(e) =>
                   ((e.target as HTMLElement).style.borderColor =
-                    "rgba(59,130,246,0.4)")
+                    "rgba(99,102,241,0.6)")
                 }
                 onBlur={(e) =>
                   ((e.target as HTMLElement).style.borderColor =
@@ -237,10 +254,10 @@ function DirectionModal({
                   ))}
               </select>
               <ChevronDown
-                size={13}
+                size={14}
                 style={{
                   position: "absolute",
-                  right: 10,
+                  right: 14,
                   top: "50%",
                   transform: "translateY(-50%)",
                   color: "rgba(148,163,184,0.4)",
@@ -253,7 +270,7 @@ function DirectionModal({
                 style={{
                   fontSize: 11,
                   color: "rgba(99,102,241,0.7)",
-                  marginTop: 5,
+                  marginTop: 6,
                 }}
               >
                 ↳ {parents.find((p) => String(p.id) === parentId)?.label}-ийн
@@ -262,29 +279,29 @@ function DirectionModal({
             )}
           </div>
 
-          {/* Нэр */}
           <div>
             <label
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: "0.1em",
-                textTransform: "uppercase" as const,
-                color: "rgba(148,163,184,0.45)",
+                textTransform: "uppercase",
+                color: "rgba(148,163,184,0.5)",
                 display: "block",
-                marginBottom: 5,
+                marginBottom: 8,
               }}
             >
-              Нэр *
+              Чиглэлийн нэр *
             </label>
             <input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               style={inp}
               placeholder={parentId ? "Жишээ: Дотоод засал" : "Жишээ: Барилга"}
+              autoFocus
               onFocus={(e) =>
                 ((e.target as HTMLElement).style.borderColor =
-                  "rgba(59,130,246,0.4)")
+                  "rgba(99,102,241,0.6)")
               }
               onBlur={(e) =>
                 ((e.target as HTMLElement).style.borderColor =
@@ -294,19 +311,28 @@ function DirectionModal({
             />
           </div>
 
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
             <button
               onClick={onClose}
               style={{
                 flex: 1,
-                height: 42,
-                borderRadius: 10,
+                height: 48,
+                borderRadius: 14,
                 background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.08)",
                 color: "rgba(148,163,184,0.6)",
                 fontSize: 13,
+                fontWeight: 500,
                 cursor: "pointer",
-                fontFamily: "inherit",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.color = "white";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.color = "rgba(148,163,184,0.6)";
               }}
             >
               Болих
@@ -316,29 +342,29 @@ function DirectionModal({
               disabled={saving}
               style={{
                 flex: 2,
-                height: 42,
-                borderRadius: 10,
-                background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
+                height: 48,
+                borderRadius: 14,
+                background: "linear-gradient(135deg, #4f46e5, #6366f1)",
                 border: "none",
                 color: "white",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
-                fontFamily: "inherit",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 7,
+                gap: 8,
                 opacity: saving ? 0.7 : 1,
+                transition: "all 0.2s",
               }}
             >
               {saving ? (
                 <Loader2
-                  size={14}
+                  size={16}
                   style={{ animation: "spin 0.8s linear infinite" }}
                 />
               ) : (
-                <CheckCircle2 size={14} />
+                <CheckCircle2 size={16} />
               )}
               {saving
                 ? "Хадгалж байна..."
@@ -368,7 +394,6 @@ export function DirectionsTab({
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
-
   const [flatDirs, setFlatDirs] = useState<Direction[]>([]);
 
   const fetchDirections = useCallback(async () => {
@@ -379,7 +404,6 @@ export function DirectionsTab({
       if (data.success) {
         const result: Direction[] = [];
         (data.directions || []).forEach((d: any) => {
-          // ✅ Parent
           result.push({
             id: d.id,
             label: d.label,
@@ -387,25 +411,24 @@ export function DirectionsTab({
             parent_id: d.parent_id ?? null,
             created_at: d.created_at,
           });
-          // ✅ Children
           (d.children || []).forEach((c: any) => {
             result.push({
               id: c.id,
               label: c.label,
               is_active: c.is_active,
-              parent_id: d.id, // ✅ parent_id заавал тохируулна
+              parent_id: d.id,
               created_at: c.created_at,
             });
           });
         });
         setFlatDirs(result);
-        // ✅ Children бүхий parent-уудыг expand хийнэ
         const parentIds = new Set(
           result.filter((d) => d.parent_id).map((d) => d.parent_id as number),
         );
         setExpanded(parentIds);
       }
     } catch {
+      // Silent catch
     } finally {
       setLoading(false);
     }
@@ -418,12 +441,17 @@ export function DirectionsTab({
   const toggleExpand = (id: number) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
   const handleToggle = async (d: Direction) => {
+    if (!isSuperAdmin) return;
     setToggling(d.id);
     try {
       const res = await fetch(`${API}/api/activity-directions/${d.id}/toggle`, {
@@ -477,6 +505,7 @@ export function DirectionsTab({
   const mains = flatDirs.filter((d) => !d.parent_id).length;
   const subs = flatDirs.filter((d) => !!d.parent_id).length;
 
+  // DirectionRow component defined inside to access flatDirs and expanded state
   const DirectionRow = ({
     d,
     isChild = false,
@@ -489,20 +518,20 @@ export function DirectionsTab({
     const hasChildren = children.length > 0;
 
     return (
-      <>
+      <React.Fragment key={d.id}>
         <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
           <td
             style={{
-              padding: "10px 16px",
+              padding: "12px 16px",
               fontSize: 11,
               color: "rgba(148,163,184,0.3)",
               fontFamily: "monospace",
-              width: 48,
+              width: 60,
             }}
           >
             {isChild ? "" : d.id}
           </td>
-          <td style={{ padding: "10px 16px" }}>
+          <td style={{ padding: "12px 16px" }}>
             <div
               style={{
                 display: "flex",
@@ -511,7 +540,6 @@ export function DirectionsTab({
                 paddingLeft: isChild ? 40 : 0,
               }}
             >
-              {/* Expand/collapse — зөвхөн parent-д */}
               {!isChild && hasChildren && (
                 <button
                   type="button"
@@ -520,7 +548,7 @@ export function DirectionsTab({
                     background: "rgba(99,102,241,0.1)",
                     border: "1px solid rgba(99,102,241,0.2)",
                     borderRadius: 6,
-                    padding: "3px 5px",
+                    padding: "3px 6px",
                     cursor: "pointer",
                     display: "flex",
                     color: "#818cf8",
@@ -528,14 +556,12 @@ export function DirectionsTab({
                   }}
                 >
                   {isExpanded ? (
-                    <ChevronDown size={11} />
+                    <ChevronDown size={12} />
                   ) : (
-                    <ChevronRight size={11} />
+                    <ChevronRight size={12} />
                   )}
                 </button>
               )}
-
-              {/* Sub icon */}
               {isChild && (
                 <span
                   style={{
@@ -547,57 +573,54 @@ export function DirectionsTab({
                   ↳
                 </span>
               )}
-
               <div
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 9,
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
                   flexShrink: 0,
                   background: isChild
                     ? "rgba(99,102,241,0.08)"
                     : d.is_active
-                      ? "rgba(59,130,246,0.12)"
+                      ? "rgba(99,102,241,0.12)"
                       : "rgba(148,163,184,0.06)",
                   border: isChild
                     ? "1px solid rgba(99,102,241,0.15)"
                     : d.is_active
-                      ? "1px solid rgba(59,130,246,0.2)"
+                      ? "1px solid rgba(99,102,241,0.2)"
                       : "1px solid rgba(148,163,184,0.1)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 700,
                   color: isChild
-                    ? "#818cf8"
+                    ? "#a5b4fc"
                     : d.is_active
-                      ? "#60a5fa"
+                      ? "#a5b4fc"
                       : "rgba(148,163,184,0.4)",
                 }}
               >
-                {d.label[0]}
+                {d.label[0]?.toUpperCase()}
               </div>
-
               <div>
                 <span
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 600,
                     color: d.is_active
-                      ? "rgba(255,255,255,0.85)"
-                      : "rgba(255,255,255,0.35)",
+                      ? "rgba(255,255,255,0.88)"
+                      : "rgba(255,255,255,0.4)",
                   }}
                 >
                   {d.label}
                 </span>
-                {/* Parent-д children тоо */}
                 {!isChild && hasChildren && (
                   <div
                     style={{
                       fontSize: 10,
                       color: "rgba(148,163,184,0.4)",
-                      marginTop: 1,
+                      marginTop: 2,
                     }}
                   >
                     {children.length} туслах чиглэл
@@ -607,38 +630,50 @@ export function DirectionsTab({
             </div>
           </td>
 
-          <td style={{ padding: "10px 16px" }}>
+          <td style={{ padding: "12px 16px" }}>
             <button
-              onClick={() => isSuperAdmin && handleToggle(d)}
+              onClick={() => handleToggle(d)}
               disabled={toggling === d.id || !isSuperAdmin}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 5,
-                padding: "3px 10px",
-                borderRadius: 99,
-                border: "none",
+                gap: 6,
+                padding: "4px 12px",
+                borderRadius: 30,
                 cursor: isSuperAdmin ? "pointer" : "default",
-                fontFamily: "inherit",
                 fontSize: 11,
                 fontWeight: 600,
                 background: d.is_active
                   ? "rgba(16,185,129,0.12)"
                   : "rgba(148,163,184,0.1)",
-                color: d.is_active ? "#10b981" : "#94a3b8",
-                opacity: toggling === d.id ? 0.5 : 1,
+                color: d.is_active ? "#34d399" : "#94a3b8",
+                border: d.is_active
+                  ? "1px solid rgba(16,185,129,0.2)"
+                  : "1px solid rgba(148,163,184,0.15)",
+                opacity: toggling === d.id ? 0.6 : 1,
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                if (isSuperAdmin && toggling !== d.id) {
+                  e.currentTarget.style.transform = "scale(1.02)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (isSuperAdmin && toggling !== d.id) {
+                  e.currentTarget.style.transform = "scale(1)";
+                }
               }}
             >
               {toggling === d.id ? (
                 <Loader2
-                  size={10}
+                  size={12}
                   style={{ animation: "spin 0.8s linear infinite" }}
                 />
               ) : (
                 <span
                   style={{
-                    width: 5,
-                    height: 5,
+                    width: 7,
+                    height: 7,
                     borderRadius: "50%",
                     background: d.is_active ? "#10b981" : "#94a3b8",
                   }}
@@ -650,7 +685,7 @@ export function DirectionsTab({
 
           <td
             style={{
-              padding: "10px 16px",
+              padding: "12px 16px",
               fontSize: 11,
               color: "rgba(148,163,184,0.4)",
             }}
@@ -659,56 +694,78 @@ export function DirectionsTab({
               <span
                 style={{
                   fontSize: 10,
-                  padding: "2px 8px",
-                  borderRadius: 99,
+                  padding: "2px 10px",
+                  borderRadius: 30,
                   background: "rgba(99,102,241,0.08)",
-                  color: "rgba(99,102,241,0.5)",
+                  color: "#a5b4fc",
+                  border: "1px solid rgba(99,102,241,0.15)",
                 }}
               >
                 туслах
               </span>
             ) : d.created_at ? (
-              new Date(d.created_at).toLocaleDateString("mn-MN")
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Calendar size={12} style={{ color: "#475569" }} />
+                {new Date(d.created_at).toLocaleDateString("mn-MN")}
+              </div>
             ) : (
               "—"
             )}
           </td>
 
-          <td style={{ padding: "10px 16px" }}>
+          <td style={{ padding: "12px 16px" }}>
             {isSuperAdmin && (
-              <div style={{ display: "flex", gap: 5 }}>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => {
                     setEditTarget(d);
                     setModalMode("edit");
                   }}
                   style={{
-                    background: "rgba(59,130,246,0.08)",
-                    border: "1px solid rgba(59,130,246,0.18)",
+                    padding: "6px 12px",
                     borderRadius: 8,
-                    padding: "6px 10px",
+                    background: "#1e293b",
+                    border: "1px solid #334155",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    gap: 4,
+                    gap: 6,
                     fontSize: 11,
-                    color: "#60a5fa",
-                    fontFamily: "inherit",
+                    color: "#a5b4fc",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#334155";
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#1e293b";
+                    e.currentTarget.style.borderColor = "#334155";
                   }}
                 >
-                  <Pencil size={11} /> Засах
+                  <Pencil size={12} /> Засах
                 </button>
                 <button
                   onClick={() => setConfirmDel(d)}
                   style={{
-                    background: "rgba(239,68,68,0.06)",
-                    border: "1px solid rgba(239,68,68,0.15)",
+                    padding: "6px 10px",
                     borderRadius: 8,
-                    padding: "6px 8px",
+                    background: "#1e293b",
+                    border: "1px solid #334155",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    color: "rgba(239,68,68,0.7)",
+                    gap: 4,
+                    color: "#f87171",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                    e.currentTarget.style.borderColor = "rgba(239,68,68,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#1e293b";
+                    e.currentTarget.style.borderColor = "#334155";
                   }}
                 >
                   <Trash2 size={12} />
@@ -718,52 +775,81 @@ export function DirectionsTab({
           </td>
         </tr>
 
-        {/* ✅ Children — expand дарсан үед харагдана */}
+        {/* Children rows */}
         {!isChild &&
           isExpanded &&
+          hasChildren &&
           children.map((child) => (
             <DirectionRow key={child.id} d={child} isChild={true} />
           ))}
 
-        {/* ✅ Children байвал хэрэглэгч expand дарахгүй байсан ч summary харуулна */}
+        {/* Collapsed summary */}
         {!isChild && !isExpanded && hasChildren && (
           <tr>
-            <td />
-            <td style={{ paddingLeft: 56, paddingBottom: 8 }}>
+            <td colSpan={5}>
               <button
                 type="button"
                 onClick={() => toggleExpand(d.id)}
                 style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 16px 8px 56px",
                   fontSize: 11,
                   color: "rgba(99,102,241,0.6)",
-                  background: "none",
+                  background: "rgba(99,102,241,0.03)",
                   border: "none",
                   cursor: "pointer",
                   fontFamily: "inherit",
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
+                  gap: 6,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(99,102,241,0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(99,102,241,0.03)";
                 }}
               >
-                <ChevronRight size={11} />
+                <ChevronRight size={12} />
                 {children.length} туслах чиглэл харах
               </button>
             </td>
-            <td />
-            <td />
-            <td />
           </tr>
         )}
-      </>
+      </React.Fragment>
     );
   };
 
   return (
     <>
       <style>{`
-        @keyframes modalIn{from{opacity:0;transform:scale(0.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        tr:hover td { background: rgba(255,255,255,0.015); }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.96); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .perm-row {
+          transition: all 0.2s ease;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .perm-row:hover {
+          background: rgba(255,255,255,0.03);
+          transform: translateX(2px);
+        }
+        .perm-row:last-child {
+          border-bottom: none;
+        }
       `}</style>
 
       {(modalMode === "create" || modalMode === "edit") && (
@@ -793,43 +879,45 @@ export function DirectionsTab({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(0,0,0,0.82)",
-            backdropFilter: "blur(10px)",
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(12px)",
+            animation: "fadeIn 0.2s ease",
           }}
           onClick={() => setConfirmDel(null)}
         >
           <div
             style={{
               width: "100%",
-              maxWidth: 380,
+              maxWidth: 400,
               background: "#0d1526",
               border: "1px solid rgba(239,68,68,0.2)",
-              borderRadius: 20,
-              padding: 28,
+              borderRadius: 24,
+              padding: 32,
               boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
+              animation: "modalIn 0.3s ease",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
               style={{
-                width: 52,
-                height: 52,
-                borderRadius: 16,
-                background: "rgba(239,68,68,0.08)",
+                width: 56,
+                height: 56,
+                borderRadius: 18,
+                background: "rgba(239,68,68,0.12)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                margin: "0 auto 18px",
+                margin: "0 auto 20px",
               }}
             >
-              <Trash2 size={22} style={{ color: "#ef4444" }} />
+              <Trash2 size={24} style={{ color: "#ef4444" }} />
             </div>
-            <div style={{ textAlign: "center", marginBottom: 22 }}>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
               <p
                 style={{
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.9)",
+                  color: "rgba(255,255,255,0.92)",
                   margin: "0 0 8px",
                 }}
               >
@@ -838,14 +926,14 @@ export function DirectionsTab({
               <p
                 style={{
                   fontSize: 13,
-                  color: "rgba(148,163,184,0.6)",
+                  color: "rgba(148,163,184,0.5)",
                   margin: 0,
                 }}
               >
                 <span
-                  style={{ color: "rgba(255,255,255,0.8)", fontWeight: 600 }}
+                  style={{ color: "rgba(255,255,255,0.7)", fontWeight: 600 }}
                 >
-                  {confirmDel.label}
+                  "{confirmDel.label}"
                 </span>
               </p>
               {flatDirs.filter((d) => d.parent_id === confirmDel.id).length >
@@ -853,8 +941,8 @@ export function DirectionsTab({
                 <p
                   style={{
                     fontSize: 12,
-                    color: "rgba(239,68,68,0.7)",
-                    marginTop: 8,
+                    color: "rgba(239,68,68,0.6)",
+                    marginTop: 10,
                   }}
                 >
                   ⚠️ Туслах{" "}
@@ -863,19 +951,28 @@ export function DirectionsTab({
                 </p>
               )}
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ display: "flex", gap: 12 }}>
               <button
                 onClick={() => setConfirmDel(null)}
                 style={{
                   flex: 1,
-                  height: 42,
-                  borderRadius: 10,
+                  height: 44,
+                  borderRadius: 12,
                   background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.08)",
                   color: "rgba(148,163,184,0.6)",
                   fontSize: 13,
+                  fontWeight: 500,
                   cursor: "pointer",
-                  fontFamily: "inherit",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  e.currentTarget.style.color = "rgba(148,163,184,0.6)";
                 }}
               >
                 Болих
@@ -885,29 +982,41 @@ export function DirectionsTab({
                 disabled={deleting}
                 style={{
                   flex: 1,
-                  height: 42,
-                  borderRadius: 10,
-                  background: "rgba(239,68,68,0.1)",
+                  height: 44,
+                  borderRadius: 12,
+                  background: "rgba(239,68,68,0.15)",
                   border: "1px solid rgba(239,68,68,0.3)",
-                  color: "#ef4444",
+                  color: "#f87171",
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: "pointer",
-                  fontFamily: "inherit",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 6,
+                  gap: 8,
                   opacity: deleting ? 0.6 : 1,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!deleting) {
+                    e.currentTarget.style.background = "rgba(239,68,68,0.25)";
+                    e.currentTarget.style.color = "#ef4444";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!deleting) {
+                    e.currentTarget.style.background = "rgba(239,68,68,0.15)";
+                    e.currentTarget.style.color = "#f87171";
+                  }
                 }}
               >
                 {deleting ? (
                   <Loader2
-                    size={13}
+                    size={14}
                     style={{ animation: "spin 0.8s linear infinite" }}
                   />
                 ) : (
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 )}
                 Устгах
               </button>
@@ -916,155 +1025,158 @@ export function DirectionsTab({
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {/* Toolbar */}
+      <div
+        className="animate-fade-up"
+        style={{ display: "flex", flexDirection: "column", gap: 20 }}
+      >
+        {/* Header */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexWrap: "wrap",
+            gap: 16,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={{ fontSize: 12, color: "rgba(148,163,184,0.4)" }}>
-              {loading ? "..." : flatDirs.length + " чиглэл"}
-            </span>
-            {!loading && (
-              <>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "2px 8px",
-                    borderRadius: 99,
-                    fontSize: 11,
-                    background: "rgba(59,130,246,0.1)",
-                    color: "#60a5fa",
-                  }}
-                >
-                  {mains} үндсэн
-                </span>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "2px 8px",
-                    borderRadius: 99,
-                    fontSize: 11,
-                    background: "rgba(99,102,241,0.1)",
-                    color: "#818cf8",
-                  }}
-                >
-                  {subs} туслах
-                </span>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "2px 8px",
-                    borderRadius: 99,
-                    fontSize: 11,
-                    background: "rgba(16,185,129,0.12)",
-                    color: "#10b981",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: "50%",
-                      background: "#10b981",
-                    }}
-                  />
-                  {active} идэвхтэй
-                </span>
-                {inactive > 0 && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "2px 8px",
-                      borderRadius: 99,
-                      fontSize: 11,
-                      background: "rgba(148,163,184,0.1)",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    {inactive} идэвхгүй
-                  </span>
-                )}
-              </>
-            )}
+          <div>
+            <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
+              Нийт {flatDirs.length} чиглэл
+            </p>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={fetchDirections}
-              style={{
-                padding: "9px 14px",
-                borderRadius: 10,
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                color: "rgba(148,163,184,0.6)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 12,
-                fontFamily: "inherit",
-              }}
-            >
-              <RefreshCw
-                size={13}
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              <span
                 style={{
-                  animation: loading ? "spin 1s linear infinite" : undefined,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 12px",
+                  borderRadius: 30,
+                  background: "rgba(99,102,241,0.12)",
+                  border: "1px solid rgba(99,102,241,0.2)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#a5b4fc",
                 }}
-              />
-              Дахин ачаалах
-            </button>
-            {isSuperAdmin && (
+              >
+                {mains} үндсэн
+              </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 12px",
+                  borderRadius: 30,
+                  background: "rgba(16,185,129,0.12)",
+                  border: "1px solid rgba(16,185,129,0.2)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#34d399",
+                }}
+              >
+                <Shield size={12} /> Идэвхтэй: {active}
+              </span>
+              {inactive > 0 && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 12px",
+                    borderRadius: 30,
+                    background: "rgba(148,163,184,0.1)",
+                    border: "1px solid rgba(148,163,184,0.2)",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#94a3b8",
+                  }}
+                >
+                  Идэвхгүй: {inactive}
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={() => {
-                  setEditTarget(null);
-                  setModalMode("create");
-                }}
+                onClick={fetchDirections}
                 style={{
                   padding: "9px 16px",
-                  borderRadius: 10,
-                  background: "linear-gradient(135deg,#1d4ed8,#3b82f6)",
-                  border: "none",
-                  color: "white",
-                  fontSize: 13,
-                  fontWeight: 600,
+                  borderRadius: 12,
+                  background: "#1e293b",
+                  border: "1px solid #334155",
+                  color: "#94a3b8",
                   cursor: "pointer",
-                  fontFamily: "inherit",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
+                  fontSize: 12,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#334155";
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#1e293b";
+                  e.currentTarget.style.color = "#94a3b8";
                 }}
               >
-                <Plus size={14} /> Шинэ чиглэл
+                <RefreshCw
+                  size={14}
+                  style={{
+                    animation: loading ? "spin 1s linear infinite" : undefined,
+                  }}
+                />
+                Дахин ачаалах
               </button>
-            )}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => {
+                    setEditTarget(null);
+                    setModalMode("create");
+                  }}
+                  style={{
+                    padding: "9px 20px",
+                    borderRadius: 12,
+                    background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                    border: "none",
+                    color: "white",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 8px 20px rgba(79,70,229,0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 14px rgba(79,70,229,0.3)";
+                  }}
+                >
+                  <Plus size={14} /> Шинэ чиглэл
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Table */}
         <div
           style={{
-            background: "#0d1526",
-            border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 18,
+            background: "#0f172a",
+            border: "1px solid #334155",
+            borderRadius: 20,
             overflow: "hidden",
           }}
         >
@@ -1074,48 +1186,49 @@ export function DirectionsTab({
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                padding: 56,
+                padding: 80,
                 gap: 12,
               }}
             >
               <div
                 style={{
-                  width: 22,
-                  height: 22,
-                  border: "2px solid rgba(52,211,153,0.3)",
-                  borderTopColor: "#34d399",
+                  width: 24,
+                  height: 24,
+                  border: "2px solid #334155",
+                  borderTopColor: "#4f46e5",
                   borderRadius: "50%",
                   animation: "spin 0.8s linear infinite",
                 }}
               />
-              <span style={{ fontSize: 13, color: "rgba(148,163,184,0.4)" }}>
+              <span style={{ fontSize: 13, color: "#64748b" }}>
                 Ачаалж байна...
               </span>
             </div>
           ) : flatDirs.length === 0 ? (
-            <div style={{ padding: "56px 16px", textAlign: "center" }}>
-              <p
+            <div style={{ padding: "80px 20px", textAlign: "center" }}>
+              <Activity
+                size={48}
                 style={{
-                  fontSize: 13,
-                  color: "rgba(148,163,184,0.3)",
-                  margin: 0,
+                  color: "#334155",
+                  margin: "0 auto 16px",
+                  display: "block",
                 }}
-              >
+              />
+              <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>
                 Үйл ажиллагааны чиглэл байхгүй байна
               </p>
               {isSuperAdmin && (
                 <button
                   onClick={() => setModalMode("create")}
                   style={{
-                    marginTop: 16,
-                    padding: "8px 18px",
+                    marginTop: 20,
+                    padding: "8px 20px",
                     borderRadius: 10,
-                    background: "rgba(59,130,246,0.1)",
-                    border: "1px solid rgba(59,130,246,0.25)",
-                    color: "#60a5fa",
+                    background: "rgba(79,70,229,0.1)",
+                    border: "1px solid rgba(79,70,229,0.3)",
+                    color: "#a5b4fc",
                     fontSize: 13,
                     cursor: "pointer",
-                    fontFamily: "inherit",
                   }}
                 >
                   + Эхний чиглэл нэмэх
@@ -1123,37 +1236,103 @@ export function DirectionsTab({
               )}
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  {["#", "Нэр", "Статус", "Нэмэгдсэн", ""].map((h, i) => (
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: 700,
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: "#0f172a",
+                      borderBottom: "1px solid #334155",
+                    }}
+                  >
                     <th
-                      key={i}
                       style={{
-                        textAlign: "left",
-                        padding: "10px 16px",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "rgba(148,163,184,0.28)",
-                        textTransform: "uppercase" as const,
-                        letterSpacing: "0.09em",
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        whiteSpace: "nowrap" as const,
+                        padding: "14px 16px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#64748b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      {h}
+                      <Hash
+                        size={12}
+                        style={{ display: "inline", marginRight: 4 }}
+                      />{" "}
+                      №
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {flatDirs
-                  .filter((d) => d.parent_id === null)
-                  .map((d) => (
-                    <DirectionRow key={d.id} d={d} />
-                  ))}
-              </tbody>
-            </table>
+                    <th
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#64748b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Чиглэлийн нэр
+                    </th>
+                    <th
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#64748b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Статус
+                    </th>
+                    <th
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#64748b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <Calendar
+                        size={12}
+                        style={{ display: "inline", marginRight: 4 }}
+                      />{" "}
+                      Төрөл
+                    </th>
+                    <th
+                      style={{
+                        padding: "14px 16px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#64748b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        whiteSpace: "nowrap",
+                      }}
+                    ></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flatDirs
+                    .filter((d) => d.parent_id === null)
+                    .map((d) => (
+                      <DirectionRow key={d.id} d={d} />
+                    ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

@@ -22,18 +22,20 @@ export function Section({ icon: Icon, title, children }: any) {
           gap: 8,
         }}
       >
+        {/* Icon Background нь #0072BC болсон */}
         <div
           style={{
             width: 28,
             height: 28,
-            borderRadius: 8,
-            background: "#eef2ff",
+            borderRadius: 8,        
+            background: "#0072BC",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Icon size={14} style={{ color: "#6366f1" }} />
+          {/* Icon Color нь white болсон */}
+          <Icon size={14} style={{ color: "#FFFFFF" }} /> 
         </div>
         <p
           style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}

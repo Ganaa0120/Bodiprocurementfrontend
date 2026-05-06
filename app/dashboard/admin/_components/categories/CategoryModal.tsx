@@ -205,7 +205,7 @@ export function CategoryModal({
 
           {/* ── Угтвар + Дугаар ── */}
           <div>
-            <label style={lbl}>Угтвар & Дугаар *</label>
+            <label style={lbl}>Ангилал төрөл сонгох *</label>
             <div
               style={{
                 display: "grid",
@@ -230,7 +230,7 @@ export function CategoryModal({
                   onBlur={blur}
                 >
                   {PREFIXES.map((p) => (
-                    <option key={p.value} value={p.value}>
+                    <option key={p.value} value={p.value} className="bg-slate-700">
                       {p.label}
                     </option>
                   ))}

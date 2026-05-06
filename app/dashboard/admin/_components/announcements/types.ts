@@ -1,5 +1,7 @@
 export type AnnType = "open" | "targeted" | "rfq";
 
+export type ProcurementKind = "goods" | "service";
+
 export type Ann = {
   id: string;
   title: string;
@@ -27,6 +29,24 @@ export type Ann = {
   rfq_delivery_date?: string;
   rfq_specs?: string;
   attachments?: AttachedFile[];
+
+  // ── Шинэ талбарууд ────────────────────────────────────────
+  client_company?: string;
+  responsible_person_name?: string;
+  responsible_position?: string;
+  contact_phone?: string;
+  start_date?: string;
+  end_date?: string;
+  procurement_kind?: ProcurementKind;
+  supply_start_date?: string;
+  supply_end_date?: string;
+  central_location?: string;
+  branch_location?: string;
+  address_details?: string;
+  buyer_doc_info?: string;
+  buyer_attachments?: AttachedFile[];
+  supplier_doc_info?: string;
+  supplier_required_docs?: AttachedFile[];
 };
 
 export type AttachedFile = {

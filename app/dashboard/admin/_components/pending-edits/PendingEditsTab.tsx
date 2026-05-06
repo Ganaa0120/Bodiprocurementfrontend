@@ -682,7 +682,7 @@ export function PendingEditsTab({
                 fontWeight: 600,
               }}
             >
-              Хүлээгдэж буй өөрчлөлт
+              Шинэчлэсэн хүсэлтүүд
             </span>
             <span
               style={{
@@ -768,7 +768,7 @@ export function PendingEditsTab({
                   margin: 0,
                 }}
               >
-                Хүлээгдэж буй өөрчлөлт байхгүй байна
+                Шинэчлэсэн хүсэлтүүд байхгүй байна
               </p>
             </div>
           ) : (

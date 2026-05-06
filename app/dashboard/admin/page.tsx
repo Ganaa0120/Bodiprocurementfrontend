@@ -34,6 +34,14 @@ import {
   ChevronDown,
   ChevronRight,
   Lock,
+  Menu,
+  Zap,
+  ArrowRight,
+  Home,
+  Briefcase,
+  FolderTree,
+  Megaphone,
+  UserCog,
 } from "lucide-react";
 import { IndividualsTab } from "./_components/individuals/IndividualsTab";
 import { SpecialPermissionsTab } from "./_components/SpecialPermissionsTab";
@@ -98,7 +106,6 @@ type Person = {
   return_reason?: string;
 };
 
-// Real stats type
 type DashStats = {
   total_companies: number;
   total_persons: number;
@@ -209,9 +216,9 @@ const NAV_PERMS: NavPerm[] = [
   },
   {
     id: "pending_edits",
-    label: "Хүлээгдэж буй өөрчлөлт",
+    label: "Зассан мэдээлэлүүд",
     icon: "⏳",
-    superAdminOnly: true, // зөвхөн super admin
+    superAdminOnly: true,
     subs: [
       { id: "pending_edits.view", label: "Харах", desc: "Pending edits харах" },
     ],
@@ -292,6 +299,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
       bg: "rgba(148,163,184,0.1)",
     },
   };
+
 function Badge({ status }: { status: string }) {
   const c = STATUS_CFG[status] ?? STATUS_CFG.pending;
   return (
@@ -299,19 +307,20 @@ function Badge({ status }: { status: string }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 5,
-        padding: "3px 10px",
-        borderRadius: 99,
+        gap: 6,
+        padding: "4px 12px",
+        borderRadius: 30,
         background: c.bg,
         fontSize: 11,
         fontWeight: 600,
         color: c.color,
+        border: `1px solid ${c.color}20`,
       }}
     >
       <span
         style={{
-          width: 5,
-          height: 5,
+          width: 6,
+          height: 6,
           borderRadius: "50%",
           background: c.color,
         }}
@@ -320,19 +329,20 @@ function Badge({ status }: { status: string }) {
     </span>
   );
 }
+
 function Th({ h }: { h: string }) {
   return (
     <th
       style={{
         textAlign: "left",
-        padding: "10px 16px",
-        fontSize: 10,
-        fontWeight: 700,
-        color: "rgba(255,255,255,0.22)",
-        textTransform: "uppercase" as const,
-        letterSpacing: "0.09em",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        whiteSpace: "nowrap" as const,
+        padding: "14px 16px",
+        fontSize: 11,
+        fontWeight: 600,
+        color: "#64748b",
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        whiteSpace: "nowrap",
       }}
     >
       {h}
@@ -340,7 +350,7 @@ function Th({ h }: { h: string }) {
   );
 }
 
-// ── Beautiful Area Chart ─────────────────────────────────────
+// AreaChart Component - Enhanced with better colors and animations
 function AreaChart({
   data,
 }: {
@@ -350,7 +360,7 @@ function AreaChart({
     return (
       <div
         style={{
-          height: 160,
+          height: 180,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -358,15 +368,19 @@ function AreaChart({
           fontSize: 12,
         }}
       >
-        Мэдээлэл байхгүй
+        <div style={{ textAlign: "center" }}>
+          <TrendingUp size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
+          <p>Мэдээлэл байхгүй</p>
+        </div>
       </div>
     );
+
   const W = 580,
-    H = 160,
-    PL = 32,
+    H = 180,
+    PL = 40,
     PB = 28,
-    PT = 12,
-    PR = 16;
+    PT = 16,
+    PR = 20;
   const cW = W - PL - PR,
     cH = H - PT - PB;
   const maxC = Math.max(...data.map((d) => d.companies), 1);
@@ -395,23 +409,29 @@ function AreaChart({
   const pathArea = (pts: { x: number; y: number }[]) =>
     `${pathLine(pts)} L${pts[pts.length - 1].x.toFixed(1)},${(PT + cH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PT + cH).toFixed(1)} Z`;
 
-  // Grid lines
-  const gridVals = [0, Math.round(mx / 3), Math.round((mx * 2) / 3), mx];
+  const gridVals = [0, Math.round(mx / 2), mx];
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }}>
       <defs>
         <linearGradient id="gc2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.35" />
           <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="gp2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.2" />
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" />
           <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
         </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
 
-      {/* Grid */}
+      {/* Grid lines */}
       {gridVals.map((v, i) => {
         const y = PT + cH - (v / mx) * cH;
         return (
@@ -423,13 +443,14 @@ function AreaChart({
               y2={y}
               stroke="rgba(255,255,255,0.05)"
               strokeWidth="1"
+              strokeDasharray="4 4"
             />
             <text
-              x={PL - 4}
+              x={PL - 6}
               y={y + 4}
               textAnchor="end"
-              fontSize="8"
-              fill="rgba(255,255,255,0.2)"
+              fontSize="9"
+              fill="rgba(255,255,255,0.3)"
             >
               {v}
             </text>
@@ -446,52 +467,58 @@ function AreaChart({
         d={pathLine(compPoints)}
         fill="none"
         stroke="#6366f1"
-        strokeWidth="2"
+        strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+        filter="url(#glow)"
       />
       <path
         d={pathLine(persPoints)}
         fill="none"
         stroke="#22d3ee"
-        strokeWidth="2"
+        strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+        filter="url(#glow)"
       />
 
-      {/* Dots */}
+      {/* Dots with glow */}
       {compPoints.map((p, i) => (
-        <circle
-          key={`c${i}`}
-          cx={p.x}
-          cy={p.y}
-          r="3"
-          fill="#6366f1"
-          stroke="#0b1022"
-          strokeWidth="1.5"
-        />
+        <g key={`c${i}`}>
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r="4"
+            fill="#6366f1"
+            stroke="#0a0e1a"
+            strokeWidth="2"
+          />
+          <circle cx={p.x} cy={p.y} r="6" fill="#6366f1" opacity="0.3" />
+        </g>
       ))}
       {persPoints.map((p, i) => (
-        <circle
-          key={`p${i}`}
-          cx={p.x}
-          cy={p.y}
-          r="3"
-          fill="#22d3ee"
-          stroke="#0b1022"
-          strokeWidth="1.5"
-        />
+        <g key={`p${i}`}>
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r="4"
+            fill="#22d3ee"
+            stroke="#0a0e1a"
+            strokeWidth="2"
+          />
+          <circle cx={p.x} cy={p.y} r="6" fill="#22d3ee" opacity="0.3" />
+        </g>
       ))}
 
-      {/* X labels */}
+      {/* X-axis labels */}
       {data.map((d, i) => (
         <text
           key={i}
           x={PL + i * xStep}
-          y={H - 4}
+          y={H - 6}
           textAnchor="middle"
-          fontSize="8"
-          fill="rgba(255,255,255,0.25)"
+          fontSize="9"
+          fill="rgba(255,255,255,0.35)"
         >
           {d.month}
         </text>
@@ -500,7 +527,7 @@ function AreaChart({
   );
 }
 
-// ── Ring Chart ───────────────────────────────────────────────
+// Ring Chart Component
 function RingChart({
   data,
 }: {
@@ -563,7 +590,7 @@ function RingChart({
   );
 }
 
-// ── Animated Counter ─────────────────────────────────────────
+// Counter Component
 function Counter({ target }: { target: number }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
@@ -582,7 +609,117 @@ function Counter({ target }: { target: number }) {
   return <span>{val.toLocaleString()}</span>;
 }
 
-// ── Permission Row ───────────────────────────────────────────
+// Stat Card Component
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  color,
+  trend,
+  onClick,
+  loading,
+}: any) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(18,22,45,0.95), rgba(12,16,35,0.98))",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 24,
+        padding: "20px 22px",
+        cursor: onClick ? "pointer" : "default",
+        transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        position: "relative",
+        overflow: "hidden",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-4px)";
+        e.currentTarget.style.borderColor = `${color}40`;
+        e.currentTarget.style.boxShadow = `0 20px 40px -12px ${color}20`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.boxShadow = "none";
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            background: `${color}15`,
+            border: `1px solid ${color}25`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon size={20} style={{ color }} />
+        </div>
+        {trend !== undefined && (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: trend >= 0 ? "#10b981" : "#ef4444",
+              background:
+                trend >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
+              padding: "4px 10px",
+              borderRadius: 30,
+            }}
+          >
+            {trend >= 0 ? `+${trend}%` : `${trend}%`}
+          </span>
+        )}
+      </div>
+      <div
+        style={{
+          fontSize: 28,
+          fontWeight: 800,
+          color: "white",
+          letterSpacing: "-0.02em",
+          lineHeight: 1.2,
+        }}
+      >
+        {loading ? (
+          <div
+            style={{
+              width: 60,
+              height: 28,
+              borderRadius: 8,
+              background: "rgba(255,255,255,0.05)",
+            }}
+            className="shimmer"
+          />
+        ) : (
+          <Counter target={value} />
+        )}
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          color: "rgba(255,255,255,0.45)",
+          marginTop: 8,
+          fontWeight: 500,
+        }}
+      >
+        {title}
+      </div>
+    </div>
+  );
+}
+
+// Permission Row Component
 function PermRow({
   nav,
   perms,
@@ -604,7 +741,7 @@ function PermRow({
   return (
     <div
       style={{
-        borderRadius: 11,
+        borderRadius: 12,
         overflow: "hidden",
         border: visible
           ? "1px solid rgba(99,102,241,0.25)"
@@ -618,8 +755,8 @@ function PermRow({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 10,
-          padding: "11px 14px",
+          gap: 12,
+          padding: "12px 16px",
         }}
       >
         <button
@@ -662,8 +799,8 @@ function PermRow({
               <span
                 style={{
                   fontSize: 9,
-                  padding: "1px 6px",
-                  borderRadius: 99,
+                  padding: "2px 8px",
+                  borderRadius: 30,
                   background: "rgba(148,163,184,0.1)",
                   color: "rgba(148,163,184,0.5)",
                 }}
@@ -677,7 +814,7 @@ function PermRow({
               style={{
                 fontSize: 10,
                 color: "rgba(148,163,184,0.4)",
-                marginTop: 1,
+                marginTop: 2,
               }}
             >
               {subCount}/{nav.subs.length} эрх
@@ -691,12 +828,12 @@ function PermRow({
             style={{
               background: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 7,
-              padding: "3px 9px",
+              borderRadius: 8,
+              padding: "4px 10px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: 3,
+              gap: 4,
               fontSize: 10,
               color: "rgba(148,163,184,0.55)",
               fontFamily: "inherit",
@@ -711,7 +848,7 @@ function PermRow({
         <div
           style={{
             borderTop: "1px solid rgba(255,255,255,0.06)",
-            padding: "8px 14px 10px",
+            padding: "10px 16px",
           }}
         >
           <div
@@ -719,15 +856,15 @@ function PermRow({
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: "0.08em",
-              textTransform: "uppercase" as const,
+              textTransform: "uppercase",
               color: "rgba(148,163,184,0.35)",
-              marginBottom: 6,
+              marginBottom: 8,
             }}
           >
             Дэд эрхүүд
           </div>
           <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}
           >
             {nav.subs.map((sub) => {
               const isView = sub.id === `${nav.id}.view`;
@@ -739,9 +876,9 @@ function PermRow({
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
-                    gap: 8,
-                    padding: "7px 9px",
-                    borderRadius: 8,
+                    gap: 10,
+                    padding: "8px 10px",
+                    borderRadius: 10,
                     cursor: isView ? "default" : "pointer",
                     background: checked
                       ? "rgba(99,102,241,0.08)"
@@ -754,8 +891,8 @@ function PermRow({
                 >
                   <div
                     style={{
-                      width: 15,
-                      height: 15,
+                      width: 16,
+                      height: 16,
                       borderRadius: 4,
                       flexShrink: 0,
                       marginTop: 1,
@@ -770,7 +907,7 @@ function PermRow({
                       justifyContent: "center",
                     }}
                   >
-                    {checked && <CheckCircle2 size={9} color="white" />}
+                    {checked && <CheckCircle2 size={10} color="white" />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
@@ -805,7 +942,7 @@ function PermRow({
   );
 }
 
-// ── Admin Modal ──────────────────────────────────────────────
+// Admin Modal Component
 function AdminModal({
   mode,
   admin,
@@ -929,29 +1066,26 @@ function AdminModal({
 
   const inp: React.CSSProperties = {
     width: "100%",
-    height: 40,
-    background: "rgba(255,255,255,0.05)",
+    height: 42,
+    background: "rgba(255,255,255,0.04)",
     border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 9,
-    padding: "0 12px",
+    borderRadius: 12,
+    padding: "0 14px",
     fontSize: 13,
-    color: "rgba(255,255,255,0.82)",
+    color: "rgba(255,255,255,0.85)",
     outline: "none",
     fontFamily: "inherit",
+    transition: "all 0.2s",
   };
   const lbl: React.CSSProperties = {
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.09em",
-    textTransform: "uppercase" as const,
-    color: "rgba(255,255,255,0.3)",
-    display: "block" as const,
-    marginBottom: 5,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.4)",
+    display: "block",
+    marginBottom: 6,
   };
-  const fo = (e: any) =>
-    ((e.target as HTMLElement).style.borderColor = "rgba(99,102,241,0.4)");
-  const bl = (e: any) =>
-    ((e.target as HTMLElement).style.borderColor = "rgba(255,255,255,0.08)");
   const visibleNavs = NAV_PERMS.filter((n) => !n.superAdminOnly || isSA);
 
   return (
@@ -963,8 +1097,8 @@ function AdminModal({
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",
-        background: "rgba(0,0,0,0.82)",
-        backdropFilter: "blur(10px)",
+        background: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(12px)",
         overflowY: "auto",
         padding: "20px 16px",
       }}
@@ -973,10 +1107,10 @@ function AdminModal({
       <div
         style={{
           width: "100%",
-          maxWidth: 600,
+          maxWidth: 640,
           background: "#0d1526",
           border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 22,
+          borderRadius: 28,
           padding: 28,
           boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
           marginBottom: 24,
@@ -994,9 +1128,9 @@ function AdminModal({
           <div>
             <div
               style={{
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.9)",
+                color: "rgba(255,255,255,0.92)",
               }}
             >
               {mode === "create"
@@ -1005,9 +1139,9 @@ function AdminModal({
             </div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 12,
                 color: "rgba(148,163,184,0.45)",
-                marginTop: 3,
+                marginTop: 4,
               }}
             >
               Харах цэс болон үйлдлийн эрхийг тохируулна уу
@@ -1018,14 +1152,23 @@ function AdminModal({
             style={{
               background: "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 9,
-              padding: 7,
+              borderRadius: 12,
+              padding: 8,
               cursor: "pointer",
               color: "rgba(148,163,184,0.5)",
               display: "flex",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.color = "white";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+              e.currentTarget.style.color = "rgba(148,163,184,0.5)";
             }}
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
         {error && (
@@ -1034,28 +1177,26 @@ function AdminModal({
               display: "flex",
               alignItems: "center",
               gap: 8,
-              padding: "9px 12px",
-              borderRadius: 10,
-              background: "rgba(239,68,68,0.08)",
-              border: "1px solid rgba(239,68,68,0.18)",
-              marginBottom: 16,
+              padding: "12px 16px",
+              borderRadius: 12,
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.2)",
+              marginBottom: 20,
             }}
           >
             <AlertCircle
               size={14}
-              style={{ color: "#ef4444", flexShrink: 0 }}
+              style={{ color: "#f87171", flexShrink: 0 }}
             />
-            <span style={{ fontSize: 12, color: "rgba(239,68,68,0.9)" }}>
-              {error}
-            </span>
+            <span style={{ fontSize: 12, color: "#fca5a5" }}>{error}</span>
           </div>
         )}
         <form
           onSubmit={submit}
-          style={{ display: "flex", flexDirection: "column", gap: 14 }}
+          style={{ display: "flex", flexDirection: "column", gap: 16 }}
         >
           <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
           >
             <div>
               <label style={lbl}>Овог *</label>
@@ -1067,8 +1208,10 @@ function AdminModal({
                 placeholder="Овог"
                 required
                 style={inp}
-                onFocus={fo}
-                onBlur={bl}
+                onFocus={(e) => (e.target.style.borderColor = "#6366f1")}
+                onBlur={(e) =>
+                  (e.target.style.borderColor = "rgba(255,255,255,0.08)")
+                }
               />
             </div>
             <div>
@@ -1081,8 +1224,10 @@ function AdminModal({
                 placeholder="Нэр"
                 required
                 style={inp}
-                onFocus={fo}
-                onBlur={bl}
+                onFocus={(e) => (e.target.style.borderColor = "#6366f1")}
+                onBlur={(e) =>
+                  (e.target.style.borderColor = "rgba(255,255,255,0.08)")
+                }
               />
             </div>
           </div>
@@ -1095,12 +1240,14 @@ function AdminModal({
               }
               placeholder="Компани"
               style={inp}
-              onFocus={fo}
-              onBlur={bl}
+              onFocus={(e) => (e.target.style.borderColor = "#6366f1")}
+              onBlur={(e) =>
+                (e.target.style.borderColor = "rgba(255,255,255,0.08)")
+              }
             />
           </div>
           <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
           >
             <div>
               <label style={lbl}>И-мэйл *</label>
@@ -1113,8 +1260,10 @@ function AdminModal({
                 placeholder="mail@example.mn"
                 required
                 style={inp}
-                onFocus={fo}
-                onBlur={bl}
+                onFocus={(e) => (e.target.style.borderColor = "#6366f1")}
+                onBlur={(e) =>
+                  (e.target.style.borderColor = "rgba(255,255,255,0.08)")
+                }
               />
             </div>
             <div>
@@ -1126,8 +1275,10 @@ function AdminModal({
                 }
                 placeholder="99001122"
                 style={inp}
-                onFocus={fo}
-                onBlur={bl}
+                onFocus={(e) => (e.target.style.borderColor = "#6366f1")}
+                onBlur={(e) =>
+                  (e.target.style.borderColor = "rgba(255,255,255,0.08)")
+                }
               />
             </div>
           </div>
@@ -1143,16 +1294,18 @@ function AdminModal({
                   }
                   placeholder="••••••••"
                   required
-                  style={{ ...inp, paddingRight: 40 }}
-                  onFocus={fo}
-                  onBlur={bl}
+                  style={{ ...inp, paddingRight: 45 }}
+                  onFocus={(e) => (e.target.style.borderColor = "#6366f1")}
+                  onBlur={(e) =>
+                    (e.target.style.borderColor = "rgba(255,255,255,0.08)")
+                  }
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
                   style={{
                     position: "absolute",
-                    right: 12,
+                    right: 14,
                     top: "50%",
                     transform: "translateY(-50%)",
                     background: "none",
@@ -1162,13 +1315,13 @@ function AdminModal({
                     display: "flex",
                   }}
                 >
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
           )}
           <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
           >
             <div>
               <label style={lbl}>Эрх</label>
@@ -1197,8 +1350,8 @@ function AdminModal({
           </div>
           <div
             style={{
-              borderTop: "1px solid rgba(255,255,255,0.07)",
-              paddingTop: 16,
+              borderTop: "1px solid rgba(255,255,255,0.08)",
+              paddingTop: 20,
             }}
           >
             <div
@@ -1206,21 +1359,21 @@ function AdminModal({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: 12,
+                marginBottom: 14,
               }}
             >
               <div>
                 <div
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 700,
                     color: "rgba(255,255,255,0.7)",
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
+                    gap: 8,
                   }}
                 >
-                  <Lock size={13} style={{ color: "#818cf8" }} />
+                  <Lock size={14} style={{ color: "#818cf8" }} />
                   Цэсний эрх тохиргоо
                 </div>
                 <div
@@ -1244,10 +1397,18 @@ function AdminModal({
                     background: "rgba(99,102,241,0.08)",
                     border: "1px solid rgba(99,102,241,0.2)",
                     borderRadius: 8,
-                    padding: "5px 12px",
-                    color: "#818cf8",
+                    padding: "6px 14px",
+                    color: "#a5b4fc",
                     cursor: "pointer",
                     fontFamily: "inherit",
+                    fontWeight: 600,
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(99,102,241,0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(99,102,241,0.08)";
                   }}
                 >
                   {perms.length >= ALL_PERMS.length
@@ -1259,8 +1420,8 @@ function AdminModal({
             {isSA ? (
               <div
                 style={{
-                  padding: "12px 16px",
-                  borderRadius: 12,
+                  padding: "14px 18px",
+                  borderRadius: 14,
                   background: "rgba(99,102,241,0.06)",
                   border: "1px solid rgba(99,102,241,0.18)",
                 }}
@@ -1270,7 +1431,7 @@ function AdminModal({
                 </div>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {visibleNavs.map((nav) => (
                   <PermRow
                     key={nav.id}
@@ -1287,20 +1448,30 @@ function AdminModal({
               </div>
             )}
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
             <button
               type="button"
               onClick={onClose}
               style={{
                 flex: 1,
-                height: 44,
-                borderRadius: 10,
+                height: 48,
+                borderRadius: 14,
                 background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.08)",
                 color: "rgba(148,163,184,0.6)",
                 fontSize: 13,
+                fontWeight: 500,
                 cursor: "pointer",
                 fontFamily: "inherit",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.color = "white";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.color = "rgba(148,163,184,0.6)";
               }}
             >
               Болих
@@ -1310,20 +1481,23 @@ function AdminModal({
               disabled={loading}
               style={{
                 flex: 2,
-                height: 44,
-                borderRadius: 10,
-                background: "linear-gradient(135deg,#4f46e5,#6366f1)",
+                height: 48,
+                borderRadius: 14,
+                background: loading
+                  ? "#4f46e5"
+                  : "linear-gradient(135deg, #4f46e5, #6366f1)",
                 border: "none",
                 color: "white",
                 fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
+                fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 7,
+                gap: 8,
                 opacity: loading ? 0.7 : 1,
+                transition: "all 0.2s",
               }}
             >
               {loading ? (
@@ -1348,6 +1522,7 @@ function AdminModal({
   );
 }
 
+// Delete Modal Component
 function DeleteModal({
   admin,
   onClose,
@@ -1368,44 +1543,45 @@ function DeleteModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(0,0,0,0.7)",
-        backdropFilter: "blur(6px)",
+        background: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(8px)",
+        animation: "fadeIn 0.2s ease",
       }}
       onClick={onClose}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: 380,
+          maxWidth: 400,
           background: "#0d1526",
           border: "1px solid rgba(239,68,68,0.2)",
-          borderRadius: 18,
-          padding: 24,
+          borderRadius: 24,
+          padding: 28,
           boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
+            width: 56,
+            height: 56,
+            borderRadius: 18,
             background: "rgba(239,68,68,0.12)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            margin: "0 auto 16px",
+            margin: "0 auto 20px",
           }}
         >
-          <Trash2 size={20} style={{ color: "#ef4444" }} />
+          <Trash2 size={24} style={{ color: "#ef4444" }} />
         </div>
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div
             style={{
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: 700,
-              color: "rgba(255,255,255,0.88)",
-              marginBottom: 6,
+              color: "rgba(255,255,255,0.9)",
+              marginBottom: 8,
             }}
           >
             Устгах уу?
@@ -1417,19 +1593,29 @@ function DeleteModal({
             — {admin.email}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 12 }}>
           <button
             onClick={onClose}
             style={{
               flex: 1,
-              height: 38,
-              borderRadius: 9,
+              height: 44,
+              borderRadius: 12,
               background: "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.08)",
               color: "rgba(255,255,255,0.5)",
               fontSize: 13,
+              fontWeight: 500,
               cursor: "pointer",
               fontFamily: "inherit",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.color = "white";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.5)";
             }}
           >
             Болих
@@ -1439,28 +1625,37 @@ function DeleteModal({
             disabled={loading}
             style={{
               flex: 1,
-              height: 38,
-              borderRadius: 9,
+              height: 44,
+              borderRadius: 12,
               background: "rgba(239,68,68,0.15)",
               border: "1px solid rgba(239,68,68,0.3)",
-              color: "#ef4444",
+              color: "#f87171",
               fontSize: 13,
               fontWeight: 600,
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
               fontFamily: "inherit",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 6,
+              gap: 8,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239,68,68,0.25)";
+              e.currentTarget.style.color = "#ef4444";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239,68,68,0.15)";
+              e.currentTarget.style.color = "#f87171";
             }}
           >
             {loading ? (
               <Loader2
-                size={13}
+                size={14}
                 style={{ animation: "spin 0.8s linear infinite" }}
               />
             ) : (
-              <Trash2 size={13} />
+              <Trash2 size={14} />
             )}{" "}
             Устгах
           </button>
@@ -1469,10 +1664,33 @@ function DeleteModal({
     </div>
   );
 }
+function TableHeader({
+  children,
+  align = "left",
+}: {
+  children: React.ReactNode;
+  align?: "left" | "center" | "right";
+}) {
+  return (
+    <th
+      style={{
+        textAlign: align,
+        padding: "14px 16px",
+        fontSize: 11,
+        fontWeight: 600,
+        color: "#64748b",
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </th>
+  );
+}
 
-// ═══════════════════════════════════════════════════════════════
-// Main Dashboard
-// ═══════════════════════════════════════════════════════════════
+// Main Dashboard Component
 export default function AdminDashboard() {
   const router = useRouter();
   const [me, setMe] = useState<Admin | null>(null);
@@ -1504,7 +1722,6 @@ export default function AdminDashboard() {
   const [recentPersons, setRecentPersons] = useState<Person[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
 
-  // ✅ Real stats state
   const [stats, setStats] = useState<DashStats>({
     total_companies: 0,
     total_persons: 0,
@@ -1519,7 +1736,6 @@ export default function AdminDashboard() {
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
-  // ✅ Fetch real stats from multiple endpoints
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
@@ -1559,7 +1775,6 @@ export default function AdminDashboard() {
       const actC = cActD?.total ?? cActD?.organizations?.length ?? 0;
       const actP = pActD?.total ?? pActD?.persons?.length ?? 0;
 
-      // Build monthly data from recent companies + persons
       const [cRecent, pRecent] = await Promise.allSettled([
         fetch(`${API}/api/organizations?limit=200&sort=created_at`, {
           headers: authH(),
@@ -1576,7 +1791,6 @@ export default function AdminDashboard() {
       const pList =
         pRecent.status === "fulfilled" ? (pRecent.value.persons ?? []) : [];
 
-      // Group by month (last 6 months)
       const months: { month: string; companies: number; persons: number }[] =
         [];
       const now = new Date();
@@ -1644,7 +1858,6 @@ export default function AdminDashboard() {
       console.error("Failed to parse user data", e);
     }
 
-    // Unread notifications
     const t = tok();
     if (!t) return;
 
@@ -1662,7 +1875,6 @@ export default function AdminDashboard() {
 
     const aId = adminData()?.id ?? "guest";
 
-    // Read set-ийг зөв авч байна
     let readSet: Set<string | number> = new Set();
     try {
       const readArray = JSON.parse(
@@ -1686,7 +1898,7 @@ export default function AdminDashboard() {
         }
       })
       .catch(() => {});
-  }, [router]); // ← энд төгсгөлийн таслал зөв байна
+  }, [router]);
 
   const canNav = (id: NavId) => {
     if (!me) return false;
@@ -1705,32 +1917,50 @@ export default function AdminDashboard() {
   };
 
   const NAV_ITEMS = [
-    { id: "dashboard" as NavId, icon: BarChart3, label: "Хянах самбар" },
+    {
+      id: "dashboard" as NavId,
+      icon: BarChart3,
+      label: "Хянах самбар",
+      badge: 0,
+    },
     {
       id: "notifications" as NavId,
       icon: Bell,
       label: "Мэдэгдэл",
       badge: unread,
     },
-    { id: "admins" as NavId, icon: ShieldCheck, label: "Админууд" },
-    { id: "companies" as NavId, icon: Building2, label: "Компаниуд" },
-    { id: "individuals" as NavId, icon: Users, label: "Хувь хүн" },
-    { id: "categories" as NavId, icon: ChevronDown, label: "Ангилалууд" },
+    { id: "admins" as NavId, icon: ShieldCheck, label: "Админууд", badge: 0 },
+    { id: "companies" as NavId, icon: Building2, label: "Компаниуд", badge: 0 },
+    { id: "individuals" as NavId, icon: Users, label: "Хувь хүн", badge: 0 },
+    {
+      id: "categories" as NavId,
+      icon: FolderTree,
+      label: "Ангилалууд",
+      badge: 0,
+    },
     {
       id: "directions" as NavId,
       icon: Activity,
       label: "Үйл ажиллагааны чиглэл",
+      badge: 0,
     },
     {
       id: "special_permissions" as NavId,
       icon: FileText,
       label: "Тусгай зөвшөөрөл",
+      badge: 0,
     },
-    { id: "announcements" as NavId, icon: FileText, label: "Зарлалууд" },
+    {
+      id: "announcements" as NavId,
+      icon: Megaphone,
+      label: "Зарлалууд",
+      badge: 0,
+    },
     {
       id: "pending_edits" as NavId,
       icon: Clock,
-      label: "Хүлээгдэж буй өөрчлөлт",
+      label: "Шинэчлэсэн хүсэлтүүд",
+      badge: 0,
     },
   ].filter((n) => canNav(n.id));
 
@@ -1928,33 +2158,172 @@ export default function AdminDashboard() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-        *,*::before,*::after{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;}
-        body{margin:0;background:#060b17;}
-        ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:99px}
-        .ni{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin:1px 8px;cursor:pointer;border:none;font-size:13px;font-weight:500;color:rgba(255,255,255,0.35);background:transparent;transition:all .18s;text-align:left;width:calc(100% - 16px);}
-        .ni:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);}
-        .ni.on{background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));color:#a5b4fc;border-left:2px solid #6366f1;font-weight:600;}
-        .card{background:rgba(15,20,40,0.8);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;backdrop-filter:blur(12px);}
-        .sc{background:rgba(15,20,40,0.7);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px;position:relative;overflow:hidden;transition:all .25s;cursor:default;}
-        .sc:hover{border-color:rgba(99,102,241,0.25);transform:translateY(-3px);box-shadow:0 12px 40px rgba(99,102,241,0.08);}
-        .tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background .15s;}
-        .tr:hover{background:rgba(255,255,255,0.025);}
-        .tr:last-child{border:none;}
-        .gi{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 14px 8px 36px;font-size:13px;color:rgba(255,255,255,0.72);outline:none;transition:all .2s;font-family:inherit;}
-        .gi::placeholder{color:rgba(255,255,255,0.18);}
-        .gi:focus{border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.05);}
-        .page-in{animation:pi .35s ease both;}
-        @keyframes pi{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        .badge{min-width:17px;height:17px;border-radius:99px;background:#ef4444;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;}
-        .sec-lbl{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.15);padding:10px 20px 4px;}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .icon-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:6px 7px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-        .icon-btn:hover{background:rgba(255,255,255,0.08);}
-        select option{background:#1a2035;color:rgba(255,255,255,0.82);}
-        @keyframes shimmer{0%{opacity:0.5}50%{opacity:1}100%{opacity:0.5}}
-        .shimmer{animation:shimmer 1.5s ease infinite;}
-        @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(99,102,241,0.15)}50%{box-shadow:0 0 40px rgba(99,102,241,0.3)}}
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
+        
+        * {
+          box-sizing: border-box;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+          margin: 0;
+          background: #0a0e1a;
+        }
+        
+        ::-webkit-scrollbar {
+          width: 4px;
+          height: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.03);
+          border-radius: 99px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.12);
+          border-radius: 99px;
+          transition: background 0.2s;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(99,102,241,0.4);
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.6;
+            transform: scale(1.05);
+          }
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+        
+        .shimmer {
+          background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+          background-size: 200% 100%;
+          animation: shimmer 1.5s ease infinite;
+        }
+        
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 16px;
+          margin: 4px 12px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          color: rgba(255,255,255,0.4);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .nav-item::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 0;
+          background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08));
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 0;
+        }
+        
+        .nav-item:hover {
+          color: rgba(255,255,255,0.85);
+          transform: translateX(4px);
+        }
+        
+        .nav-item:hover::before {
+          width: 100%;
+        }
+        
+        .nav-item.active {
+          background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08));
+          color: #a5b4fc;
+          border-left: 2px solid #6366f1;
+        }
+        
+        .nav-item > * {
+          position: relative;
+          z-index: 1;
+        }
+        
+        .glass-card {
+          background: rgba(12,16,35,0.8);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 24px;
+          transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+          border-color: rgba(99,102,241,0.25);
+          box-shadow: 0 8px 32px rgba(99,102,241,0.08);
+        }
+        
+        .animate-fade-up {
+          animation: fadeInUp 0.4s ease forwards;
+        }
+        
+        .animate-slide-in {
+          animation: slideIn 0.3s ease forwards;
+        }
+        
+        .delay-100 { animation-delay: 0.1s; opacity: 0; }
+        .delay-200 { animation-delay: 0.2s; opacity: 0; }
+        .delay-300 { animation-delay: 0.3s; opacity: 0; }
+        
+        @media (max-width: 1024px) {
+          .mobile-menu-btn { display: flex !important; }
+          .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+          .sidebar.open { transform: translateX(0); }
+          .main-content { margin-left: 0 !important; }
+        }
       `}</style>
 
       {/* Toast */}
@@ -1962,29 +2331,32 @@ export default function AdminDashboard() {
         <div
           style={{
             position: "fixed",
-            bottom: 24,
-            right: 24,
+            bottom: 28,
+            right: 28,
             zIndex: 200,
-            padding: "10px 16px",
-            borderRadius: 11,
+            padding: "12px 20px",
+            borderRadius: 16,
             fontSize: 13,
             fontWeight: 600,
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+            gap: 10,
+            boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
             background: toast.ok
-              ? "rgba(16,185,129,0.95)"
-              : "rgba(239,68,68,0.95)",
+              ? "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95))"
+              : "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(220,38,38,0.95))",
             color: "white",
-            backdropFilter: "blur(8px)",
+            backdropFilter: "blur(12px)",
+            border: `1px solid ${toast.ok ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+            animation: "fadeInUp 0.3s ease",
           }}
         >
-          {toast.ok ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}{" "}
-          {toast.msg}
+          {toast.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          <span>{toast.msg}</span>
         </div>
       )}
 
+      {/* Modals */}
       {(modalMode === "create" || modalMode === "edit") && (
         <AdminModal
           mode={modalMode}
@@ -2013,73 +2385,107 @@ export default function AdminDashboard() {
       )}
 
       <div
-        style={{ display: "flex", minHeight: "100vh", background: "#060b17" }}
+        style={{ display: "flex", minHeight: "100vh", background: "#0a0e1a" }}
       >
-        {/* ── Sidebar ── */}
+        {/* Sidebar */}
         <aside
+          className={`sidebar ${open ? "open" : ""}`}
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             bottom: 0,
-            width: 240,
-            background: "rgba(8,12,28,0.95)",
+            width: 260,
+            background: "rgba(8,12,28,0.98)",
+            backdropFilter: "blur(20px)",
             borderRight: "1px solid rgba(255,255,255,0.05)",
             display: "flex",
             flexDirection: "column",
             zIndex: 50,
-            backdropFilter: "blur(20px)",
           }}
         >
-          {/* Logo */}
+          {/* Logo Section */}
           <div
             style={{
-              padding: "20px 18px 14px",
-              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              padding: "24px 20px",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <a href="/">
-              <img
-                src="/images/Bodi-Group-logo-PNG-ENG-blue.png"
-                alt="Logo"
-                style={{ height: 26, objectFit: "contain" }}
-              />
-            </a>
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+  style={{
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    background: "transparent", // ✅ Дэвсгэрийг ил тод болгосон
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    // boxShadow: "0 6px 14px rgba(99,102,241,0.3)", // ✅ Сүүдрийг арилгасан
+  }}
+>
+  <img src="/images/logosolo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+</div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "white",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  Bodi Group
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "rgba(99,102,241,0.6)",
+                    fontWeight: 500,
+                  }}
+                >
+                  Худалдан авалтын портал
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* User Profile */}
+          <div
+            style={{
+              padding: "20px",
+              margin: "12px 16px",
+              background:
+                "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05))",
+              borderRadius: 20,
+              border: "1px solid rgba(99,102,241,0.15)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                  width: 48,
+                  height: 48,
+                  borderRadius: 16,
+                  background: "linear-gradient(145deg, #4f46e5, #7c3aed)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  fontSize: 16,
+                  fontWeight: 700,
                   color: "white",
-                  fontSize: 13,
-                  fontWeight: 800,
-                  flexShrink: 0,
                   boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
                 }}
               >
                 {ini}
               </div>
-              <div style={{ overflow: "hidden" }}>
+              <div style={{ flex: 1 }}>
                 <div
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 700,
-                    color: "rgba(255,255,255,0.85)",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    color: "white",
+                    marginBottom: 2,
                   }}
                 >
                   {nm}
@@ -2088,80 +2494,182 @@ export default function AdminDashboard() {
                   style={{
                     fontSize: 10,
                     color: "rgba(99,102,241,0.7)",
-                    marginTop: 1,
                     fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  {me.role === "super_admin" ? "✦ Супер Админ" : "Мини Админ"}
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "#10b981",
+                      boxShadow: "0 0 6px #10b981",
+                    }}
+                  />
+                  {me.role === "super_admin" ? "Super Admin" : "Admin"}
                 </div>
               </div>
             </div>
           </div>
 
-          <nav style={{ flex: 1, overflowY: "auto", padding: "10px 0" }}>
-            <div className="sec-lbl">Үндсэн цэс</div>
-            {NAV_ITEMS.map((item) => (
-              <button
+          {/* Navigation Menu */}
+          <nav style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.25)",
+                padding: "12px 20px 8px",
+              }}
+            >
+              Main Menu
+            </div>
+            {NAV_ITEMS.map((item, idx) => (
+              <div
                 key={item.id}
-                className={`ni ${nav === item.id ? "on" : ""}`}
+                className={`nav-item ${nav === item.id ? "active" : ""}`}
+                style={{
+                  animationDelay: `${idx * 0.05}s`,
+                  opacity: 0,
+                  animation: "slideIn 0.3s ease forwards",
+                }}
                 onClick={() => {
                   setNav(item.id);
                   setOpen(false);
                   if (item.id === "notifications") setUnread(0);
                 }}
               >
-                <item.icon size={15} style={{ flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>{item.label}</span>
-                {(item.badge ?? 0) > 0 && (
-                  <span className="badge">{item.badge}</span>
+                <item.icon size={18} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>
+                  {item.label}
+                </span>
+                {item.badge > 0 && ( // ✅ badge нь заавал number байна
+                  <span
+                    style={{
+                      background: "#ef4444",
+                      color: "white",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 30,
+                      minWidth: 22,
+                      textAlign: "center",
+                    }}
+                  >
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </span>
                 )}
-              </button>
+              </div>
             ))}
-            <div className="sec-lbl" style={{ marginTop: 8 }}>
-              Тохиргоо
-            </div>
-            <button className="ni">
-              <Settings size={15} />
-              Тохиргоо
-            </button>
-          </nav>
 
-          <div
-            style={{
-              padding: "10px 8px",
-              borderTop: "1px solid rgba(255,255,255,0.05)",
-            }}
-          >
-            <button
-              className="ni"
-              onClick={logout}
-              style={{ color: "rgba(239,68,68,0.5)" }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.color = "#ef4444";
-                (e.currentTarget as HTMLElement).style.background =
-                  "rgba(239,68,68,0.08)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.color =
-                  "rgba(239,68,68,0.5)";
-                (e.currentTarget as HTMLElement).style.background =
-                  "transparent";
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.25)",
+                padding: "20px 20px 8px",
+                marginTop: 8,
               }}
             >
-              <LogOut size={15} />
-              Системээс гарах
-            </button>
+              Settings
+            </div>
+            <div
+              className="nav-item"
+              style={{
+                animationDelay: "0.3s",
+                opacity: 0,
+                animation: "slideIn 0.3s ease forwards",
+              }}
+            >
+              <Settings size={18} />
+              <span style={{ fontSize: 13 }}>Preferences</span>
+            </div>
+          </nav>
+
+          {/* Logout Button */}
+          <div
+            style={{
+              padding: "16px",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div
+              onClick={logout}
+              className="nav-item"
+              style={{
+                color: "rgba(239,68,68,0.6)",
+                margin: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                e.currentTarget.style.color = "#ef4444";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "rgba(239,68,68,0.6)";
+              }}
+            >
+              <LogOut size={18} />
+              <span style={{ fontSize: 13, fontWeight: 500 }}>Sign Out</span>
+            </div>
           </div>
         </aside>
 
-        {/* ── Main ── */}
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setOpen(!open)}
+          className="mobile-menu-btn"
+          style={{
+            position: "fixed",
+            top: 16,
+            left: 16,
+            zIndex: 101,
+            background: "rgba(18,22,45,0.95)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 14,
+            padding: 10,
+            cursor: "pointer",
+            display: "none",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          {open ? (
+            <X size={20} color="white" />
+          ) : (
+            <Menu size={20} color="white" />
+          )}
+        </button>
+
+        {/* Overlay */}
+        {open && (
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              backdropFilter: "blur(6px)",
+              zIndex: 49,
+              animation: "fadeIn 0.2s ease",
+            }}
+          />
+        )}
+
+        {/* Main Content */}
         <div
+          className="main-content"
           style={{
             flex: 1,
-            marginLeft: 240,
-            display: "flex",
-            flexDirection: "column",
+            marginLeft: 260,
             minHeight: "100vh",
+            transition: "margin-left 0.3s ease",
           }}
         >
           {/* Topbar */}
@@ -2169,38 +2677,39 @@ export default function AdminDashboard() {
             style={{
               position: "sticky",
               top: 0,
-              zIndex: 30,
-              height: 56,
-              background: "rgba(6,11,23,0.85)",
-              backdropFilter: "blur(24px)",
-              borderBottom: "1px solid rgba(255,255,255,0.05)",
-              padding: "0 28px",
+              zIndex: 40,
+              background: "rgba(10,14,26,0.85)",
+              backdropFilter: "blur(20px)",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              padding: "14px 32px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
             }}
           >
             <div>
-              <div
+              <h1
                 style={{
-                  fontSize: 15,
+                  fontSize: 20,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.9)",
+                  color: "white",
+                  margin: 0,
+                  letterSpacing: "-0.3px",
                 }}
               >
                 {NAV_ITEMS.find((n) => n.id === nav)?.label}
-              </div>
-              <div
+              </h1>
+              <p
                 style={{
-                  fontSize: 10,
-                  color: "rgba(255,255,255,0.2)",
-                  marginTop: 1,
+                  fontSize: 12,
+                  color: "rgba(255,255,255,0.35)",
+                  marginTop: 2,
                 }}
               >
-                BODI Group · Нийлүүлэгчийн портал
-              </div>
+                Welcome back, {nm.split(" ")[0]}
+              </p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <button
                 onClick={() => {
                   setNav("notifications");
@@ -2209,41 +2718,51 @@ export default function AdminDashboard() {
                 style={{
                   position: "relative",
                   background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 10,
-                  padding: 8,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 12,
+                  padding: 10,
                   cursor: "pointer",
-                  display: "flex",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(99,102,241,0.1)";
+                  e.currentTarget.style.borderColor = "rgba(99,102,241,0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
                 }}
               >
-                <Bell size={15} style={{ color: "rgba(255,255,255,0.5)" }} />
+                <Bell size={18} style={{ color: "rgba(255,255,255,0.6)" }} />
                 {unread > 0 && (
                   <span
                     style={{
                       position: "absolute",
-                      top: 5,
-                      right: 5,
-                      width: 6,
-                      height: 6,
+                      top: 4,
+                      right: 4,
+                      width: 8,
+                      height: 8,
                       borderRadius: "50%",
                       background: "#ef4444",
-                      border: "1.5px solid #060b17",
+                      animation: "pulse 1.5s infinite",
+                      border: "2px solid rgba(10,14,26,0.85)",
                     }}
                   />
                 )}
               </button>
               <div
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 9,
-                  background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                  width: 38,
+                  height: 38,
+                  borderRadius: 14,
+                  background: "linear-gradient(145deg, #4f46e5, #7c3aed)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "white",
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: 700,
+                  color: "white",
+                  boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
                 }}
               >
                 {ini}
@@ -2251,251 +2770,215 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <main style={{ flex: 1, padding: "24px 28px", overflowY: "auto" }}>
-            {/* ── DASHBOARD ── */}
+          {/* Main Content Area */}
+          <main
+            style={{ padding: "28px 32px", minHeight: "calc(100vh - 70px)" }}
+          >
+            {/* Dashboard Tab */}
             {nav === "dashboard" && canNav("dashboard") && (
               <div
-                className="page-in"
-                style={{ display: "flex", flexDirection: "column", gap: 20 }}
+                className="animate-fade-up"
+                style={{ display: "flex", flexDirection: "column", gap: 24 }}
               >
-                {/* Stat Cards */}
+                {/* Stats Grid */}
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(4,1fr)",
-                    gap: 14,
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: 20,
                   }}
                 >
-                  {[
-                    {
-                      label: "Нийт бүртгэл",
-                      value: stats.total_companies + stats.total_persons,
-                      sub: `${stats.total_companies} компани · ${stats.total_persons} хувь хүн`,
-                      color: "#6366f1",
-                      glow: "rgba(99,102,241,0.2)",
-                      icon: Users,
-                    },
-                    {
-                      label: "Хүлээгдэж байна",
-                      value: stats.pending_companies + stats.pending_persons,
-                      sub: `${stats.pending_companies} компани · ${stats.pending_persons} хувь хүн`,
-                      color: "#f59e0b",
-                      glow: "rgba(245,158,11,0.15)",
-                      icon: Clock,
-                    },
-                    {
-                      label: "Идэвхтэй",
-                      value: stats.active_companies + stats.active_persons,
-                      sub: `${stats.active_companies} компани · ${stats.active_persons} хувь хүн`,
-                      color: "#10b981",
-                      glow: "rgba(16,185,129,0.15)",
-                      icon: CheckCircle2,
-                    },
-                    {
-                      label: "Энэ сарын шинэ",
-                      value: stats.new_this_month,
-                      sub: "Компани + хувь хүн",
-                      color: "#22d3ee",
-                      glow: "rgba(34,211,238,0.15)",
-                      icon: TrendingUp,
-                    },
-                  ].map(({ label, value, sub, color, glow, icon: Icon }, i) => (
-                    <div key={i} className="sc">
-                      {/* Glow bg */}
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: -30,
-                          right: -30,
-                          width: 120,
-                          height: 120,
-                          borderRadius: "50%",
-                          background: color,
-                          opacity: 0.06,
-                          filter: "blur(20px)",
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          background: `radial-gradient(ellipse at top right, ${glow} 0%, transparent 70%)`,
-                          borderRadius: "inherit",
-                        }}
-                      />
-
-                      <div style={{ position: "relative" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginBottom: 16,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 38,
-                              height: 38,
-                              borderRadius: 12,
-                              background: `${color}18`,
-                              border: `1px solid ${color}30`,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <Icon size={18} style={{ color }} />
-                          </div>
-                          {statsLoading ? (
-                            <div
-                              style={{
-                                width: 32,
-                                height: 16,
-                                borderRadius: 4,
-                                background: "rgba(255,255,255,0.05)",
-                              }}
-                              className="shimmer"
-                            />
-                          ) : (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 3,
-                                fontSize: 10,
-                                fontWeight: 700,
-                                color: color,
-                                background: `${color}15`,
-                                padding: "2px 8px",
-                                borderRadius: 99,
-                              }}
-                            >
-                              <ChevronUp size={10} /> live
-                            </div>
-                          )}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 28,
-                            fontWeight: 800,
-                            color: "rgba(255,255,255,0.92)",
-                            lineHeight: 1,
-                            letterSpacing: "-0.5px",
-                          }}
-                        >
-                          {statsLoading ? (
-                            <div
-                              style={{
-                                width: 60,
-                                height: 28,
-                                borderRadius: 6,
-                                background: "rgba(255,255,255,0.05)",
-                              }}
-                              className="shimmer"
-                            />
-                          ) : (
-                            <Counter target={value} />
-                          )}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "rgba(255,255,255,0.7)",
-                            marginTop: 6,
-                          }}
-                        >
-                          {label}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 10,
-                            color: "rgba(255,255,255,0.25)",
-                            marginTop: 3,
-                          }}
-                        >
-                          {sub}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <StatCard
+                    title="Нийт бүртгэл"
+                    value={stats.total_companies + stats.total_persons}
+                    icon={Users}
+                    color="#8b5cf6"
+                    trend={12}
+                    loading={statsLoading}
+                  />
+                  <StatCard
+                    title="Хүлээгдэж буй"
+                    value={stats.pending_companies + stats.pending_persons}
+                    icon={Clock}
+                    color="#f59e0b"
+                    trend={-3}
+                    loading={statsLoading}
+                  />
+                  <StatCard
+                    title="Идэвхтэй"
+                    value={stats.active_companies + stats.active_persons}
+                    icon={CheckCircle2}
+                    color="#10b981"
+                    trend={8}
+                    loading={statsLoading}
+                  />
+                  <StatCard
+                    title="Энэ сард"
+                    value={stats.new_this_month}
+                    icon={TrendingUp}
+                    color="#22d3ee"
+                    trend={15}
+                    loading={statsLoading}
+                  />
                 </div>
 
-                {/* Charts Row */}
+                {/* Charts Row - Enhanced Design */}
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 320px",
-                    gap: 14,
+                    gridTemplateColumns: "1fr 380px",
+                    gap: 24,
                   }}
                 >
-                  {/* Area Chart */}
+                  {/* Area Chart - Premium Design */}
                   <div
-                    className="card"
                     style={{
-                      padding: "20px 20px 12px",
-                      background: "rgba(12,16,35,0.8)",
+                      background:
+                        "linear-gradient(135deg, rgba(18,22,45,0.95), rgba(12,16,35,0.98))",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: 24,
+                      padding: "20px 24px",
+                      transition: "all 0.3s ease",
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor =
+                        "rgba(99,102,241,0.3)";
+                      e.currentTarget.style.boxShadow =
+                        "0 8px 32px rgba(99,102,241,0.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor =
+                        "rgba(255,255,255,0.06)";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
+                    {/* Decorative glow */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: -50,
+                        right: -50,
+                        width: 150,
+                        height: 150,
+                        borderRadius: "50%",
+                        background:
+                          "radial-gradient(circle, rgba(99,102,241,0.15), transparent)",
+                        pointerEvents: "none",
+                      }}
+                    />
+
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: 16,
+                        alignItems: "center",
+                        marginBottom: 20,
+                        flexWrap: "wrap",
+                        gap: 12,
                       }}
                     >
                       <div>
-                        <div
+                        <h3
                           style={{
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: 700,
-                            color: "rgba(255,255,255,0.88)",
+                            color: "white",
+                            margin: 0,
+                            letterSpacing: "-0.3px",
                           }}
                         >
-                          Бүртгэлийн динамик
-                        </div>
+                          Бүртгэлийн өсөлт
+                        </h3>
+                        <p
+                          style={{
+                            fontSize: 12,
+                            color: "rgba(255,255,255,0.4)",
+                            marginTop: 4,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              background: "#10b981",
+                              display: "inline-block",
+                            }}
+                          />
+                          Сүүлийн 6 сарын мэдээлэл
+                        </p>
+                      </div>
+
+                      <div style={{ display: "flex", gap: 20 }}>
                         <div
                           style={{
-                            fontSize: 11,
-                            color: "rgba(255,255,255,0.25)",
-                            marginTop: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "4px 12px",
+                            borderRadius: 30,
+                            background: "rgba(99,102,241,0.08)",
+                            border: "1px solid rgba(99,102,241,0.15)",
                           }}
                         >
-                          Сүүлийн 6 сар · Бодит өгөгдөл
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 16 }}>
-                        {[
-                          { c: "#6366f1", l: "Компани" },
-                          { c: "#22d3ee", l: "Хувь хүн" },
-                        ].map((l) => (
-                          <div
-                            key={l.l}
+                          <span
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 5,
+                              width: 10,
+                              height: 10,
+                              borderRadius: 2,
+                              background: "#6366f1",
+                              display: "block",
+                            }}
+                          />
+                          <span
+                            style={{
                               fontSize: 11,
-                              color: "rgba(255,255,255,0.35)",
+                              fontWeight: 500,
+                              color: "#a5b4fc",
                             }}
                           >
-                            <span
-                              style={{
-                                width: 24,
-                                height: 2,
-                                borderRadius: 99,
-                                background: l.c,
-                                display: "block",
-                              }}
-                            />
-                            {l.l}
-                          </div>
-                        ))}
+                            Компани
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "4px 12px",
+                            borderRadius: 30,
+                            background: "rgba(34,211,238,0.08)",
+                            border: "1px solid rgba(34,211,238,0.15)",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: 2,
+                              background: "#22d3ee",
+                              display: "block",
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 500,
+                              color: "#67e8f9",
+                            }}
+                          >
+                            Хувь хүн
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div style={{ height: 160 }}>
+
+                    <div style={{ height: 200 }}>
                       {statsLoading ? (
                         <div
                           style={{
@@ -2503,15 +2986,25 @@ export default function AdminDashboard() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            flexDirection: "column",
+                            gap: 12,
                           }}
                         >
                           <Loader2
-                            size={18}
+                            size={28}
                             style={{
                               color: "#6366f1",
                               animation: "spin 0.8s linear infinite",
                             }}
                           />
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: "rgba(255,255,255,0.3)",
+                            }}
+                          >
+                            Мэдээлэл ачааллаж байна...
+                          </span>
                         </div>
                       ) : (
                         <AreaChart data={stats.monthly} />
@@ -2519,40 +3012,91 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Ring Chart */}
+                  {/* Ring Chart - Premium Design */}
                   <div
-                    className="card"
-                    style={{ padding: 20, background: "rgba(12,16,35,0.8)" }}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(18,22,45,0.95), rgba(12,16,35,0.98))",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: 24,
+                      padding: "20px",
+                      transition: "all 0.3s ease",
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor =
+                        "rgba(99,102,241,0.3)";
+                      e.currentTarget.style.boxShadow =
+                        "0 8px 32px rgba(99,102,241,0.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor =
+                        "rgba(255,255,255,0.06)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   >
+                    {/* Decorative glow */}
                     <div
                       style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "rgba(255,255,255,0.88)",
-                        marginBottom: 4,
+                        position: "absolute",
+                        bottom: -30,
+                        left: -30,
+                        width: 120,
+                        height: 120,
+                        borderRadius: "50%",
+                        background:
+                          "radial-gradient(circle, rgba(16,185,129,0.1), transparent)",
+                        pointerEvents: "none",
                       }}
-                    >
-                      Статус хуваарилалт
+                    />
+
+                    <div style={{ marginBottom: 16 }}>
+                      <h3
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: "white",
+                          margin: 0,
+                          letterSpacing: "-0.3px",
+                        }}
+                      >
+                        Статус хуваарилалт
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "rgba(255,255,255,0.4)",
+                          marginTop: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: "#f59e0b",
+                            display: "inline-block",
+                          }}
+                        />
+                        Нийт бүртгэлийн харьцаа
+                      </p>
                     </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "rgba(255,255,255,0.25)",
-                        marginBottom: 16,
-                      }}
-                    >
-                      Бодит тоон мэдээлэл
-                    </div>
+
                     {statsLoading ? (
                       <div
                         style={{
                           display: "flex",
                           justifyContent: "center",
-                          padding: 32,
+                          alignItems: "center",
+                          padding: 40,
                         }}
                       >
                         <Loader2
-                          size={18}
+                          size={28}
                           style={{
                             color: "#6366f1",
                             animation: "spin 0.8s linear infinite",
@@ -2564,77 +3108,138 @@ export default function AdminDashboard() {
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 16,
+                          gap: 20,
+                          flexWrap: "wrap",
+                          justifyContent: "center",
                         }}
                       >
-                        <RingChart data={ringData} />
+                        {/* Ring Chart with glow effect */}
                         <div
                           style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 10,
-                            flex: 1,
+                            position: "relative",
+                            filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))",
                           }}
                         >
-                          {ringData.map((d) => {
-                            const tot =
+                          <RingChart data={ringData} />
+                        </div>
+
+                        {/* Legend with progress bars */}
+                        <div
+                          style={{
+                            flex: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 14,
+                            minWidth: 140,
+                          }}
+                        >
+                          {ringData.map((item, idx) => {
+                            const total =
                               ringData.reduce((s, x) => s + x.value, 0) || 1;
+                            const percentage = Math.round(
+                              (item.value / total) * 100,
+                            );
                             return (
-                              <div key={d.label}>
+                              <div
+                                key={item.label}
+                                style={{
+                                  animation: `fadeInUp ${0.3 + idx * 0.1}s ease forwards`,
+                                  opacity: 0,
+                                }}
+                              >
                                 <div
                                   style={{
                                     display: "flex",
                                     justifyContent: "space-between",
-                                    marginBottom: 4,
+                                    alignItems: "center",
+                                    marginBottom: 8,
                                   }}
                                 >
-                                  <span
+                                  <div
                                     style={{
-                                      fontSize: 11,
-                                      color: "rgba(255,255,255,0.45)",
                                       display: "flex",
                                       alignItems: "center",
-                                      gap: 5,
+                                      gap: 8,
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: 3,
+                                        background: item.color,
+                                        boxShadow: `0 0 6px ${item.color}`,
+                                      }}
+                                    />
+                                    <span
+                                      style={{
+                                        fontSize: 12,
+                                        fontWeight: 500,
+                                        color: "rgba(255,255,255,0.7)",
+                                      }}
+                                    >
+                                      {item.label}
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 6,
                                     }}
                                   >
                                     <span
                                       style={{
-                                        width: 6,
-                                        height: 6,
-                                        borderRadius: "50%",
-                                        background: d.color,
-                                        display: "block",
+                                        fontSize: 15,
+                                        fontWeight: 700,
+                                        color: "white",
                                       }}
-                                    />
-                                    {d.label}
-                                  </span>
-                                  <span
-                                    style={{
-                                      fontSize: 12,
-                                      fontWeight: 700,
-                                      color: "rgba(255,255,255,0.75)",
-                                    }}
-                                  >
-                                    {d.value}
-                                  </span>
+                                    >
+                                      {item.value.toLocaleString()}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: 11,
+                                        color: "rgba(255,255,255,0.35)",
+                                      }}
+                                    >
+                                      ({percentage}%)
+                                    </span>
+                                  </div>
                                 </div>
                                 <div
                                   style={{
-                                    height: 4,
-                                    borderRadius: 99,
-                                    background: "rgba(255,255,255,0.06)",
+                                    height: 6,
+                                    borderRadius: 3,
+                                    background: "rgba(255,255,255,0.08)",
                                     overflow: "hidden",
                                   }}
                                 >
                                   <div
                                     style={{
                                       height: "100%",
-                                      borderRadius: 99,
-                                      background: d.color,
-                                      width: `${(d.value / tot) * 100}%`,
-                                      transition: "width .8s ease",
+                                      borderRadius: 3,
+                                      background: item.color,
+                                      width: `${percentage}%`,
+                                      transition:
+                                        "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                                      boxShadow: `0 0 8px ${item.color}`,
+                                      position: "relative",
                                     }}
-                                  />
+                                  >
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        background:
+                                          "linear-gradient(90deg, transparent, rgba(255,255,255,0.2))",
+                                        animation: "shimmer 2s infinite",
+                                      }}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -2645,143 +3250,185 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Quick stats row */}
+                {/* Quick Stats */}
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(3,1fr)",
-                    gap: 14,
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 20,
                   }}
                 >
-                  {[
-                    {
-                      label: "Нийт компани",
-                      value: stats.total_companies,
-                      icon: "🏢",
-                      color: "#8b5cf6",
-                    },
-                    {
-                      label: "Нийт хувь хүн",
-                      value: stats.total_persons,
-                      icon: "👤",
-                      color: "#06b6d4",
-                    },
-                    {
-                      label: "Хүлээгдэж буй",
-                      value: stats.pending_companies + stats.pending_persons,
-                      icon: "⏳",
-                      color: "#f59e0b",
-                    },
-                  ].map(({ label, value, icon, color }, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        background: "rgba(12,16,35,0.7)",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        borderRadius: 14,
-                        padding: "16px 18px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 14,
-                      }}
-                    >
-                      <div style={{ fontSize: 24 }}>{icon}</div>
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 22,
-                            fontWeight: 800,
-                            color: "rgba(255,255,255,0.9)",
-                            lineHeight: 1,
-                          }}
-                        >
-                          {statsLoading ? (
-                            <span style={{ opacity: 0.3 }}>—</span>
-                          ) : (
-                            <Counter target={value} />
-                          )}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: "rgba(255,255,255,0.35)",
-                            marginTop: 3,
-                          }}
-                        >
-                          {label}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Recent table */}
-                <div
-                  className="card"
-                  style={{ background: "rgba(12,16,35,0.8)" }}
-                >
                   <div
+                    className="glass-card"
                     style={{
                       padding: "16px 20px",
-                      borderBottom: "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                    }}
+                  >
+                    <span style={{ fontSize: 28 }}>🏢</span>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 800,
+                          color: "white",
+                        }}
+                      >
+                        {statsLoading ? (
+                          <span style={{ opacity: 0.3 }}>—</span>
+                        ) : (
+                          <Counter target={stats.total_companies} />
+                        )}
+                      </div>
+                      <div
+                        style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}
+                      >
+                        Нийт компани
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="glass-card"
+                    style={{
+                      padding: "16px 20px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                    }}
+                  >
+                    <span style={{ fontSize: 28 }}>👤</span>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 800,
+                          color: "white",
+                        }}
+                      >
+                        {statsLoading ? (
+                          <span style={{ opacity: 0.3 }}>—</span>
+                        ) : (
+                          <Counter target={stats.total_persons} />
+                        )}
+                      </div>
+                      <div
+                        style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}
+                      >
+                        Нийт хувь хүн
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="glass-card"
+                    style={{
+                      padding: "16px 20px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                    }}
+                  >
+                    <span style={{ fontSize: 28 }}>⏳</span>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 800,
+                          color: "white",
+                        }}
+                      >
+                        {statsLoading ? (
+                          <span style={{ opacity: 0.3 }}>—</span>
+                        ) : (
+                          <Counter
+                            target={
+                              stats.pending_companies + stats.pending_persons
+                            }
+                          />
+                        )}
+                      </div>
+                      <div
+                        style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}
+                      >
+                        Хүлээгдэж буй
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Registrations */}
+                <div className="glass-card">
+                  <div
+                    style={{
+                      padding: "18px 24px",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                     }}
                   >
                     <div>
-                      <div
+                      <h3
                         style={{
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: 700,
-                          color: "rgba(255,255,255,0.88)",
+                          color: "white",
+                          margin: 0,
                         }}
                       >
                         Сүүлийн бүртгэлүүд
-                      </div>
-                      <div
+                      </h3>
+                      <p
                         style={{
                           fontSize: 11,
-                          color: "rgba(255,255,255,0.25)",
-                          marginTop: 1,
+                          color: "rgba(255,255,255,0.35)",
+                          marginTop: 2,
                         }}
                       >
-                        Хувь хүн · Бодит өгөгдөл
-                      </div>
+                        Хувь хүний бүртгэл
+                      </p>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => {
-                          fetchRecent();
-                          fetchStats();
-                        }}
+                    <button
+                      onClick={() => {
+                        fetchRecent();
+                        fetchStats();
+                      }}
+                      style={{
+                        background: "rgba(99,102,241,0.08)",
+                        border: "1px solid rgba(99,102,241,0.2)",
+                        borderRadius: 10,
+                        padding: "6px 14px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        color: "#a5b4fc",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background =
+                          "rgba(99,102,241,0.15)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background =
+                          "rgba(99,102,241,0.08)";
+                      }}
+                    >
+                      <RefreshCw
+                        size={12}
                         style={{
-                          background: "rgba(99,102,241,0.08)",
-                          border: "1px solid rgba(99,102,241,0.2)",
-                          borderRadius: 8,
-                          padding: "6px 12px",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          color: "#818cf8",
-                          fontSize: 12,
-                          fontFamily: "inherit",
-                          fontWeight: 600,
+                          animation: recentLoading
+                            ? "spin 1s linear infinite"
+                            : undefined,
                         }}
-                      >
-                        <RefreshCw
-                          size={12}
-                          style={{
-                            animation: recentLoading
-                              ? "spin 1s linear infinite"
-                              : undefined,
-                          }}
-                        />
-                        Шинэчлэх
-                      </button>
-                    </div>
+                      />
+                      Шинэчлэх
+                    </button>
                   </div>
+
                   {recentLoading ? (
                     <div
                       style={{
@@ -2789,150 +3436,198 @@ export default function AdminDashboard() {
                         justifyContent: "center",
                         alignItems: "center",
                         padding: 48,
-                        gap: 10,
                       }}
                     >
                       <Loader2
-                        size={18}
+                        size={24}
                         style={{
                           color: "#6366f1",
                           animation: "spin 0.8s linear infinite",
                         }}
                       />
-                      <span
-                        style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}
-                      >
-                        Ачаалж байна...
-                      </span>
                     </div>
                   ) : (
-                    <table
-                      style={{ width: "100%", borderCollapse: "collapse" }}
-                    >
-                      <thead>
-                        <tr>
-                          <Th h="Нэр" />
-                          <Th h="И-мэйл" />
-                          <Th h="Регистр" />
-                          <Th h="Статус" />
-                          <Th h="Огноо" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentPersons.map((p, i) => {
-                          const nm =
-                            [p.last_name, p.first_name]
-                              .filter(Boolean)
-                              .join(" ") || p.email;
-                          const colors = [
-                            "#6366f1",
-                            "#8b5cf6",
-                            "#06b6d4",
-                            "#10b981",
-                            "#f59e0b",
-                          ];
-                          const c = colors[i % colors.length];
-                          return (
-                            <tr key={p.id} className="tr">
-                              <td style={{ padding: "12px 16px" }}>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 10,
-                                  }}
-                                >
+                    <div style={{ overflowX: "auto" }}>
+                      <table
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          minWidth: 600,
+                        }}
+                      >
+                        <thead>
+                          <tr
+                            style={{
+                              borderBottom: "1px solid rgba(255,255,255,0.06)",
+                            }}
+                          >
+                            <TableHeader>Нэр</TableHeader>
+                            <TableHeader>И-мэйл</TableHeader>
+                            <TableHeader>Регистр</TableHeader>
+                            <TableHeader>Статус</TableHeader>
+                            <TableHeader>Огноо</TableHeader>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recentPersons.slice(0, 5).map((person, idx) => {
+                            const fullName =
+                              [person.last_name, person.first_name]
+                                .filter(Boolean)
+                                .join(" ") || person.email;
+                            const colorsList = [
+                              "#6366f1",
+                              "#8b5cf6",
+                              "#06b6d4",
+                              "#10b981",
+                              "#f59e0b",
+                            ];
+                            const avatarColor =
+                              colorsList[idx % colorsList.length];
+
+                            return (
+                              <tr
+                                key={person.id}
+                                style={{
+                                  borderBottom:
+                                    "1px solid rgba(255,255,255,0.04)",
+                                  transition: "background 0.2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background =
+                                    "rgba(255,255,255,0.03)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background =
+                                    "transparent";
+                                }}
+                              >
+                                {/* Name Column */}
+                                <td style={{ padding: "12px 16px" }}>
                                   <div
                                     style={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: 9,
-                                      flexShrink: 0,
-                                      background: `${c}18`,
-                                      border: `1px solid ${c}25`,
                                       display: "flex",
                                       alignItems: "center",
-                                      justifyContent: "center",
-                                      fontSize: 12,
-                                      fontWeight: 700,
-                                      color: c,
+                                      gap: 12,
                                     }}
                                   >
-                                    {(
-                                      p.first_name?.[0] ?? p.email[0]
-                                    ).toUpperCase()}
+                                    <div
+                                      style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 10,
+                                        background: `${avatarColor}15`,
+                                        border: `1px solid ${avatarColor}25`,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        fontWeight: 700,
+                                        color: avatarColor,
+                                      }}
+                                    >
+                                      {(
+                                        person.first_name?.[0] ??
+                                        person.email[0]
+                                      ).toUpperCase()}
+                                    </div>
+                                    <span
+                                      style={{
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        color: "rgba(255,255,255,0.85)",
+                                      }}
+                                    >
+                                      {fullName}
+                                    </span>
                                   </div>
-                                  <span
-                                    style={{
-                                      fontSize: 13,
-                                      fontWeight: 600,
-                                      color: "rgba(255,255,255,0.8)",
-                                    }}
-                                  >
-                                    {nm}
-                                  </span>
-                                </div>
-                              </td>
+                                </td>
+
+                                {/* Email Column */}
+                                <td
+                                  style={{
+                                    padding: "12px 16px",
+                                    fontSize: 12,
+                                    color: "rgba(148,163,184,0.6)",
+                                  }}
+                                >
+                                  {person.email}
+                                </td>
+
+                                {/* Register Number Column */}
+                                <td
+                                  style={{
+                                    padding: "12px 16px",
+                                    fontSize: 11,
+                                    fontFamily: "monospace",
+                                    color: "rgba(148,163,184,0.5)",
+                                  }}
+                                >
+                                  {person.register_number || "—"}
+                                </td>
+
+                                {/* Status Column */}
+                                <td style={{ padding: "12px 16px" }}>
+                                  <Badge status={person.status} />
+                                </td>
+
+                                {/* Date Column */}
+                                <td
+                                  style={{
+                                    padding: "12px 16px",
+                                    fontSize: 11,
+                                    color: "rgba(148,163,184,0.4)",
+                                  }}
+                                >
+                                  {person.created_at
+                                    ? new Date(
+                                        person.created_at,
+                                      ).toLocaleDateString("mn-MN")
+                                    : "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {recentPersons.length === 0 && (
+                            <tr>
                               <td
+                                colSpan={5}
                                 style={{
-                                  padding: "12px 16px",
-                                  fontSize: 12,
+                                  padding: "60px 20px",
+                                  textAlign: "center",
                                   color: "rgba(255,255,255,0.35)",
                                 }}
                               >
-                                {p.email}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "12px 16px",
-                                  fontSize: 11,
-                                  fontFamily: "monospace",
-                                  color: "rgba(255,255,255,0.3)",
-                                }}
-                              >
-                                {p.register_number || "—"}
-                              </td>
-                              <td style={{ padding: "12px 16px" }}>
-                                <Badge status={p.status} />
-                              </td>
-                              <td
-                                style={{
-                                  padding: "12px 16px",
-                                  fontSize: 11,
-                                  color: "rgba(255,255,255,0.25)",
-                                }}
-                              >
-                                {p.created_at
-                                  ? new Date(p.created_at).toLocaleDateString(
-                                      "mn-MN",
-                                    )
-                                  : "—"}
+                                <div
+                                  style={{
+                                    fontSize: 48,
+                                    marginBottom: 12,
+                                    opacity: 0.3,
+                                  }}
+                                >
+                                  📭
+                                </div>
+                                <p style={{ margin: 0 }}>Бүртгэл байхгүй</p>
+                                <p
+                                  style={{
+                                    margin: "6px 0 0",
+                                    fontSize: 11,
+                                    color: "rgba(148,163,184,0.25)",
+                                  }}
+                                >
+                                  Шинэ бүртгэл бүртгүүлэхэд энд харагдана
+                                </p>
                               </td>
                             </tr>
-                          );
-                        })}
-                        {recentPersons.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={5}
-                              style={{
-                                padding: "36px 16px",
-                                textAlign: "center",
-                                fontSize: 13,
-                                color: "rgba(255,255,255,0.2)",
-                              }}
-                            >
-                              Бүртгэл байхгүй
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </div>
             )}
 
+            {/* Other Tabs */}
             {nav === "notifications" && canNav("notifications") && (
               <NotificationsTab
                 showToast={showToast}
@@ -2953,22 +3648,6 @@ export default function AdminDashboard() {
                   canDelete: can("companies.delete"),
                 }}
               />
-            )}
-
-            {nav === "categories" && canNav("categories") && (
-              <CategoriesTab
-                isSuperAdmin={me.role === "super_admin"}
-                showToast={showToast}
-              />
-            )}
-            {nav === "directions" && canNav("directions") && (
-              <DirectionsTab
-                isSuperAdmin={me.role === "super_admin"}
-                showToast={showToast}
-              />
-            )}
-            {nav === "announcements" && canNav("announcements") && (
-              <AnnouncementsTab showToast={showToast} />
             )}
 
             {nav === "individuals" && canNav("individuals") && (
@@ -2995,128 +3674,92 @@ export default function AdminDashboard() {
 
             {nav === "admins" && canNav("admins") && (
               <div
-                className="page-in"
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                className="animate-fade-up"
+                style={{ display: "flex", flexDirection: "column", gap: 20 }}
               >
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    gap: 12,
                   }}
                 >
-                  <div style={{ position: "relative" }}>
+                  <div style={{ position: "relative", width: 280 }}>
                     <Search
-                      size={13}
+                      size={16}
                       style={{
                         position: "absolute",
-                        left: 10,
+                        left: 14,
                         top: "50%",
                         transform: "translateY(-50%)",
-                        color: "rgba(255,255,255,0.28)",
+                        color: "rgba(255,255,255,0.3)",
                       }}
                     />
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Хайх..."
-                      className="gi"
-                      style={{ width: 220 }}
+                      placeholder="Админ хайх..."
+                      className="modern-input"
+                      style={{ paddingLeft: 42 }}
                     />
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  {can("admins.manage") && (
                     <button
-                      onClick={fetchAdmins}
+                      onClick={() => {
+                        setEditTarget(null);
+                        setModalMode("create");
+                      }}
                       style={{
-                        padding: "8px 12px",
-                        borderRadius: 9,
-                        background: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        color: "rgba(255,255,255,0.5)",
+                        background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                        border: "none",
+                        borderRadius: 14,
+                        padding: "10px 20px",
+                        color: "white",
+                        fontSize: 13,
+                        fontWeight: 600,
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
-                        gap: 6,
-                        fontSize: 12,
-                        fontFamily: "inherit",
+                        gap: 8,
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow =
+                          "0 8px 20px rgba(99,102,241,0.3)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
                       }}
                     >
-                      <RefreshCw
-                        size={13}
-                        style={{
-                          animation: adminsLoading
-                            ? "spin 1s linear infinite"
-                            : undefined,
-                        }}
-                      />{" "}
-                      Дахин ачаалах
+                      <Plus size={16} /> Шинэ Админ
                     </button>
-                    {can("admins.manage") && (
-                      <button
-                        onClick={() => {
-                          setEditTarget(null);
-                          setModalMode("create");
-                        }}
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: 9,
-                          background: "linear-gradient(135deg,#4f46e5,#6366f1)",
-                          border: "none",
-                          color: "white",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          boxShadow: "0 4px 14px rgba(99,102,241,0.3)",
-                        }}
-                      >
-                        <Plus size={15} /> Шинэ Админ
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
 
-                {adminsError && !adminsLoading && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "10px 14px",
-                      borderRadius: 12,
-                      background: "rgba(245,158,11,0.07)",
-                      border: "1px solid rgba(245,158,11,0.18)",
-                    }}
-                  >
-                    <AlertCircle
-                      size={14}
-                      style={{ color: "#f59e0b", flexShrink: 0 }}
-                    />
-                    <span
-                      style={{ fontSize: 12, color: "rgba(245,158,11,0.8)" }}
-                    >
-                      API холболт байхгүй — mock өгөгдөл харуулж байна
-                    </span>
-                  </div>
-                )}
-
-                <div className="card">
+                {/* Admins Table Section */}
+                <div
+                  style={{
+                    background: "rgba(12,16,35,0.6)",
+                    backdropFilter: "blur(12px)",
+                    borderRadius: 20,
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    overflow: "hidden",
+                  }}
+                >
                   {adminsLoading ? (
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
-                        padding: 48,
-                        gap: 10,
+                        padding: 60,
+                        gap: 12,
                       }}
                     >
                       <Loader2
-                        size={18}
+                        size={24}
                         style={{
                           color: "#6366f1",
                           animation: "spin 0.8s linear infinite",
@@ -3129,265 +3772,434 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                   ) : (
-                    <table
-                      style={{ width: "100%", borderCollapse: "collapse" }}
-                    >
-                      <thead>
-                        <tr>
-                          <Th h="Нэр" />
-                          <Th h="Компани" />
-                          <Th h="И-мэйл" />
-                          <Th h="Эрх" />
-                          <Th h="Цэсний эрх" />
-                          <Th h="Статус" />
-                          <Th h="" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredAdmins.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={7}
-                              style={{
-                                padding: "40px 16px",
-                                textAlign: "center",
-                                fontSize: 13,
-                                color: "rgba(255,255,255,0.25)",
-                              }}
-                            >
-                              Хайлтын үр дүн олдсонгүй
-                            </td>
+                    <div style={{ overflowX: "auto" }}>
+                      <table
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          minWidth: 800,
+                        }}
+                      >
+                        <thead>
+                          <tr
+                            style={{
+                              borderBottom: "1px solid rgba(255,255,255,0.06)",
+                              background: "rgba(255,255,255,0.02)",
+                            }}
+                          >
+                            <Th h="Нэр" />
+                            <Th h="Компани" />
+                            <Th h="И-мэйл" />
+                            <Th h="Эрх" />
+                            <Th h="Цэсний эрх" />
+                            <Th h="Статус" />
+                            <Th h="" />
                           </tr>
-                        ) : (
-                          filteredAdmins.map((a, i) => {
-                            const aPerms = parsePerms(a.permissions);
-                            const navCount =
-                              a.role === "super_admin"
-                                ? NAV_PERMS.length
-                                : NAV_PERMS.filter(
-                                    (n) =>
-                                      aPerms.includes(`${n.id}.view`) ||
-                                      (n.id === "dashboard" &&
-                                        (aPerms.includes("dashboard.view") ||
-                                          aPerms.includes("dashboard"))),
-                                  ).length;
-                            const colors = [
-                              "#6366f1",
-                              "#8b5cf6",
-                              "#06b6d4",
-                              "#10b981",
-                            ];
-                            const c = colors[i % colors.length];
-                            return (
-                              <tr key={a.id} className="tr">
-                                <td style={{ padding: "12px 16px" }}>
-                                  <div
+                        </thead>
+                        <tbody>
+                          {filteredAdmins.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={7}
+                                style={{
+                                  padding: "60px 20px",
+                                  textAlign: "center",
+                                  color: "rgba(255,255,255,0.35)",
+                                  fontSize: 13,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 48,
+                                    marginBottom: 12,
+                                    opacity: 0.3,
+                                  }}
+                                >
+                                  👥
+                                </div>
+                                Хайлтын үр дүн олдсонгүй
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredAdmins.map((a, i) => {
+                              const aPerms = parsePerms(a.permissions);
+                              const navCount =
+                                a.role === "super_admin"
+                                  ? NAV_PERMS.length
+                                  : NAV_PERMS.filter(
+                                      (n) =>
+                                        aPerms.includes(`${n.id}.view`) ||
+                                        (n.id === "dashboard" &&
+                                          (aPerms.includes("dashboard.view") ||
+                                            aPerms.includes("dashboard"))),
+                                    ).length;
+                              const colors = [
+                                "#6366f1",
+                                "#8b5cf6",
+                                "#06b6d4",
+                                "#10b981",
+                              ];
+                              const color = colors[i % colors.length];
+                              return (
+                                <tr
+                                  key={a.id}
+                                  style={{
+                                    borderBottom:
+                                      "1px solid rgba(255,255,255,0.04)",
+                                    transition: "background 0.2s",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background =
+                                      "rgba(255,255,255,0.03)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background =
+                                      "transparent";
+                                  }}
+                                >
+                                  {/* Name Column */}
+                                  <td
                                     style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 10,
+                                      padding: "14px 16px",
+                                      verticalAlign: "middle",
                                     }}
                                   >
                                     <div
                                       style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 9,
-                                        flexShrink: 0,
-                                        background: `${c}18`,
-                                        border: `1px solid ${c}25`,
                                         display: "flex",
                                         alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: 12,
-                                        fontWeight: 700,
-                                        color: c,
+                                        gap: 12,
                                       }}
                                     >
-                                      {a.first_name?.[0] ??
-                                        a.email[0].toUpperCase()}
-                                    </div>
-                                    <div>
                                       <div
                                         style={{
+                                          width: 36,
+                                          height: 36,
+                                          borderRadius: 10,
+                                          background: `${color}15`,
+                                          border: `1px solid ${color}25`,
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
                                           fontSize: 13,
-                                          fontWeight: 600,
-                                          color: "rgba(255,255,255,0.82)",
+                                          fontWeight: 700,
+                                          color: color,
+                                          flexShrink: 0,
                                         }}
                                       >
-                                        {a.last_name} {a.first_name}
+                                        {(
+                                          a.first_name?.[0] ?? a.email[0]
+                                        ).toUpperCase()}
                                       </div>
-                                      {a.created_at && (
+                                      <div>
                                         <div
                                           style={{
-                                            fontSize: 10,
-                                            color: "rgba(255,255,255,0.25)",
-                                            marginTop: 1,
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            color: "rgba(255,255,255,0.88)",
                                           }}
                                         >
-                                          {new Date(
-                                            a.created_at,
-                                          ).toLocaleDateString("mn-MN")}
+                                          {a.last_name} {a.first_name}
                                         </div>
-                                      )}
+                                        {a.created_at && (
+                                          <div
+                                            style={{
+                                              fontSize: 10,
+                                              color: "rgba(148,163,184,0.45)",
+                                              marginTop: 2,
+                                            }}
+                                          >
+                                            {new Date(
+                                              a.created_at,
+                                            ).toLocaleDateString("mn-MN")}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "12px 16px",
-                                    fontSize: 12,
-                                    color: "rgba(255,255,255,0.45)",
-                                  }}
-                                >
-                                  {a.company_name || "—"}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "12px 16px",
-                                    fontSize: 12,
-                                    color: "rgba(255,255,255,0.45)",
-                                  }}
-                                >
-                                  {a.email}
-                                </td>
-                                <td style={{ padding: "12px 16px" }}>
-                                  <span
+                                  </td>
+
+                                  {/* Company */}
+                                  <td
                                     style={{
-                                      fontSize: 10,
-                                      fontWeight: 600,
-                                      padding: "2px 8px",
-                                      borderRadius: 99,
-                                      background:
-                                        a.role === "super_admin"
-                                          ? "rgba(239,68,68,0.12)"
-                                          : "rgba(99,102,241,0.12)",
-                                      color:
-                                        a.role === "super_admin"
-                                          ? "#f87171"
-                                          : "#a5b4fc",
+                                      padding: "14px 16px",
+                                      fontSize: 12,
+                                      color: "rgba(148,163,184,0.6)",
+                                      verticalAlign: "middle",
                                     }}
                                   >
-                                    {a.role === "super_admin"
-                                      ? "Super Admin"
-                                      : "Mini Admin"}
-                                  </span>
-                                </td>
-                                <td style={{ padding: "12px 16px" }}>
-                                  {a.role === "super_admin" ? (
+                                    {a.company_name || "—"}
+                                  </td>
+
+                                  {/* Email */}
+                                  <td
+                                    style={{
+                                      padding: "14px 16px",
+                                      fontSize: 12,
+                                      color: "rgba(148,163,184,0.6)",
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
+                                    {a.email}
+                                  </td>
+
+                                  {/* Role */}
+                                  <td
+                                    style={{
+                                      padding: "14px 16px",
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
                                     <span
                                       style={{
-                                        fontSize: 11,
-                                        color: "rgba(239,68,68,0.7)",
+                                        fontSize: 10,
+                                        fontWeight: 600,
+                                        padding: "4px 12px",
+                                        borderRadius: 30,
+                                        background:
+                                          a.role === "super_admin"
+                                            ? "rgba(239,68,68,0.12)"
+                                            : "rgba(99,102,241,0.12)",
+                                        color:
+                                          a.role === "super_admin"
+                                            ? "#f87171"
+                                            : "#a5b4fc",
+                                        border: `1px solid ${
+                                          a.role === "super_admin"
+                                            ? "rgba(239,68,68,0.25)"
+                                            : "rgba(99,102,241,0.25)"
+                                        }`,
                                       }}
                                     >
-                                      Бүгд
+                                      {a.role === "super_admin"
+                                        ? "Super Admin"
+                                        : "Mini Admin"}
                                     </span>
-                                  ) : (
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 5,
-                                      }}
-                                    >
-                                      <span
-                                        style={{
-                                          fontSize: 12,
-                                          fontWeight: 600,
-                                          color: "rgba(165,180,252,0.8)",
-                                        }}
-                                      >
-                                        {navCount}
-                                      </span>
+                                  </td>
+
+                                  {/* Menu Permissions */}
+                                  <td
+                                    style={{
+                                      padding: "14px 16px",
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
+                                    {a.role === "super_admin" ? (
                                       <span
                                         style={{
                                           fontSize: 11,
-                                          color: "rgba(148,163,184,0.4)",
+                                          color: "rgba(239,68,68,0.6)",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 4,
                                         }}
                                       >
-                                        / {NAV_PERMS.length} цэс
+                                        🔓 Бүгд
                                       </span>
-                                    </div>
-                                  )}
-                                </td>
-                                <td style={{ padding: "12px 16px" }}>
-                                  <button
-                                    onClick={() => toggleStatus(a)}
-                                    disabled={statusLoading === a.id}
+                                    ) : (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 6,
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: 14,
+                                            fontWeight: 700,
+                                            color: "#a5b4fc",
+                                          }}
+                                        >
+                                          {navCount}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 11,
+                                            color: "rgba(148,163,184,0.4)",
+                                          }}
+                                        >
+                                          / {NAV_PERMS.length}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            color: "rgba(148,163,184,0.3)",
+                                            marginLeft: 4,
+                                          }}
+                                        >
+                                          цэс
+                                        </span>
+                                      </div>
+                                    )}
+                                  </td>
+
+                                  {/* Status */}
+                                  <td
                                     style={{
-                                      background: "none",
-                                      border: "none",
-                                      cursor: "pointer",
-                                      padding: 0,
-                                      display: "flex",
-                                      alignItems: "center",
+                                      padding: "14px 16px",
+                                      verticalAlign: "middle",
                                     }}
                                   >
-                                    {statusLoading === a.id ? (
-                                      <Loader2
-                                        size={14}
+                                    <button
+                                      onClick={() => toggleStatus(a)}
+                                      disabled={statusLoading === a.id}
+                                      style={{
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        padding: 0,
+                                        display: "flex",
+                                      }}
+                                    >
+                                      {statusLoading === a.id ? (
+                                        <Loader2
+                                          size={14}
+                                          style={{
+                                            color: "#6366f1",
+                                            animation:
+                                              "spin 0.8s linear infinite",
+                                          }}
+                                        />
+                                      ) : (
+                                        <Badge status={a.status} />
+                                      )}
+                                    </button>
+                                  </td>
+
+                                  {/* Actions */}
+                                  <td
+                                    style={{
+                                      padding: "14px 16px",
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
+                                    {can("admins.manage") && (
+                                      <div
                                         style={{
-                                          color: "rgba(255,255,255,0.4)",
-                                          animation:
-                                            "spin 0.8s linear infinite",
+                                          display: "flex",
+                                          gap: 8,
+                                          alignItems: "center",
                                         }}
-                                      />
-                                    ) : (
-                                      <Badge status={a.status} />
+                                      >
+                                        <button
+                                          onClick={() => {
+                                            setEditTarget(a);
+                                            setModalMode("edit");
+                                          }}
+                                          style={{
+                                            background:
+                                              "rgba(255,255,255,0.05)",
+                                            border:
+                                              "1px solid rgba(255,255,255,0.08)",
+                                            borderRadius: 8,
+                                            padding: "6px 10px",
+                                            cursor: "pointer",
+                                            transition: "all 0.2s",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 5,
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.style.background =
+                                              "rgba(99,102,241,0.15)";
+                                            e.currentTarget.style.borderColor =
+                                              "rgba(99,102,241,0.3)";
+                                            e.currentTarget.style.transform =
+                                              "translateY(-1px)";
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.background =
+                                              "rgba(255,255,255,0.05)";
+                                            e.currentTarget.style.borderColor =
+                                              "rgba(255,255,255,0.08)";
+                                            e.currentTarget.style.transform =
+                                              "translateY(0)";
+                                          }}
+                                          title="Засах"
+                                        >
+                                          <Pencil
+                                            size={13}
+                                            style={{ color: "#a5b4fc" }}
+                                          />
+                                          {/* ✅ Icon only - текст арилгасан */}
+                                        </button>
+
+                                        <button
+                                          onClick={() => setDeleteTarget(a)}
+                                          style={{
+                                            background:
+                                              "rgba(255,255,255,0.05)",
+                                            border:
+                                              "1px solid rgba(255,255,255,0.08)",
+                                            borderRadius: 8,
+                                            padding: "6px 10px",
+                                            cursor: "pointer",
+                                            transition: "all 0.2s",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 5,
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.style.background =
+                                              "rgba(239,68,68,0.15)";
+                                            e.currentTarget.style.borderColor =
+                                              "rgba(239,68,68,0.3)";
+                                            e.currentTarget.style.transform =
+                                              "translateY(-1px)";
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.background =
+                                              "rgba(255,255,255,0.05)";
+                                            e.currentTarget.style.borderColor =
+                                              "rgba(255,255,255,0.08)";
+                                            e.currentTarget.style.transform =
+                                              "translateY(0)";
+                                          }}
+                                          title="Устгах"
+                                        >
+                                          <Trash2
+                                            size={13}
+                                            style={{ color: "#f87171" }}
+                                          />
+                                        </button>
+                                      </div>
                                     )}
-                                  </button>
-                                </td>
-                                <td style={{ padding: "12px 16px" }}>
-                                  {can("admins.manage") && (
-                                    <div style={{ display: "flex", gap: 6 }}>
-                                      <button
-                                        className="icon-btn"
-                                        onClick={() => {
-                                          setEditTarget(a);
-                                          setModalMode("edit");
-                                        }}
-                                      >
-                                        <Pencil
-                                          size={13}
-                                          style={{
-                                            color: "rgba(99,102,241,0.7)",
-                                          }}
-                                        />
-                                      </button>
-                                      <button
-                                        className="icon-btn"
-                                        onClick={() => setDeleteTarget(a)}
-                                      >
-                                        <Trash2
-                                          size={13}
-                                          style={{
-                                            color: "rgba(239,68,68,0.6)",
-                                          }}
-                                        />
-                                      </button>
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </div>
             )}
-            {nav === "pending_edits" && canNav("pending_edits") && (
-              <PendingEditsTab showToast={showToast} />
-            )}
 
+            {nav === "categories" && canNav("categories") && (
+              <CategoriesTab
+                isSuperAdmin={me.role === "super_admin"}
+                showToast={showToast}
+              />
+            )}
+            {nav === "directions" && canNav("directions") && (
+              <DirectionsTab
+                isSuperAdmin={me.role === "super_admin"}
+                showToast={showToast}
+              />
+            )}
+            {nav === "announcements" && canNav("announcements") && (
+              <AnnouncementsTab showToast={showToast} />
+            )}
             {nav === "special_permissions" && canNav("special_permissions") && (
               <SpecialPermissionsTab
                 isSuperAdmin={me.role === "super_admin"}
                 showToast={showToast}
               />
+            )}
+            {nav === "pending_edits" && canNav("pending_edits") && (
+              <PendingEditsTab showToast={showToast} />
             )}
           </main>
         </div>

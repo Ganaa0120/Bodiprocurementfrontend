@@ -29,6 +29,7 @@ export default function CompanyNotificationsPage() {
   const [notifs, setNotifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
+  const [fullImage, setFullImage] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -257,161 +258,473 @@ export default function CompanyNotificationsPage() {
         </div>
       )}
 
-      {/* ====================== DETAIL MODAL ====================== */}
       {selected && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 1000,
+      background: "rgba(0,0,0,0.75)",
+      backdropFilter: "blur(12px)",
+      display: "flex",
+      alignItems: isMobile ? "flex-end" : "center",
+      justifyContent: "center",
+      padding: isMobile ? 0 : "24px",
+      animation: "fadeIn 0.2s ease",
+    }}
+    onClick={() => setSelected(null)}
+  >
+    <div
+      style={{
+        width: "100%",
+        maxWidth: isMobile ? "100%" : 560,
+        background: "white",
+        borderRadius: isMobile ? "28px 28px 0 0" : 28,
+        boxShadow: "0 30px 80px rgba(0,0,0,0.4)",
+        animation: isMobile ? "slideUp 0.35s cubic-bezier(0.2,0.9,0.4,1.1)" : "modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+        maxHeight: isMobile ? "90vh" : "85vh",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Modal Header - Small icon only */}
+      <div
+        style={{
+          padding: isMobile ? "24px 24px 20px" : "28px 28px 20px",
+          borderBottom: "1px solid #f0f2f5",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          background: "linear-gradient(135deg, #ffffff, #fafbfc)",
+        }}
+      >
         <div
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 100,
-            background: "rgba(15,23,42,0.65)",
-            backdropFilter: "blur(10px)",
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            background: "linear-gradient(135deg, #eef2ff, #e0e7ff)",
             display: "flex",
-            alignItems: isMobile ? "flex-end" : "center",
+            alignItems: "center",
             justifyContent: "center",
-            padding: isMobile ? 0 : "20px",
+            fontSize: 22,
+            flexShrink: 0,
           }}
-          onClick={() => setSelected(null)}
         >
+          {TYPE_ICON[selected.notification_type ?? "system"] ?? "🔔"}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              width: "100%",
-              maxWidth: isMobile ? "100%" : 560,
-              background: "white",
-              borderRadius: isMobile ? "20px 20px 0 0" : 24,
-              boxShadow: "0 30px 80px rgba(15,23,42,0.35)",
-              animation: isMobile ? "slideUp 0.35s ease" : "modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-              maxHeight: isMobile ? "94vh" : "88vh",
-              overflowY: "auto",
+              fontSize: isMobile ? 16 : 17,
+              fontWeight: 700,
+              color: "#0f172a",
+              lineHeight: 1.35,
+              marginBottom: 6,
+              letterSpacing: "-0.3px",
             }}
-            onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div style={{
-              padding: isMobile ? "24px 24px 18px" : "32px 36px 24px",
-              borderBottom: "1px solid #f1f5f9",
+            {selected.title || "Мэдэгдэл"}
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: "#94a3b8",
               display: "flex",
-              alignItems: "flex-start",
-              gap: 16,
-            }}>
-              <div style={{
-                width: 56,
-                height: 56,
-                borderRadius: 16,
-                background: "#e6f2fa",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 26,
-                flexShrink: 0,
-              }}>
-                {selected.image_url ? (
-                  <img src={selected.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 14 }} 
-                       onError={(e) => (e.currentTarget.style.display = "none")} />
-                ) : (
-                  TYPE_ICON[selected.notification_type ?? "system"] ?? "🔔"
-                )}
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: isMobile ? 17 : 19,
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  lineHeight: 1.35,
-                  marginBottom: 8,
-                }}>
-                  {selected.title || selected.message}
-                </div>
-                <div style={{ fontSize: 12.5, color: "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Clock size={13} />
-                  {new Date(selected.created_at).toLocaleString("mn-MN")}
-                </div>
-              </div>
-
-              <button
-                onClick={() => setSelected(null)}
+              alignItems: "center",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Clock size={11} />
+              {new Date(selected.created_at).toLocaleString("mn-MN")}
+            </span>
+            {selected.notification_type && (
+              <span
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <X size={18} style={{ color: "#64748b" }} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: isMobile ? "24px 24px" : "32px 36px" }}>
-              {(selected.message || selected.body) && (
-                <div style={{
-                  fontSize: 15,
-                  lineHeight: 1.75,
-                  color: "#334155",
-                  wordBreak: "break-word",
-                }}>
-                  {selected.message && selected.message.trim().startsWith("<") ? (
-                    <div dangerouslySetInnerHTML={{ __html: selected.message }} />
-                  ) : (
-                    <p style={{ margin: 0 }}>{selected.message || selected.body}</p>
-                  )}
-                </div>
-              )}
-
-              {selected.link && (
-                <a
-                  href={selected.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginTop: 24,
-                    padding: "12px 24px",
-                    background: "#3b9be0",
-                    color: "white",
-                    borderRadius: 12,
-                    textDecoration: "none",
-                    fontWeight: 600,
-                    fontSize: 14,
-                  }}
-                >
-                  Дэлгэрэнгүй харах <ArrowRight size={16} />
-                </a>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div style={{
-              padding: isMobile ? "16px 24px 24px" : "20px 36px 32px",
-              borderTop: "1px solid #f1f5f9",
-            }}>
-              <button
-                onClick={() => setSelected(null)}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  borderRadius: 12,
-                  border: "1px solid #e2e8f0",
-                  background: "white",
+                  fontSize: 9,
+                  padding: "2px 8px",
+                  borderRadius: 30,
+                  background: "#f1f5f9",
                   color: "#475569",
-                  fontWeight: 500,
-                  fontSize: 14,
                 }}
               >
-                Хаах
-              </button>
-            </div>
+                {selected.notification_type === "announcement"
+                  ? "Зарлал"
+                  : selected.notification_type === "system"
+                  ? "Систем"
+                  : "Мэдэгдэл"}
+              </span>
+            )}
           </div>
         </div>
-      )}
+
+        <button
+          onClick={() => setSelected(null)}
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            background: "#f1f5f9",
+            border: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#e2e8f0";
+            e.currentTarget.style.transform = "scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#f1f5f9";
+            e.currentTarget.style.transform = "scale(1)";
+          }}
+        >
+          <X size={15} style={{ color: "#64748b" }} />
+        </button>
+      </div>
+
+      {/* Modal Body - Image placed here */}
+      <div
+        style={{
+          padding: isMobile ? "20px 24px" : "24px 28px",
+          flex: 1,
+          overflowY: "auto",
+        }}
+      >
+        {/* ✅ Image in body - Click to open fullscreen modal (NOT blank tab) */}
+        {selected.image_url && (
+          <div
+            style={{
+              marginBottom: 20,
+              borderRadius: 16,
+              overflow: "hidden",
+              background: "#f8fafc",
+              textAlign: "center",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              // ✅ Open fullscreen modal instead of blank tab
+              setFullImage(selected.image_url);
+            }}
+          >
+            <img
+              src={selected.image_url}
+              alt=""
+              style={{
+                width: "100%",
+                maxHeight: 280,
+                objectFit: "contain",
+                display: "block",
+                transition: "transform 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.02)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  parent.style.padding = "40px";
+                  parent.innerHTML = "🖼️ Зураг олдсонгүй";
+                  parent.style.color = "#94a3b8";
+                  parent.style.fontSize = "13px";
+                }
+              }}
+            />
+            {/* Zoom hint */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: 12,
+                right: 12,
+                background: "rgba(0,0,0,0.5)",
+                borderRadius: 20,
+                padding: "4px 10px",
+                fontSize: 10,
+                color: "white",
+                pointerEvents: "none",
+              }}
+            >
+              🔍 Томруулах
+            </div>
+          </div>
+        )}
+
+        {/* Message Content */}
+        {(selected.message || selected.body) && (
+          <div
+            style={{
+              fontSize: 14,
+              lineHeight: 1.7,
+              color: "#334155",
+              wordBreak: "break-word",
+            }}
+            className="notification-content"
+          >
+            {selected.message && selected.message.trim().startsWith("<") ? (
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: selected.message
+                    .replace(/<img/g, '<img style="max-width:100%; border-radius:12px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,0.08); cursor:pointer;"')
+                    .replace(/<a/g, '<a style="color:#4f46e5; text-decoration:underline;" target="_blank"'),
+                }}
+              />
+            ) : (
+              <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+                {selected.message || selected.body}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Call to Action Button */}
+        {selected.link && (
+          <div style={{ marginTop: 28 }}>
+            <a
+              href={selected.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                padding: "12px 24px",
+                background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                color: "white",
+                borderRadius: 14,
+                textDecoration: "none",
+                fontWeight: 600,
+                fontSize: 14,
+                transition: "all 0.2s",
+                boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
+                width: "100%",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 8px 20px rgba(79,70,229,0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(79,70,229,0.3)";
+              }}
+            >
+              Дэлгэрэнгүй харах
+              <ArrowRight size={16} />
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Modal Footer */}
+      <div
+        style={{
+          padding: isMobile ? "16px 24px 24px" : "20px 28px 28px",
+          borderTop: "1px solid #f0f2f5",
+          background: "#fafbfc",
+        }}
+      >
+        <button
+          onClick={() => setSelected(null)}
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            borderRadius: 14,
+            border: "1px solid #e2e8f0",
+            background: "white",
+            color: "#475569",
+            fontWeight: 500,
+            fontSize: 14,
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#f8fafc";
+            e.currentTarget.style.borderColor = "#cbd5e1";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "white";
+            e.currentTarget.style.borderColor = "#e2e8f0";
+          }}
+        >
+          Хаах
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ✅ Full Screen Image Modal - opens when clicking on image */}
+{fullImage && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 2000,
+      background: "rgba(0,0,0,0.95)",
+      backdropFilter: "blur(20px)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      animation: "fadeIn 0.2s ease",
+    }}
+    onClick={() => setFullImage(null)}
+  >
+    <img
+      src={fullImage}
+      alt="Full size"
+      style={{
+        maxWidth: "90vw",
+        maxHeight: "90vh",
+        objectFit: "contain",
+        borderRadius: 12,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+        cursor: "zoom-out",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    />
+    
+    {/* Close button */}
+    <button
+      onClick={() => setFullImage(null)}
+      style={{
+        position: "absolute",
+        top: 24,
+        right: 24,
+        width: 44,
+        height: 44,
+        borderRadius: 50,
+        background: "rgba(255,255,255,0.1)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        color: "white",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.2)";
+        e.currentTarget.style.transform = "scale(1.05)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+        e.currentTarget.style.transform = "scale(1)";
+      }}
+    >
+      <X size={22} />
+    </button>
+
+    {/* Download button */}
+    <button
+      onClick={() => {
+        const link = document.createElement("a");
+        link.href = fullImage;
+        link.download = "image.jpg";
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }}
+      style={{
+        position: "absolute",
+        bottom: 24,
+        right: 24,
+        width: 44,
+        height: 44,
+        borderRadius: 50,
+        background: "rgba(255,255,255,0.1)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        color: "white",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.2)";
+        e.currentTarget.style.transform = "scale(1.05)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+        e.currentTarget.style.transform = "scale(1)";
+      }}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    </button>
+  </div>
+)}
+
+{/* Global Animations */}
+<style>{`
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .notification-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: pointer;
+  }
+  
+  .notification-content a {
+    color: #4f46e5;
+    text-decoration: underline;
+  }
+`}</style>
     </div>
   );
 }

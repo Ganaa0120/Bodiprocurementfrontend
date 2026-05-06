@@ -574,7 +574,7 @@ export function RadioGroup({ label, options, value, onChange, editing }: any) {
               fontWeight: 500,
               border:
                 value === o.value
-                  ? "1.5px solid #4f46e5"
+                  ? "1.5px solid #0072BC"
                   : "1.5px solid #cbd5e1",
               background:
                 value === o.value
@@ -582,7 +582,7 @@ export function RadioGroup({ label, options, value, onChange, editing }: any) {
                   : editing
                     ? "white"
                     : "transparent",
-              color: value === o.value ? "#4f46e5" : "#64748b",
+              color: value === o.value ? "#0072BC" : "#64748b",
               cursor: editing ? "pointer" : "default",
               transition: "all .15s",
             }}
