@@ -11,6 +11,8 @@ import {
   Calendar,
   AlertCircle,
   RefreshCw,
+  Eye,
+  Download,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -20,12 +22,26 @@ const STATUS_CFG: Record<
   string,
   { label: string; color: string; bg: string; border: string; gradient: string }
 > = {
+  submitted: {
+    label: "Хүлээгдэж буй",
+    color: "#d97706",
+    bg: "#fffbeb",
+    border: "#fde68a",
+    gradient: "linear-gradient(135deg,#fef3c7 0%,#fffbeb 100%)",
+  },
   pending: {
     label: "Хүлээгдэж буй",
     color: "#d97706",
     bg: "#fffbeb",
     border: "#fde68a",
     gradient: "linear-gradient(135deg,#fef3c7 0%,#fffbeb 100%)",
+  },
+  accepted: {
+    label: "Зөвшөөрөгдсөн",
+    color: "#059669",
+    bg: "#ecfdf5",
+    border: "#a7f3d0",
+    gradient: "linear-gradient(135deg,#d1fae5 0%,#ecfdf5 100%)",
   },
   approved: {
     label: "Зөвшөөрөгдсөн",
@@ -49,6 +65,72 @@ const TYPE_LABEL: Record<string, { label: string; emoji: string }> = {
   rfq: { label: "Үнийн санал", emoji: "📊" },
 };
 
+// Файл татах компонент
+function FileItem({ file }: { file: any }) {
+  const formatSize = (bytes: number) => {
+    if (!bytes) return "—";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (name: string) => {
+    const ext = name?.split(".").pop()?.toLowerCase() || "";
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) return "🖼️";
+    if (["pdf"].includes(ext)) return "📄";
+    if (["doc", "docx"].includes(ext)) return "📝";
+    if (["xls", "xlsx"].includes(ext)) return "📊";
+    return "📎";
+  };
+
+  return (
+    <a
+      href={file.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 12px",
+        background: "white",
+        borderRadius: 8,
+        border: "1px solid #e2e8f0",
+        textDecoration: "none",
+        transition: "all 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "#f8fafc";
+        e.currentTarget.style.borderColor = "#cbd5e1";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "white";
+        e.currentTarget.style.borderColor = "#e2e8f0";
+      }}
+    >
+      <span style={{ fontSize: 20 }}>{getFileIcon(file.name)}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 500,
+            color: "#0f172a",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {file.name}
+        </div>
+        <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
+          {formatSize(file.size)}
+        </div>
+      </div>
+      <Download size={14} color="#4f46e5" />
+    </a>
+  );
+}
+
 function useW() {
   const [w, setW] = useState(0);
   useEffect(() => {
@@ -68,6 +150,8 @@ export default function CompanyApplicationsPage() {
   const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [selectedAttachments, setSelectedAttachments] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const load = async () => {
     const token = localStorage.getItem("token");
@@ -78,7 +162,9 @@ export default function CompanyApplicationsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const d = await res.json();
-      if (d.success) setApps(d.applications ?? []);
+      if (d.success) {
+        setApps(d.applications ?? []);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -95,12 +181,24 @@ export default function CompanyApplicationsPage() {
 
   const counts = {
     all: apps.length,
-    pending: apps.filter((a) => a.status === "pending").length,
-    approved: apps.filter((a) => a.status === "approved").length,
+    pending: apps.filter((a) => a.status === "pending" || a.status === "submitted").length,
+    approved: apps.filter((a) => a.status === "approved" || a.status === "accepted").length,
     rejected: apps.filter((a) => a.status === "rejected").length,
   };
 
   const fmtMoney = (v: any) => (v ? Number(v).toLocaleString() : null);
+
+  const openAttachmentsModal = (attachments: any[]) => {
+    setSelectedAttachments(attachments || []);
+    setIsModalOpen(true);
+  };
+
+  const getStatusConfig = (status: string) => {
+    if (status === "pending" || status === "submitted") return STATUS_CFG.pending;
+    if (status === "approved" || status === "accepted") return STATUS_CFG.approved;
+    if (status === "rejected") return STATUS_CFG.rejected;
+    return STATUS_CFG.pending;
+  };
 
   return (
     <div
@@ -113,6 +211,10 @@ export default function CompanyApplicationsPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.96); }
+          to { opacity: 1; transform: scale(1); }
+        }
 
         .app-card {
           transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -128,6 +230,87 @@ export default function CompanyApplicationsPage() {
           transition: transform .2s;
         }
       `}</style>
+
+      {/* Attachments Modal */}
+      {isModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 200,
+            background: "rgba(15,23,42,0.7)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            animation: "fadeIn .2s ease",
+          }}
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 500,
+              background: "white",
+              borderRadius: 24,
+              padding: 24,
+              animation: "modalIn .2s ease",
+              maxHeight: "80vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  margin: 0,
+                }}
+              >
+                Хавсаргасан файлууд
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: "#f1f5f9",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            {selectedAttachments.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
+                <FileText size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
+                <p>Хавсаргасан файл байхгүй</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {selectedAttachments.map((file, idx) => (
+                  <FileItem key={idx} file={file} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div
@@ -227,7 +410,7 @@ export default function CompanyApplicationsPage() {
           },
         ].map(({ key, label, count }) => {
           const active = filter === key;
-          const sc = key === "all" ? null : STATUS_CFG[key];
+          const sc = key === "all" ? null : STATUS_CFG[key === "pending" ? "pending" : key === "approved" ? "approved" : "rejected"];
 
           return (
             <button
@@ -334,7 +517,7 @@ export default function CompanyApplicationsPage() {
           >
             {filter === "all"
               ? "Хүсэлт байхгүй байна"
-              : `${STATUS_CFG[filter]?.label ?? filter} төлөвт хүсэлт байхгүй`}
+              : `${STATUS_CFG[filter === "pending" ? "pending" : filter === "approved" ? "approved" : "rejected"]?.label ?? filter} төлөвт хүсэлт байхгүй`}
           </h3>
           <p
             style={{
@@ -381,21 +564,17 @@ export default function CompanyApplicationsPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((app) => {
-            const sc = STATUS_CFG[app.status] ?? STATUS_CFG.pending;
+            const sc = getStatusConfig(app.status);
             const tl = TYPE_LABEL[app.ann_type] ?? TYPE_LABEL.open;
-            const isApproved = app.status === "approved";
+            const isApproved = app.status === "approved" || app.status === "accepted";
             const isRejected = app.status === "rejected";
-            const isPending = app.status === "pending";
+            const isPending = app.status === "pending" || app.status === "submitted";
+            const hasAttachments = app.attachments && app.attachments.length > 0;
 
             return (
               <div
                 key={app.id}
                 className="app-card"
-                onClick={() =>
-                  router.push(
-                    `/dashboard/company/announcements?id=${app.announcement_id}`,
-                  )
-                }
                 style={{
                   background: "white",
                   borderRadius: 16,
@@ -453,7 +632,6 @@ export default function CompanyApplicationsPage() {
 
                   {/* Main Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Top: type pill + status pill */}
                     <div
                       style={{
                         display: "flex",
@@ -472,7 +650,6 @@ export default function CompanyApplicationsPage() {
                           background: "#f8fafc",
                           color: "#475569",
                           border: "1px solid #e2e8f0",
-                          letterSpacing: "0.02em",
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 4,
@@ -490,7 +667,6 @@ export default function CompanyApplicationsPage() {
                           background: sc.bg,
                           color: sc.color,
                           border: `1px solid ${sc.border}`,
-                          letterSpacing: "0.02em",
                         }}
                       >
                         {sc.label}
@@ -512,7 +688,6 @@ export default function CompanyApplicationsPage() {
                       )}
                     </div>
 
-                    {/* Title */}
                     <h3
                       style={{
                         fontSize: 15,
@@ -527,7 +702,6 @@ export default function CompanyApplicationsPage() {
                       {app.announcement_title || "Тендер / Зарлал"}
                     </h3>
 
-                    {/* Meta row */}
                     <div
                       style={{
                         display: "flex",
@@ -593,6 +767,39 @@ export default function CompanyApplicationsPage() {
                         </span>
                       )}
                     </div>
+
+                    {/* Attachments button */}
+                    {hasAttachments && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAttachmentsModal(app.attachments);
+                        }}
+                        style={{
+                          marginTop: 10,
+                          padding: "5px 12px",
+                          borderRadius: 8,
+                          background: "#f1f5f9",
+                          border: "1px solid #e2e8f0",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 11,
+                          color: "#4f46e5",
+                          fontFamily: "inherit",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#eef2ff";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#f1f5f9";
+                        }}
+                      >
+                        <Eye size={12} />
+                        Хавсаргасан файл ({app.attachments.length})
+                      </button>
+                    )}
 
                     {/* Approved message */}
                     {isApproved && (

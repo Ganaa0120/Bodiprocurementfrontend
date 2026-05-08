@@ -1,136 +1,379 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Loader2, FileText, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, FileText, Clock, CheckCircle2, XCircle, AlertCircle, ClipboardList, DollarSign, Calendar, MessageSquare, Zap } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const STATUS_CFG: Record<string,{label:string;color:string;bg:string;border:string}> = {
-  pending:  { label:"Хүлээгдэж буй", color:"#f59e0b", bg:"#fffbeb", border:"#fde68a" },
-  reviewed: { label:"Хянагдсан",      color:"#3b82f6", bg:"#eff6ff", border:"#bfdbfe" },
-  approved: { label:"Баталгаажсан",   color:"#10b981", bg:"#ecfdf5", border:"#a7f3d0" },
-  rejected: { label:"Татгалзсан",     color:"#ef4444", bg:"#fef2f2", border:"#fecaca" },
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string; icon: any }> = {
+  pending: { label: "Хүлээгдэж буй", color: "#fbbf24", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)", icon: Clock },
+  reviewed: { label: "Хянагдсан", color: "#60a5fa", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.25)", icon: AlertCircle },
+  approved: { label: "Баталгаажсан", color: "#34d399", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.25)", icon: CheckCircle2 },
+  rejected: { label: "Татгалзсан", color: "#f87171", bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.25)", icon: XCircle },
 };
 
 export default function PersonApplicationsPage() {
-  const [apps,    setApps]    = useState<any[]>([]);
+  const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter,  setFilter]  = useState("all");
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
     fetch(`${API}/api/applications/mine?limit=50`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.json())
-      .then(d => { if (d.success) setApps(d.applications ?? []); })
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setApps(d.applications ?? []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = filter === "all" ? apps : apps.filter(a => a.status === filter);
+  const filtered = filter === "all" ? apps : apps.filter((a) => a.status === filter);
+
+  const counts = {
+    all: apps.length,
+    pending: apps.filter((a) => a.status === "pending").length,
+    approved: apps.filter((a) => a.status === "approved").length,
+    rejected: apps.filter((a) => a.status === "rejected").length,
+  };
+
+  const TABS = [
+    { key: "all", label: "Бүгд", icon: "📋" },
+    { key: "pending", label: "Хүлээгдэж", icon: "⏳" },
+    { key: "approved", label: "Баталгаажсан", icon: "✅" },
+    { key: "rejected", label: "Татгалзсан", icon: "❌" },
+  ];
 
   return (
-    <div style={{ maxWidth:"100%", margin:"0 auto", padding:"24px 16px" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div style={{ width: "100%", padding: "0" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
 
-      <div style={{ marginBottom:20 }}>
-        <h1 style={{ fontSize:20, fontWeight:700, color:"#0f172a", margin:"0 0 4px" }}>
-          Миний хүсэлтүүд
-        </h1>
-        <p style={{ fontSize:13, color:"#94a3b8", margin:0 }}>
-          Нийт {apps.length} хүсэлт гаргасан байна
-        </p>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1))",
+            border: "1px solid rgba(99,102,241,0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <ClipboardList size={18} style={{ color: "#a5b4fc" }} />
+        </div>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "rgba(255,255,255,0.92)", margin: "0 0 2px", letterSpacing: "-0.01em" }}>
+            Миний хүсэлтүүд
+          </h1>
+          <p style={{ fontSize: 12, color: "rgba(148,163,184,0.5)", margin: 0 }}>
+            Нийт {apps.length} хүсэлт гаргасан байна
+          </p>
+        </div>
       </div>
 
       {/* Filter tabs */}
-      <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap" as const }}>
-        {[
-          { key:"all",      label:`Бүгд (${apps.length})` },
-          { key:"pending",  label:`Хүлээгдэж (${apps.filter(a=>a.status==="pending").length})` },
-          { key:"approved", label:`Баталгаажсан (${apps.filter(a=>a.status==="approved").length})` },
-          { key:"rejected", label:`Татгалзсан (${apps.filter(a=>a.status==="rejected").length})` },
-        ].map(({ key, label }) => {
+      <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" as const }}>
+        {TABS.map(({ key, label, icon }) => {
           const sc = key === "all" ? null : STATUS_CFG[key];
+          const cnt = counts[key as keyof typeof counts];
           const active = filter === key;
           return (
-            <button key={key} onClick={() => setFilter(key)}
-              style={{ padding:"8px 14px", borderRadius:10, fontSize:12,
-                fontWeight:500, cursor:"pointer", fontFamily:"inherit",
-                border: active ? `1.5px solid ${sc?.color ?? "#6366f1"}40` : "1.5px solid #e2e8f0",
-                background: active ? `${sc?.color ?? "#6366f1"}08` : "white",
-                color: active ? (sc?.color ?? "#6366f1") : "#64748b" }}>
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              style={{
+                padding: "9px 16px",
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                border: active
+                  ? `1.5px solid ${sc?.color ?? "rgba(129,140,248,0.5)"}`
+                  : "1px solid rgba(255,255,255,0.08)",
+                background: active
+                  ? `${sc?.color ?? "rgba(99,102,241,0.15)"}20`
+                  : "rgba(255,255,255,0.03)",
+                color: active ? (sc?.color ?? "#a5b4fc") : "rgba(148,163,184,0.6)",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap",
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.8)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                  e.currentTarget.style.color = "rgba(148,163,184,0.6)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                }
+              }}
+            >
+              <span style={{ fontSize: 15 }}>{icon}</span>
               {label}
+              {cnt > 0 && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 99,
+                    background: active ? (sc?.color ?? "#6366f1") : "rgba(255,255,255,0.06)",
+                    color: active ? "white" : "rgba(148,163,184,0.6)",
+                  }}
+                >
+                  {cnt}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div style={{ display:"flex", justifyContent:"center", padding:56, gap:10 }}>
-          <Loader2 size={20} style={{ color:"#6366f1", animation:"spin .8s linear infinite" }}/>
-          <span style={{ fontSize:13, color:"#94a3b8" }}>Ачаалж байна...</span>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 80,
+            gap: 12,
+          }}
+        >
+          <Loader2 size={28} style={{ color: "#a5b4fc", animation: "spin .8s linear infinite" }} />
+          <span style={{ fontSize: 13, color: "rgba(148,163,184,0.5)" }}>Ачаалж байна...</span>
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ textAlign:"center" as const, padding:"56px 0",
-          background:"white", borderRadius:18, border:"1px solid #f1f5f9" }}>
-          <FileText size={32} style={{ color:"#e2e8f0", display:"block", margin:"0 auto 12px" }}/>
-          <p style={{ fontSize:13, color:"#cbd5e1", margin:0 }}>Хүсэлт байхгүй байна</p>
+        <div
+          style={{
+            textAlign: "center" as const,
+            padding: "80px 20px",
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: 24,
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <FileText size={28} style={{ color: "rgba(148,163,184,0.3)" }} />
+          </div>
+          <p style={{ fontSize: 14, color: "rgba(148,163,184,0.5)", margin: 0, fontWeight: 500 }}>
+            Хүсэлт байхгүй байна
+          </p>
+          <p style={{ fontSize: 12, color: "rgba(148,163,184,0.3)", margin: "4px 0 0" }}>
+            Танд одоогоор ямар ч хүсэлт байхгүй байна
+          </p>
         </div>
       ) : (
-        <div style={{ display:"flex", flexDirection:"column" as const, gap:10 }}>
-          {filtered.map((app) => {
+        <div style={{ display: "flex", flexDirection: "column" as const, gap: 12 }}>
+          {filtered.map((app, idx) => {
             const sc = STATUS_CFG[app.status] ?? STATUS_CFG.pending;
+            const StatusIcon = sc.icon;
             return (
-              <div key={app.id} style={{ background:"white", borderRadius:16,
-                padding:"18px 20px", border:"1px solid #f1f5f9",
-                boxShadow:"0 1px 4px rgba(0,0,0,0.04)",
-                borderLeft:`3px solid ${sc.color}` }}>
-                <div style={{ display:"flex", alignItems:"flex-start", gap:14 }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ display:"flex", alignItems:"center",
-                      gap:8, marginBottom:6, flexWrap:"wrap" as const }}>
-                      <span style={{ fontSize:14, fontWeight:700, color:"#0f172a" }}>
+              <div
+                key={app.id}
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  backdropFilter: "blur(10px)",
+                  borderRadius: 20,
+                  padding: "20px 22px",
+                  border: `1px solid rgba(255,255,255,0.06)`,
+                  borderLeft: `3px solid ${sc.color}`,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                  cursor: "pointer",
+                  transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                  animation: `slideUp 0.3s ease ${idx * 0.05}s both`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.4)`;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.borderColor = `${sc.color}40`;
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                  {/* Status Icon */}
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 14,
+                      flexShrink: 0,
+                      background: sc.bg,
+                      border: `1px solid ${sc.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <StatusIcon size={22} style={{ color: sc.color }} />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Title & Status */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 8,
+                        flexWrap: "wrap" as const,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: "rgba(255,255,255,0.9)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap" as const,
+                        }}
+                      >
                         {app.announcement_title || "Тендер"}
                       </span>
-                      <span style={{ fontSize:11, fontWeight:600, padding:"2px 9px",
-                        borderRadius:99, background:sc.bg, color:sc.color,
-                        border:`1px solid ${sc.border}` }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: "3px 10px",
+                          borderRadius: 99,
+                          background: sc.bg,
+                          color: sc.color,
+                          border: `1px solid ${sc.border}`,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <StatusIcon size={10} />
                         {sc.label}
                       </span>
                     </div>
-                    <div style={{ display:"flex", gap:14, flexWrap:"wrap" as const }}>
-                      <span style={{ fontSize:11, color:"#94a3b8", display:"flex",
-                        alignItems:"center", gap:4 }}>
-                        <Clock size={11}/> {new Date(app.created_at).toLocaleDateString("mn-MN")}
+
+                    {/* Meta info */}
+                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const, marginBottom: 6 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "rgba(148,163,184,0.5)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <Calendar size={11} />
+                        {new Date(app.created_at).toLocaleDateString("mn-MN")}
                       </span>
                       {app.price_offer && (
-                        <span style={{ fontSize:11, color:"#94a3b8" }}>
-                          💰 {Number(app.price_offer).toLocaleString()}₮
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: "#34d399",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            background: "rgba(16,185,129,0.08)",
+                            padding: "2px 10px",
+                            borderRadius: 8,
+                            border: "1px solid rgba(16,185,129,0.2)",
+                          }}
+                        >
+                          <DollarSign size={11} />
+                          {Number(app.price_offer).toLocaleString()} ₮
                         </span>
                       )}
                     </div>
+
+                    {/* Note */}
                     {app.note && (
-                      <p style={{ fontSize:12, color:"#64748b", margin:"8px 0 0",
-                        lineHeight:1.5 }}>{app.note}</p>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "rgba(255,255,255,0.55)",
+                          margin: "6px 0 0",
+                          lineHeight: 1.5,
+                          padding: "8px 12px",
+                          borderRadius: 10,
+                          background: "rgba(255,255,255,0.02)",
+                          border: "1px solid rgba(255,255,255,0.04)",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 6,
+                        }}
+                      >
+                        <MessageSquare size={12} style={{ color: "rgba(148,163,184,0.4)", flexShrink: 0, marginTop: 2 }} />
+                        {app.note}
+                      </div>
                     )}
+
+                    {/* Return reason */}
                     {app.return_reason && (
-                      <div style={{ marginTop:8, padding:"8px 12px", borderRadius:8,
-                        background:"#fef2f2", border:"1px solid #fecaca",
-                        fontSize:12, color:"#dc2626" }}>
-                        <strong>Буцаасан шалтгаан:</strong> {app.return_reason}
+                      <div
+                        style={{
+                          marginTop: 8,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          background: "rgba(239,68,68,0.06)",
+                          border: "1px solid rgba(239,68,68,0.15)",
+                          fontSize: 12,
+                          color: "#fca5a5",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 8,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <AlertCircle size={13} style={{ color: "#f87171", flexShrink: 0, marginTop: 1 }} />
+                        <div>
+                          <strong style={{ color: "#f87171" }}>Буцаасан шалтгаан: </strong>
+                          {app.return_reason}
+                        </div>
                       </div>
                     )}
                   </div>
-                  <div style={{ flexShrink:0 }}>
-                    {app.status === "approved" && (
-                      <CheckCircle2 size={20} style={{ color:"#10b981" }}/>
-                    )}
-                    {app.status === "rejected" && (
-                      <XCircle size={20} style={{ color:"#ef4444" }}/>
-                    )}
-                    {app.status === "pending" && (
-                      <Clock size={20} style={{ color:"#f59e0b" }}/>
-                    )}
+
+                  {/* Right side - Status Icon (large) */}
+                  <div style={{ flexShrink: 0, opacity: 0.6 }}>
+                    <StatusIcon size={24} style={{ color: sc.color }} />
                   </div>
                 </div>
               </div>

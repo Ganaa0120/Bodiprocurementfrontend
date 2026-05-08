@@ -590,7 +590,7 @@ export function AnnModal({
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: "white", margin: 0 }}>
-                Худалдан авалтын арга сонгох
+                Урилагын төрөл сонгох
               </h2>
               <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
                 Зорилгоос хамааран сонгоно уу

@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Bell, CheckCheck, X, Clock, ArrowRight, Image as ImageIcon, ZoomIn } from "lucide-react";
+import {
+  Loader2,
+  Bell,
+  CheckCheck,
+  X,
+  Clock,
+  ArrowRight,
+  Image as ImageIcon,
+  ZoomIn,
+  Sparkles,
+} from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -13,19 +23,14 @@ export default function PersonNotificationsPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) return;
 
     fetch(`${API}/api/notifications/mine`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) {
-          setNotifs(d.notifications ?? []);
-        }
+        if (d.success) setNotifs(d.notifications ?? []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -33,50 +38,29 @@ export default function PersonNotificationsPage() {
 
   const markRead = async (id: string) => {
     const token = localStorage.getItem("token");
-
     await fetch(`${API}/api/notifications/${id}/read`, {
       method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token || ""}`,
-      },
+      headers: { Authorization: `Bearer ${token || ""}` },
     }).catch(() => {});
 
     setNotifs((prev) =>
-      prev.map((n) =>
-        n.id === id
-          ? {
-              ...n,
-              is_read: true,
-            }
-          : n,
-      ),
+      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
     );
   };
 
   const markAll = async () => {
     const token = localStorage.getItem("token");
-
     await fetch(`${API}/api/notifications/read-all`, {
       method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token || ""}`,
-      },
+      headers: { Authorization: `Bearer ${token || ""}` },
     }).catch(() => {});
 
-    setNotifs((prev) =>
-      prev.map((n) => ({
-        ...n,
-        is_read: true,
-      })),
-    );
+    setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
   const openNotif = (n: any) => {
     setSelected(n);
-
-    if (!n.is_read) {
-      markRead(n.id);
-    }
+    if (!n.is_read) markRead(n.id);
   };
 
   const unread = notifs.filter((n) => !n.is_read).length;
@@ -88,269 +72,209 @@ export default function PersonNotificationsPage() {
     system: "🔔",
   };
 
+  const TYPE_COLOR: Record<string, string> = {
+    announcement: "rgba(245,158,11,0.12)",
+    status: "rgba(16,185,129,0.12)",
+    application: "rgba(99,102,241,0.12)",
+    system: "rgba(148,163,184,0.12)",
+  };
+
+  const TYPE_BORDER: Record<string, string> = {
+    announcement: "rgba(245,158,11,0.3)",
+    status: "rgba(16,185,129,0.3)",
+    application: "rgba(99,102,241,0.3)",
+    system: "rgba(148,163,184,0.2)",
+  };
+
   return (
     <div
       style={{
         width: "100%",
-        padding: "24px 0 50px",
+        padding: "0",
         boxSizing: "border-box",
-        background: "#f8fafc",
+        background: "transparent",
         minHeight: "100vh",
       }}
     >
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
+  * { box-sizing: border-box; }
 
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        @keyframes modalIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
+  .notif-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
 
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
+  .notif-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 16px;
+  }
 
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+  .notif-card {
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    padding: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(10px);
+  }
 
-        .notif-wrapper {
-          width: 92%;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
+  .notif-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    border-color: rgba(99,102,241,0.3);
+    background: rgba(255,255,255,0.05);
+  }
 
-        .notif-list {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-          gap: 16px;
-        }
+  .notif-icon {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.2s;
+  }
 
-        .notif-card {
-          background: white;
-          border-radius: 20px;
-          padding: 18px;
-          display: flex;
-          align-items: flex-start;
-          gap: 14px;
-          cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          overflow: hidden;
-          position: relative;
-          border: 1px solid #f1f5f9;
-        }
+  .notif-card:hover .notif-icon {
+    transform: scale(1.05);
+    border-color: rgba(99,102,241,0.3);
+  }
 
-        .notif-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
-          border-color: #e2e8f0;
-        }
+  .notif-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.45;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
 
-        .notif-icon {
-          width: 52px;
-          height: 52px;
-          min-width: 52px;
-          border-radius: 16px;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
-          background: #f1f5f9;
-          transition: all 0.2s;
-        }
+  .notif-desc {
+    font-size: 12px;
+    color: rgba(148,163,184,0.7);
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.5;
+  }
 
-        .notif-card:hover .notif-icon {
-          transform: scale(1.05);
-        }
+  .notif-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: rgba(148,163,184,0.5);
+  }
 
-        .notif-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #0f172a;
-          line-height: 1.45;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-        }
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
 
-        .notif-desc {
-          font-size: 12px;
-          color: #64748b;
-          margin-top: 4px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          line-height: 1.5;
-        }
+  .modal-content {
+    width: 100%;
+    max-width: 560px;
+    background: #0f172a;
+    border-radius: 28px;
+    overflow: hidden;
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
 
-        .notif-time {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          margin-top: 8px;
-          font-size: 11px;
-          color: #94a3b8;
-        }
+  .modal-header {
+    padding: 24px 24px 20px;
+    display: flex;
+    gap: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.02));
+  }
 
-        /* Modal Styles */
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 1000;
-          background: rgba(0, 0, 0, 0.75);
-          backdrop-filter: blur(12px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          animation: fadeIn 0.2s ease;
-        }
+  .modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
 
-        .modal-content {
-          width: 100%;
-          max-width: 560px;
-          background: white;
-          border-radius: 28px;
-          overflow: hidden;
-          animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.3);
-          max-height: 85vh;
-          display: flex;
-          flex-direction: column;
-        }
+  .modal-footer {
+    padding: 16px 24px 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
 
-        .modal-header {
-          padding: 24px 24px 20px;
-          display: flex;
-          gap: 16px;
-          border-bottom: 1px solid #f0f2f5;
-          background: linear-gradient(135deg, #ffffff, #fafbfc);
-        }
+  .fullscreen-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: fadeIn 0.2s ease;
+  }
 
-        .modal-body {
-          padding: 24px;
-          overflow-y: auto;
-          flex: 1;
-        }
+  @media (max-width: 900px) {
+    .notif-list { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  }
 
-        .modal-footer {
-          padding: 16px 24px 24px;
-          border-top: 1px solid #f0f2f5;
-          background: #fafbfc;
-        }
+  @media (max-width: 640px) {
+    .notif-wrapper { padding: 0; }
+    .notif-header { flex-direction: column; align-items: flex-start !important; gap: 14px; }
+    .notif-list { grid-template-columns: 1fr; gap: 12px; }
+    .notif-card { padding: 14px; border-radius: 18px; }
+    .notif-icon { width: 44px; height: 44px; min-width: 44px; border-radius: 14px; font-size: 20px; }
+    .notif-title { font-size: 13px; }
+    .notif-desc { font-size: 11px; }
+    .modal-content { max-width: 100%; max-height: 90vh; border-radius: 24px 24px 0 0; }
+    .modal-header { padding: 20px; }
+    .modal-body { padding: 20px; }
+  }
+`}</style>
 
-        .fullscreen-modal {
-          position: fixed;
-          inset: 0;
-          z-index: 2000;
-          background: rgba(0, 0, 0, 0.95);
-          backdropFilter: "blur(20px)";
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          animation: fadeIn 0.2s ease;
-        }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-          .notif-list {
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 14px;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .notif-wrapper {
-            width: 95%;
-          }
-
-          .notif-header {
-            flex-direction: column;
-            align-items: flex-start !important;
-            gap: 14px;
-          }
-
-          .notif-list {
-            grid-template-columns: 1fr;
-            gap: 12px;
-          }
-
-          .notif-card {
-            padding: 14px;
-            border-radius: 18px;
-            align-items: flex-start;
-          }
-
-          .notif-icon {
-            width: 44px;
-            height: 44px;
-            min-width: 44px;
-            border-radius: 14px;
-            font-size: 20px;
-          }
-
-          .notif-title {
-            font-size: 13px;
-          }
-
-          .notif-desc {
-            font-size: 11px;
-          }
-
-          .modal-content {
-            max-width: 100%;
-            max-height: 90vh;
-            border-radius: 24px 24px 0 0;
-          }
-
-          .modal-header {
-            padding: 20px;
-          }
-
-          .modal-body {
-            padding: 20px;
-          }
-        }
-      `}</style>
-
-      {/* Full Screen Image Modal */}
+      {/* Full Screen Image */}
       {fullImage && (
-        <div
-          className="fullscreen-modal"
-          onClick={() => setFullImage(null)}
-        >
+        <div className="fullscreen-modal" onClick={() => setFullImage(null)}>
           <img
             src={fullImage}
             alt="Full size"
@@ -372,23 +296,21 @@ export default function PersonNotificationsPage() {
               right: 24,
               width: 44,
               height: 44,
-              borderRadius: 50,
-              background: "rgba(255,255,255,0.1)",
-              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: 14,
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
               transition: "all 0.2s",
-              color: "white",
+              color: "rgba(255,255,255,0.7)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.2)";
-              e.currentTarget.style.transform = "scale(1.05)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
             }}
           >
             <X size={22} />
@@ -408,7 +330,10 @@ export default function PersonNotificationsPage() {
                   height: 48,
                   minWidth: 48,
                   borderRadius: 16,
-                  background: "#eef2ff",
+                  background:
+                    TYPE_COLOR[selected.notification_type ?? "system"] ||
+                    "rgba(148,163,184,0.12)",
+                  border: `1px solid ${TYPE_BORDER[selected.notification_type ?? "system"] || "rgba(148,163,184,0.2)"}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -423,20 +348,19 @@ export default function PersonNotificationsPage() {
                   style={{
                     fontSize: 17,
                     fontWeight: 700,
-                    color: "#0f172a",
+                    color: "rgba(255,255,255,0.92)",
                     lineHeight: 1.4,
                     marginBottom: 6,
                   }}
                 >
                   {selected.title || "Мэдэгдэл"}
                 </div>
-
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#94a3b8",
+                    color: "rgba(148,163,184,0.5)",
                     fontSize: 11,
                   }}
                 >
@@ -457,23 +381,26 @@ export default function PersonNotificationsPage() {
                   width: 34,
                   height: 34,
                   borderRadius: 10,
-                  border: "1px solid #e2e8f0",
-                  background: "white",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(255,255,255,0.04)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
                   flexShrink: 0,
                   transition: "all 0.2s",
+                  color: "rgba(148,163,184,0.5)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f1f5f9";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                  e.currentTarget.style.color = "white";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "white";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  e.currentTarget.style.color = "rgba(148,163,184,0.5)";
                 }}
               >
-                <X size={16} color="#64748b" />
+                <X size={16} />
               </button>
             </div>
 
@@ -485,9 +412,10 @@ export default function PersonNotificationsPage() {
                     borderRadius: 16,
                     overflow: "hidden",
                     marginBottom: 20,
-                    background: "#f8fafc",
+                    background: "rgba(255,255,255,0.03)",
                     cursor: "pointer",
                     position: "relative",
+                    border: "1px solid rgba(255,255,255,0.06)",
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -504,14 +432,8 @@ export default function PersonNotificationsPage() {
                       maxHeight: 280,
                       transition: "transform 0.2s",
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "scale(1.01)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "scale(1)";
-                    }}
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                      e.currentTarget.style.display = "none";
                     }}
                   />
                   <div
@@ -519,14 +441,16 @@ export default function PersonNotificationsPage() {
                       position: "absolute",
                       bottom: 10,
                       right: 10,
-                      background: "rgba(0,0,0,0.6)",
-                      borderRadius: 20,
-                      padding: "4px 10px",
+                      background: "rgba(0,0,0,0.7)",
+                      backdropFilter: "blur(8px)",
+                      borderRadius: 10,
+                      padding: "5px 12px",
                       fontSize: 10,
                       color: "white",
                       display: "flex",
                       alignItems: "center",
                       gap: 4,
+                      border: "1px solid rgba(255,255,255,0.1)",
                     }}
                   >
                     <ZoomIn size={12} /> Томруулах
@@ -539,16 +463,24 @@ export default function PersonNotificationsPage() {
                   style={{
                     fontSize: 14,
                     lineHeight: 1.7,
-                    color: "#334155",
+                    color: "rgba(255,255,255,0.7)",
                     wordBreak: "break-word",
                   }}
                 >
-                  {(selected.message || selected.body).trim().startsWith("<") ? (
+                  {(selected.message || selected.body)
+                    .trim()
+                    .startsWith("<") ? (
                     <div
                       dangerouslySetInnerHTML={{
                         __html: (selected.message || selected.body)
-                          .replace(/<img/g, '<img style="max-width:100%; border-radius:12px; margin:12px 0; cursor:pointer;"')
-                          .replace(/<a/g, '<a style="color:#4f46e5; text-decoration:underline;" target="_blank"'),
+                          .replace(
+                            /<img/g,
+                            '<img style="max-width:100%; border-radius:12px; margin:12px 0; cursor:pointer;"',
+                          )
+                          .replace(
+                            /<a/g,
+                            '<a style="color:#a5b4fc; text-decoration:underline;" target="_blank"',
+                          ),
                       }}
                     />
                   ) : (
@@ -570,19 +502,21 @@ export default function PersonNotificationsPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 8,
-                    padding: "11px 22px",
+                    padding: "12px 22px",
                     borderRadius: 14,
-                    background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
                     color: "white",
                     textDecoration: "none",
                     fontSize: 13,
                     fontWeight: 600,
                     transition: "all 0.2s",
                     width: "100%",
+                    boxSizing: "border-box",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(79,70,229,0.3)";
+                    e.currentTarget.style.boxShadow =
+                      "0 8px 20px rgba(99,102,241,0.4)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
@@ -600,9 +534,9 @@ export default function PersonNotificationsPage() {
                 onClick={() => setSelected(null)}
                 style={{
                   width: "100%",
-                  border: "1px solid #e2e8f0",
-                  background: "white",
-                  color: "#475569",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(255,255,255,0.04)",
+                  color: "rgba(255,255,255,0.7)",
                   borderRadius: 14,
                   padding: "12px 20px",
                   fontSize: 13,
@@ -612,12 +546,10 @@ export default function PersonNotificationsPage() {
                   transition: "all 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f8fafc";
-                  e.currentTarget.style.borderColor = "#cbd5e1";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.08)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "white";
-                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.04)";
                 }}
               >
                 Хаах
@@ -647,7 +579,7 @@ export default function PersonNotificationsPage() {
                 margin: 0,
                 fontSize: 28,
                 fontWeight: 800,
-                color: "#0f172a",
+                color: "rgba(255,255,255,0.92)",
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
@@ -659,23 +591,23 @@ export default function PersonNotificationsPage() {
               {unread > 0 && (
                 <span
                   style={{
-                    background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
                     color: "white",
                     borderRadius: 30,
                     padding: "3px 12px",
                     fontSize: 12,
                     fontWeight: 700,
+                    boxShadow: "0 2px 10px rgba(99,102,241,0.3)",
                   }}
                 >
                   {unread} шинэ
                 </span>
               )}
             </h1>
-
             <p
               style={{
                 margin: "6px 0 0",
-                color: "#64748b",
+                color: "rgba(148,163,184,0.6)",
                 fontSize: 13,
               }}
             >
@@ -689,9 +621,9 @@ export default function PersonNotificationsPage() {
             <button
               onClick={markAll}
               style={{
-                border: "1px solid #e2e8f0",
-                background: "white",
-                color: "#4f46e5",
+                border: "1px solid rgba(99,102,241,0.3)",
+                background: "rgba(99,102,241,0.08)",
+                color: "#a5b4fc",
                 borderRadius: 14,
                 padding: "10px 18px",
                 display: "flex",
@@ -705,12 +637,12 @@ export default function PersonNotificationsPage() {
                 transition: "all 0.2s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#f8fafc";
-                e.currentTarget.style.borderColor = "#cbd5e1";
+                e.currentTarget.style.background = "rgba(99,102,241,0.15)";
+                e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "white";
-                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.background = "rgba(99,102,241,0.08)";
+                e.currentTarget.style.borderColor = "rgba(99,102,241,0.3)";
               }}
             >
               <CheckCheck size={16} />
@@ -734,36 +666,29 @@ export default function PersonNotificationsPage() {
               size={24}
               style={{
                 animation: "spin 0.8s linear infinite",
-                color: "#4f46e5",
+                color: "#a5b4fc",
               }}
             />
-            <span style={{ fontSize: 13, color: "#94a3b8" }}>
+            <span style={{ fontSize: 13, color: "rgba(148,163,184,0.5)" }}>
               Ачааллаж байна...
             </span>
           </div>
         ) : notifs.length === 0 ? (
           <div
             style={{
-              background: "white",
+              background: "rgba(255,255,255,0.03)",
               borderRadius: 24,
-              border: "1px solid #f1f5f9",
+              border: "1px solid rgba(255,255,255,0.06)",
               padding: "80px 20px",
               textAlign: "center",
+              backdropFilter: "blur(10px)",
             }}
           >
             <Bell
               size={44}
-              style={{
-                color: "#cbd5e1",
-                marginBottom: 16,
-              }}
+              style={{ color: "rgba(148,163,184,0.2)", marginBottom: 16 }}
             />
-            <div
-              style={{
-                color: "#94a3b8",
-                fontSize: 14,
-              }}
-            >
+            <div style={{ color: "rgba(148,163,184,0.5)", fontSize: 14 }}>
               Мэдэгдэл байхгүй байна
             </div>
           </div>
@@ -775,19 +700,29 @@ export default function PersonNotificationsPage() {
                 className="notif-card"
                 onClick={() => openNotif(n)}
                 style={{
-                  border: n.is_read ? "1px solid #f1f5f9" : "1px solid #c7d2fe",
+                  border: n.is_read
+                    ? "1px solid rgba(255,255,255,0.06)"
+                    : `1px solid ${TYPE_BORDER[n.notification_type ?? "system"] || "rgba(99,102,241,0.3)"}`,
                   boxShadow: n.is_read
                     ? "none"
-                    : "0 4px 14px rgba(99,102,241,0.06)",
-                  opacity: n.is_read ? 0.82 : 1,
-                  background: n.is_read ? "white" : "#fefefe",
+                    : `0 4px 20px ${(TYPE_BORDER[n.notification_type ?? "system"] || "rgba(99,102,241,0.1)").replace("0.3", "0.1").replace("0.2", "0.08")}`,
+                  opacity: n.is_read ? 0.7 : 1,
+                  background: n.is_read
+                    ? "rgba(255,255,255,0.02)"
+                    : "rgba(255,255,255,0.04)",
                 }}
               >
                 {/* Icon */}
                 <div
                   className="notif-icon"
                   style={{
-                    background: n.is_read ? "#f8fafc" : "#eef2ff",
+                    background: n.is_read
+                      ? "rgba(255,255,255,0.03)"
+                      : TYPE_COLOR[n.notification_type ?? "system"] ||
+                        "rgba(148,163,184,0.1)",
+                    border: n.is_read
+                      ? "1px solid rgba(255,255,255,0.06)"
+                      : `1px solid ${TYPE_BORDER[n.notification_type ?? "system"] || "rgba(148,163,184,0.2)"}`,
                   }}
                 >
                   {n.image_url ? (
@@ -800,8 +735,9 @@ export default function PersonNotificationsPage() {
                         objectFit: "cover",
                       }}
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                        (e.currentTarget as HTMLImageElement).parentElement!.innerHTML = TYPE_ICON[n.notification_type ?? "system"] ?? "🔔";
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.parentElement!.innerHTML =
+                          TYPE_ICON[n.notification_type ?? "system"] ?? "🔔";
                       }}
                     />
                   ) : (
@@ -817,12 +753,15 @@ export default function PersonNotificationsPage() {
                     className="notif-title"
                     style={{
                       fontWeight: n.is_read ? 600 : 700,
+                      color: n.is_read
+                        ? "rgba(255,255,255,0.7)"
+                        : "rgba(255,255,255,0.9)",
                     }}
                   >
                     {n.title || n.message || "Мэдэгдэл"}
                   </div>
 
-                  {(n.message && n.title) && (
+                  {n.message && n.title && (
                     <div className="notif-desc">{n.message}</div>
                   )}
 
@@ -841,12 +780,13 @@ export default function PersonNotificationsPage() {
                 {!n.is_read && (
                   <div
                     style={{
-                      width: 10,
-                      height: 10,
-                      minWidth: 10,
+                      width: 8,
+                      height: 8,
+                      minWidth: 8,
                       borderRadius: "50%",
-                      background: "#4f46e5",
-                      boxShadow: "0 0 8px rgba(99,102,241,0.5)",
+                      background: "#818cf8",
+                      boxShadow: "0 0 10px rgba(129,140,248,0.6)",
+                      animation: "pulse 2s infinite",
                     }}
                   />
                 )}

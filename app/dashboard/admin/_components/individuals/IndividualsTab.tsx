@@ -1,6 +1,21 @@
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { RefreshCw, Eye, Search, Download, Mail, Phone, Calendar, Users, CheckCircle2, Clock, AlertCircle, User, X, FileText } from "lucide-react";
+import {
+  RefreshCw,
+  Eye,
+  Search,
+  Download,
+  Mail,
+  Phone,
+  Calendar,
+  Users,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  User,
+  X,
+  FileText,
+} from "lucide-react";
 import { API, AVATAR_COLORS } from "./constants";
 import { getStatus, fmtDate, getDirLabels } from "./utils";
 import { Avatar } from "./AvatarComponents";
@@ -9,21 +24,43 @@ import type { IndividualsTabProps } from "./types";
 import { ExcelExportModal } from "../ExcelImportModal";
 
 const getToken = () =>
-  localStorage.getItem("super_admin_token") || localStorage.getItem("token") || "";
+  localStorage.getItem("super_admin_token") ||
+  localStorage.getItem("token") ||
+  "";
 
 // Status badge
 function Badge({ status }: { status: string }) {
   const statusConfig: Record<string, any> = {
     new: { label: "Шинэ", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
-    pending: { label: "Хүлээгдэж буй", color: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
-    active: { label: "Идэвхтэй", color: "#10b981", bg: "rgba(16,185,129,0.12)" },
-    approved: { label: "Идэвхтэй", color: "#10b981", bg: "rgba(16,185,129,0.12)" },
-    returned: { label: "Буцаагдсан", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
-    rejected: { label: "Татгалзсан", color: "#7f1d1d", bg: "rgba(220,38,38,0.12)" },
+    pending: {
+      label: "Хүлээгдэж буй",
+      color: "#3b82f6",
+      bg: "rgba(59,130,246,0.12)",
+    },
+    active: {
+      label: "Идэвхтэй",
+      color: "#10b981",
+      bg: "rgba(16,185,129,0.12)",
+    },
+    approved: {
+      label: "Идэвхтэй",
+      color: "#10b981",
+      bg: "rgba(16,185,129,0.12)",
+    },
+    returned: {
+      label: "Буцаагдсан",
+      color: "#dc2626",
+      bg: "rgba(220,38,38,0.12)",
+    },
+    rejected: {
+      label: "Татгалзсан",
+      color: "#7f1d1d",
+      bg: "rgba(220,38,38,0.12)",
+    },
   };
-  
+
   const c = statusConfig[status] ?? statusConfig.pending;
-  
+
   return (
     <span
       style={{
@@ -74,17 +111,51 @@ function Th({ h }: { h: string }) {
 }
 
 // StatusFilter component
-function StatusFilter({ currentStatus, onStatusChange, counts }: { 
-  currentStatus: string; 
+function StatusFilter({
+  currentStatus,
+  onStatusChange,
+  counts,
+}: {
+  currentStatus: string;
   onStatusChange: (status: string) => void;
   counts: { new: number; pending: number; active: number; returned: number };
 }) {
   const filters = [
-    { id: "", label: "Бүгд", icon: Users, color: "#64748b", count: counts.new + counts.pending + counts.active + counts.returned },
-    { id: "new", label: "Шинэ", icon: FileText, color: "#f59e0b", count: counts.new },
-    { id: "pending", label: "Хүлээгдэж буй", icon: Clock, color: "#3b82f6", count: counts.pending },
-    { id: "active", label: "Идэвхтэй", icon: CheckCircle2, color: "#10b981", count: counts.active },
-    { id: "returned", label: "Буцаагдсан", icon: AlertCircle, color: "#dc2626", count: counts.returned },
+    {
+      id: "",
+      label: "Бүгд",
+      icon: Users,
+      color: "#64748b",
+      count: counts.new + counts.pending + counts.active + counts.returned,
+    },
+    {
+      id: "new",
+      label: "Шинэ",
+      icon: FileText,
+      color: "#f59e0b",
+      count: counts.new,
+    },
+    {
+      id: "pending",
+      label: "Хүлээгдэж буй",
+      icon: Clock,
+      color: "#3b82f6",
+      count: counts.pending,
+    },
+    {
+      id: "active",
+      label: "Идэвхтэй",
+      icon: CheckCircle2,
+      color: "#10b981",
+      count: counts.active,
+    },
+    {
+      id: "returned",
+      label: "Буцаагдсан",
+      icon: AlertCircle,
+      color: "#dc2626",
+      count: counts.returned,
+    },
   ];
 
   return (
@@ -119,7 +190,10 @@ function StatusFilter({ currentStatus, onStatusChange, counts }: {
               }
             }}
           >
-            <filter.icon size={12} style={{ color: isActive ? "white" : filter.color }} />
+            <filter.icon
+              size={12}
+              style={{ color: isActive ? "white" : filter.color }}
+            />
             <span
               style={{
                 fontSize: 12,
@@ -151,31 +225,41 @@ function StatusFilter({ currentStatus, onStatusChange, counts }: {
 }
 
 export function IndividualsTab({
-  data, search, setSearch, status, setStatus, dirs = [],
+  data,
+  search,
+  setSearch,
+  status,
+  setStatus,
+  dirs = [],
 }: IndividualsTabProps) {
   const canEditStatus = data.canEditStatus !== false;
-  const canEdit       = data.canEdit       !== false;
-  const canDelete     = data.canDelete     !== false;
+  const canEdit = data.canEdit !== false;
+  const canDelete = data.canDelete !== false;
   const [detailPerson, setDetailPerson] = useState<any>(null);
   const [localPersons, setLocalPersons] = useState<any[] | null>(null);
-  const [showExport,   setShowExport]   = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [loading, setLoading] = useState(false);
   const isOpening = useRef(false);
   const showToast = data.showToast ?? (() => {});
-  const persons   = localPersons ?? data.persons ?? [];
+  const persons = localPersons ?? data.persons ?? [];
 
   // Count by status
   const statusCounts = {
     new: persons.filter((p: any) => p.status === "new").length,
     pending: persons.filter((p: any) => p.status === "pending").length,
-    active: persons.filter((p: any) => p.status === "active" || p.status === "approved").length,
+    active: persons.filter(
+      (p: any) => p.status === "active" || p.status === "approved",
+    ).length,
     returned: persons.filter((p: any) => p.status === "returned").length,
   };
 
   // Filtered persons based on search and status
   const filtered = persons.filter((p: any) => {
-    const matchesSearch = !search || 
-      `${p.last_name ?? ""} ${p.first_name ?? ""} ${p.email} ${p.register_number ?? ""}`.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      !search ||
+      `${p.last_name ?? ""} ${p.first_name ?? ""} ${p.email} ${p.register_number ?? ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase());
     const matchesStatus = !status || p.status === status;
     return matchesSearch && matchesStatus;
   });
@@ -199,7 +283,9 @@ export function IndividualsTab({
   const openDetail = useCallback(async (p: any) => {
     isOpening.current = true;
     setDetailPerson(p);
-    requestAnimationFrame(() => { isOpening.current = false; });
+    requestAnimationFrame(() => {
+      isOpening.current = false;
+    });
     try {
       const res = await fetch(`${API}/api/persons/${p.id}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -214,19 +300,27 @@ export function IndividualsTab({
     setDetailPerson(null);
   }, []);
 
-  const handleStatusChange = useCallback((id: string, newStatus: string) => {
-    const update = (prev: any[]) =>
-      newStatus === "deleted"
-        ? prev.filter(p => p.id !== id)
-        : prev.map(p => p.id === id ? { ...p, status: newStatus } : p);
-    setLocalPersons(prev => update(prev ?? data.persons ?? []));
-    setDetailPerson((prev: any) => prev?.id === id ? { ...prev, status: newStatus } : prev);
-  }, [data.persons]);
+  const handleStatusChange = useCallback(
+    (id: string, newStatus: string) => {
+      const update = (prev: any[]) =>
+        newStatus === "deleted"
+          ? prev.filter((p) => p.id !== id)
+          : prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p));
+      setLocalPersons((prev) => update(prev ?? data.persons ?? []));
+      setDetailPerson((prev: any) =>
+        prev?.id === id ? { ...prev, status: newStatus } : prev,
+      );
+    },
+    [data.persons],
+  );
 
-  const handleDeleted = useCallback((id: string) => {
-    handleStatusChange(id, "deleted");
-    setDetailPerson(null);
-  }, [handleStatusChange]);
+  const handleDeleted = useCallback(
+    (id: string) => {
+      handleStatusChange(id, "deleted");
+      setDetailPerson(null);
+    },
+    [handleStatusChange],
+  );
 
   // Sync with parent data
   useEffect(() => {
@@ -285,22 +379,38 @@ export function IndividualsTab({
         />
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 20, animation: "fadeInUp 0.3s ease" }}>
-        {/* Header */}
-        <div style={{
+      <div
+        style={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 16,
-        }}>
+          flexDirection: "column",
+          gap: 20,
+          animation: "fadeInUp 0.3s ease",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 16,
+          }}
+        >
           <div>
             <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
               Нийт {persons.length} бүртгэлтэй хувь хүн
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
             {/* Search */}
             <div style={{ position: "relative", minWidth: 260 }}>
               <Search
@@ -344,11 +454,11 @@ export function IndividualsTab({
               <button
                 onClick={() => setShowExport(true)}
                 style={{
-                  padding: "9px 16px",
+                  padding: "9px 14px",
                   borderRadius: 10,
-                  background: "#f5f3ff",
-                  border: "1px solid #e9d5ff",
-                  color: "#8b5cf6",
+                  background: "#1e293b",
+                  border: "1px solid #334155",
+                  color: "#a78bfa",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -413,19 +523,21 @@ export function IndividualsTab({
         </div>
 
         {/* Status Filter */}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 12,
-        }}>
-          <StatusFilter 
-            currentStatus={status} 
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <StatusFilter
+            currentStatus={status}
             onStatusChange={setStatus}
             counts={statusCounts}
           />
-          
+
           {/* Reset button - only when filters are active */}
           {(search || status) && (
             <button
@@ -468,7 +580,7 @@ export function IndividualsTab({
             overflow: "hidden",
           }}
         >
-          {(data.personsLoading || loading) ? (
+          {data.personsLoading || loading ? (
             <div
               style={{
                 display: "flex",
@@ -488,11 +600,19 @@ export function IndividualsTab({
                   animation: "spin 0.8s linear infinite",
                 }}
               />
-              <span style={{ fontSize: 13, color: "#64748b" }}>Ачаалж байна...</span>
+              <span style={{ fontSize: 13, color: "#64748b" }}>
+                Ачаалж байна...
+              </span>
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: 800,
+                }}
+              >
                 <thead>
                   <tr style={{ background: "#0f172a" }}>
                     <Th h="Нэр" />
@@ -508,9 +628,21 @@ export function IndividualsTab({
                 <tbody>
                   {filtered.length === 0 ? (
                     <tr key="empty">
-                      <td colSpan={8} style={{ padding: "60px 20px", textAlign: "center" }}>
-                        <Users size={40} style={{ color: "#334155", margin: "0 auto 12px", display: "block" }} />
-                        <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+                      <td
+                        colSpan={8}
+                        style={{ padding: "60px 20px", textAlign: "center" }}
+                      >
+                        <Users
+                          size={40}
+                          style={{
+                            color: "#334155",
+                            margin: "0 auto 12px",
+                            display: "block",
+                          }}
+                        />
+                        <p
+                          style={{ fontSize: 13, color: "#64748b", margin: 0 }}
+                        >
                           {persons.length === 0
                             ? "Бүртгэлтэй хувь хүн байхгүй байна"
                             : "Хайлтын үр дүн олдсонгүй"}
@@ -536,10 +668,19 @@ export function IndividualsTab({
                     </tr>
                   ) : (
                     filtered.map((p: any) => {
-                      const fullName = [p.last_name, p.first_name].filter(Boolean).join(" ") || "—";
-                      const colors = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"];
-                      const avatarColor = colors[Math.abs(p.id?.length ?? 0) % colors.length];
-                      
+                      const fullName =
+                        [p.last_name, p.first_name].filter(Boolean).join(" ") ||
+                        "—";
+                      const colors = [
+                        "#6366f1",
+                        "#8b5cf6",
+                        "#06b6d4",
+                        "#10b981",
+                        "#f59e0b",
+                      ];
+                      const avatarColor =
+                        colors[Math.abs(p.id?.length ?? 0) % colors.length];
+
                       return (
                         <tr
                           key={p.id}
@@ -547,7 +688,13 @@ export function IndividualsTab({
                           onClick={() => openDetail(p)}
                         >
                           <td style={{ padding: "14px 16px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 12,
+                              }}
+                            >
                               <div
                                 style={{
                                   width: 40,
@@ -564,7 +711,9 @@ export function IndividualsTab({
                                   color: avatarColor,
                                 }}
                               >
-                                {(p.first_name?.[0] ?? p.email[0]).toUpperCase()}
+                                {(
+                                  p.first_name?.[0] ?? p.email[0]
+                                ).toUpperCase()}
                               </div>
                               <div>
                                 <div
@@ -576,7 +725,13 @@ export function IndividualsTab({
                                 >
                                   {fullName}
                                 </div>
-                                <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
+                                <div
+                                  style={{
+                                    fontSize: 10,
+                                    color: "#64748b",
+                                    marginTop: 2,
+                                  }}
+                                >
                                   {p.supplier_number || "—"}
                                 </div>
                               </div>
@@ -615,7 +770,13 @@ export function IndividualsTab({
                               color: "#94a3b8",
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
                               <Mail size={12} style={{ color: "#64748b" }} />
                               {p.email || "—"}
                             </div>
@@ -629,7 +790,13 @@ export function IndividualsTab({
                               color: "#94a3b8",
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
                               <Phone size={12} style={{ color: "#64748b" }} />
                               {p.phone || "—"}
                             </div>
@@ -648,8 +815,17 @@ export function IndividualsTab({
                               color: "#64748b",
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <Calendar size={12} style={{ color: "#64748b" }} />
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <Calendar
+                                size={12}
+                                style={{ color: "#64748b" }}
+                              />
                               {fmtDate(p.created_at) || "—"}
                             </div>
                           </td>

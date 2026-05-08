@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   FileCheck,
   Upload,
+  DollarSign,
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -362,6 +363,11 @@ export default function CompanyAnnouncementsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentDoc, setCurrentDoc] = useState("");
 
+  // ─── ШИНЭ STATE: Үнийн санал + Хүргэлтийн огноо ───
+  const [priceOffer, setPriceOffer] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [bidMessage, setBidMessage] = useState("");
+
   const load = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -413,7 +419,12 @@ export default function CompanyAnnouncementsPage() {
       const d = await res.json();
       if (d.success && d.announcement) {
         setSelected(d.announcement);
+        // Form талбарууд reset
         setUploadedFiles({});
+        setPriceOffer("");
+        setDeliveryDate("");
+        setBidMessage("");
+        setBidError("");
       } else setSelected(null);
     } catch {
       setSelected(null);
@@ -484,22 +495,42 @@ export default function CompanyAnnouncementsPage() {
   const supplierRequiredText = selected?.supplier_doc_info || "";
   const supplierRequiredDocsList = parseRequiredDocs(supplierRequiredText);
 
+  // ═══════════════════════════════════════════════════════════
+  //  SUBMIT BID — ШИНЭЧЛЭГДСЭН (price_offer + delivery_date)
+  // ═══════════════════════════════════════════════════════════
   const submitBid = async () => {
     if (!selected?.id) return;
+
+    // ─── Validation ───
+    if (!priceOffer || Number(priceOffer) <= 0) {
+      setBidError("Үнийн саналаа оруулна уу");
+      return;
+    }
+    if (!deliveryDate) {
+      setBidError("Хүргэлтийн огноог сонгоно уу");
+      return;
+    }
+
     setBidSaving(true);
     setBidError("");
     const token = localStorage.getItem("token");
     try {
-      const attachments = Object.entries(uploadedFiles).flatMap(([docName, files]) =>
-        files.map((f) => ({ ...f, docName }))
+      const attachments = Object.entries(uploadedFiles).flatMap(
+        ([docName, files]) => files.map((f) => ({ ...f, docName })),
       );
+
       const res = await fetch(`${API}/api/announcements/${selected.id}/bids`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token || ""}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ attachments }),
+        body: JSON.stringify({
+          price_offer: Number(priceOffer),
+          delivery_date: deliveryDate,
+          attachments,
+          message: bidMessage || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Алдаа гарлаа");
@@ -540,6 +571,9 @@ export default function CompanyAnnouncementsPage() {
     : null;
   const isExpired = selected?.deadline && daysLeft !== null && daysLeft < 0;
   const totalFiles = Object.values(uploadedFiles).flat().length;
+
+  // Today YYYY-MM-DD format (date input min)
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div
@@ -584,6 +618,43 @@ export default function CompanyAnnouncementsPage() {
         .ann-prose ul, .ann-prose ol { padding-left: 20px; margin: 8px 0; }
         .ann-prose li { margin: 4px 0; }
         .ann-prose p { margin: 0 0 8px; }
+        .bid-input {
+          width: 100%;
+          padding: 12px 14px;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 14px;
+          color: #0f172a;
+          background: white;
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+        .bid-input:focus {
+          border-color: #0072BC;
+          box-shadow: 0 0 0 3px rgba(0,114,188,0.1);
+        }
+        .bid-input::placeholder { color: #94a3b8; }
+        .bid-textarea {
+          width: 100%;
+          padding: 12px 14px;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 14px;
+          color: #0f172a;
+          background: white;
+          outline: none;
+          resize: vertical;
+          min-height: 80px;
+          font-family: inherit;
+          box-sizing: border-box;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .bid-textarea:focus {
+          border-color: #0072BC;
+          box-shadow: 0 0 0 3px rgba(0,114,188,0.1);
+        }
       `}</style>
 
       {/* Header */}
@@ -1367,7 +1438,7 @@ export default function CompanyAnnouncementsPage() {
                 </Section>
               )}
 
-              {/* НИЙЛҮҮЛЭГЧИД ШААРДЛАГАТАЙ БАРИМТ БИЧГҮҮД */}
+              {/* НИЙЛҮҮЛЭГЧИД ШААРДЛАГАТАЙ БАРИМТ БИЧГҮҮД (зарлал дотор) */}
               {(supplierRequiredText || supplierRequiredFiles.length > 0 || supplierRequiredDocsList.length > 0) && (
                 <Section title="Нийлүүлэгчид шаардлагатай баримт бичгүүд" accent="#10b981" Icon={ShieldCheck}>
                   <div
@@ -1403,197 +1474,9 @@ export default function CompanyAnnouncementsPage() {
                         </div>
                       </div>
                     )}
-
-                    {supplierRequiredDocsList.length > 0 && (
-                      <div style={{ marginTop: 16 }}>
-                        <div
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: "#065f46",
-                            marginBottom: 8,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Upload size={12} />
-                          Шаардлагатай баримт бичгүүдээ хавсаргана уу:
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          {supplierRequiredDocsList.map((doc, idx) => {
-                            const files = uploadedFiles[doc] || [];
-                            return (
-                              <div
-                                key={idx}
-                                style={{
-                                  border: "1px solid #d1fae5",
-                                  borderRadius: 12,
-                                  overflow: "hidden",
-                                  background: "white",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    padding: "12px 16px",
-                                    background: "#f0fdf4",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    flexWrap: "wrap",
-                                    gap: 10,
-                                    borderBottom: files.length > 0 ? "1px solid #d1fae5" : "none",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 10,
-                                      flexWrap: "wrap",
-                                    }}
-                                  >
-                                    <FileText size={16} color="#059669" />
-                                    <span
-                                      style={{
-                                        fontSize: 13,
-                                        fontWeight: 600,
-                                        color: "#065f46",
-                                      }}
-                                    >
-                                      {doc}
-                                    </span>
-                                    {files.length > 0 && (
-                                      <span
-                                        style={{
-                                          fontSize: 10,
-                                          padding: "2px 10px",
-                                          borderRadius: 30,
-                                          background: "#d1fae5",
-                                          color: "#065f46",
-                                          fontWeight: 500,
-                                        }}
-                                      >
-                                        {files.length} файл хавсаргасан
-                                      </span>
-                                    )}
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      setCurrentDoc(doc);
-                                      fileInputRef.current?.click();
-                                    }}
-                                    disabled={uploading}
-                                    style={{
-                                      padding: "6px 14px",
-                                      borderRadius: 8,
-                                      background: "#059669",
-                                      border: "none",
-                                      color: "white",
-                                      fontSize: 12,
-                                      fontWeight: 500,
-                                      cursor: uploading ? "not-allowed" : "pointer",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 6,
-                                      opacity: uploading ? 0.6 : 1,
-                                      transition: "all 0.15s",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      if (!uploading) {
-                                        e.currentTarget.style.background = "#047857";
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (!uploading) {
-                                        e.currentTarget.style.background = "#059669";
-                                      }
-                                    }}
-                                  >
-                                    <Plus size={14} />
-                                    Файл нэмэх
-                                  </button>
-                                </div>
-
-                                {files.length > 0 && (
-                                  <div
-                                    style={{
-                                      padding: "12px 16px",
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      gap: 10,
-                                    }}
-                                  >
-                                    {files.map((file, fileIdx) => (
-                                      <UploadFileItem
-                                        key={fileIdx}
-                                        file={file}
-                                        onRemove={() => handleRemoveFile(doc, fileIdx)}
-                                        onView={() => handleViewFile(file.url, file.name)}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {uploading && (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          marginTop: 16,
-                          padding: "10px 14px",
-                          background: "#edf7ed",
-                          borderRadius: 10,
-                          fontSize: 12,
-                          color: "#065f46",
-                        }}
-                      >
-                        <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />
-                        Файл upload хийж байна...
-                      </div>
-                    )}
-
-                    {totalFiles > 0 && (
-                      <div
-                        style={{
-                          marginTop: 12,
-                          padding: "8px 12px",
-                          background: "#d1fae5",
-                          borderRadius: 8,
-                          fontSize: 11,
-                          color: "#065f46",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                      >
-                        <CheckCircle2 size={12} />
-                        Нийт {totalFiles} файл хавсаргагдсан
-                      </div>
-                    )}
                   </div>
                 </Section>
               )}
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file && currentDoc) {
-                    handleAddFile(currentDoc, file);
-                    e.target.value = "";
-                  }
-                }}
-              />
 
               {/* Author footer */}
               <div
@@ -1724,7 +1607,9 @@ export default function CompanyAnnouncementsPage() {
         </div>
       )}
 
-      {/* BID MODAL */}
+      {/* ════════════════════════════════════════════════════════ */}
+      {/*  BID MODAL — ШИНЭЧЛЭГДСЭН: Үнийн санал + Огноо нэмэгдсэн  */}
+      {/* ════════════════════════════════════════════════════════ */}
       {bidModal && selected && (
         <div
           style={{
@@ -1744,7 +1629,7 @@ export default function CompanyAnnouncementsPage() {
           <div
             style={{
               width: "100%",
-              maxWidth: isMobile ? "100%" : 520,
+              maxWidth: isMobile ? "100%" : 560,
               background: "white",
               borderRadius: isMobile ? "24px 24px 0 0" : 24,
               boxShadow: "0 32px 80px rgba(15,23,42,0.5)",
@@ -1779,6 +1664,7 @@ export default function CompanyAnnouncementsPage() {
               </div>
             ) : (
               <>
+                {/* HEADER */}
                 <div style={{ padding: isMobile ? "22px 22px 18px" : "26px 28px 22px", borderBottom: "1px solid #f1f5f9" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div
@@ -1822,6 +1708,7 @@ export default function CompanyAnnouncementsPage() {
                   </div>
                 </div>
 
+                {/* BODY */}
                 <div style={{ padding: isMobile ? "22px" : "24px 28px" }}>
                   {bidError && (
                     <div
@@ -1840,6 +1727,138 @@ export default function CompanyAnnouncementsPage() {
                       <div style={{ fontSize: 13, color: "#991b1b", lineHeight: 1.5 }}>{bidError}</div>
                     </div>
                   )}
+
+                  {/* ════════════════════════════════════════════ */}
+                  {/*  ШИНЭ: Үнийн санал + Хүргэлтийн огноо input  */}
+                  {/* ════════════════════════════════════════════ */}
+                  <div
+                    style={{
+                      marginBottom: 22,
+                      padding: "18px 20px",
+                      background: "linear-gradient(135deg,#f0f9ff 0%,#eef2ff 100%)",
+                      borderRadius: 14,
+                      border: "1px solid #bae6fd",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#0369a1",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        marginBottom: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <DollarSign size={12} />
+                      Таны санал
+                    </div>
+
+                    {/* Үнийн санал */}
+                    <div style={{ marginBottom: 14 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#0f172a",
+                          marginBottom: 6,
+                        }}
+                      >
+                        Үнийн санал <span style={{ color: "#dc2626" }}>*</span>
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type="number"
+                          className="bid-input"
+                          value={priceOffer}
+                          onChange={(e) => setPriceOffer(e.target.value)}
+                          placeholder="Жишээ: 1500000"
+                          min="0"
+                          step="any"
+                          disabled={bidSaving}
+                          style={{ paddingRight: 70 }}
+                        />
+                        <span
+                          style={{
+                            position: "absolute",
+                            right: 14,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#64748b",
+                            pointerEvents: "none",
+                          }}
+                        >
+                          {selected.currency || "MNT"}
+                        </span>
+                      </div>
+                      {priceOffer && Number(priceOffer) > 0 && (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#0369a1",
+                            marginTop: 6,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {Number(priceOffer).toLocaleString()} {selected.currency || "MNT"}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Хүргэлтийн огноо */}
+                    <div style={{ marginBottom: 14 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#0f172a",
+                          marginBottom: 6,
+                        }}
+                      >
+                        Хүргэлтийн огноо <span style={{ color: "#dc2626" }}>*</span>
+                      </label>
+                      <input
+                        type="date"
+                        className="bid-input"
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        min={today}
+                        disabled={bidSaving}
+                      />
+                    </div>
+
+                    {/* Нэмэлт тайлбар (заавал биш) */}
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#0f172a",
+                          marginBottom: 6,
+                        }}
+                      >
+                        Нэмэлт тайлбар{" "}
+                        <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>
+                          (заавал биш)
+                        </span>
+                      </label>
+                      <textarea
+                        className="bid-textarea"
+                        value={bidMessage}
+                        onChange={(e) => setBidMessage(e.target.value)}
+                        placeholder="Нэмэлт мэдээлэл, тайлбар бичих..."
+                        disabled={bidSaving}
+                      />
+                    </div>
+                  </div>
 
                   {/* Шаардлагатай баримт бичгүүд хавсаргах */}
                   {supplierRequiredDocsList.length > 0 && (
@@ -1908,15 +1927,7 @@ export default function CompanyAnnouncementsPage() {
                                   }}
                                 >
                                   <FileText size={16} color={hasFiles ? "#059669" : "#94a3b8"} />
-                                  <span
-                                    style={{
-                                      fontSize: 13,
-                                      fontWeight: 600,
-                                      color: hasFiles ? "#065f46" : "#64748b",
-                                    }}
-                                  >
-                                    {doc}
-                                  </span>
+                                  <p>Файл аа оруулна уу</p>
                                   {!hasFiles && (
                                     <span
                                       style={{
@@ -1950,7 +1961,7 @@ export default function CompanyAnnouncementsPage() {
                                     setCurrentDoc(doc);
                                     fileInputRef.current?.click();
                                   }}
-                                  disabled={uploading}
+                                  disabled={uploading || bidSaving}
                                   style={{
                                     padding: "6px 14px",
                                     borderRadius: 8,
@@ -1959,18 +1970,18 @@ export default function CompanyAnnouncementsPage() {
                                     color: "white",
                                     fontSize: 12,
                                     fontWeight: 500,
-                                    cursor: uploading ? "not-allowed" : "pointer",
+                                    cursor: uploading || bidSaving ? "not-allowed" : "pointer",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: 6,
-                                    opacity: uploading ? 0.6 : 1,
+                                    opacity: uploading || bidSaving ? 0.6 : 1,
                                     transition: "all 0.15s",
                                   }}
                                   onMouseEnter={(e) => {
-                                    if (!uploading) e.currentTarget.style.background = "#047857";
+                                    if (!uploading && !bidSaving) e.currentTarget.style.background = "#047857";
                                   }}
                                   onMouseLeave={(e) => {
-                                    if (!uploading) e.currentTarget.style.background = "#059669";
+                                    if (!uploading && !bidSaving) e.currentTarget.style.background = "#059669";
                                   }}
                                 >
                                   <Plus size={14} />
@@ -2004,6 +2015,20 @@ export default function CompanyAnnouncementsPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Уншигдсан hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && currentDoc) {
+                        handleAddFile(currentDoc, file);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
 
                   {/* Таны мэдээлэл хэсэг */}
                   <div

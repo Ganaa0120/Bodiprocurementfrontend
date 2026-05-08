@@ -1,5 +1,5 @@
 "use client";
-import { Loader2, X, ArrowLeft, Clock, Download } from "lucide-react";
+import { Loader2, X, ArrowLeft, Clock, Download, Eye, Calendar, DollarSign, FolderOpen, MapPin, Package, Hash, User, Building2, Zap, AlertCircle, CheckCircle, Send, TrendingUp, Phone, FileText } from "lucide-react";
 import { getTypeCfg, TYPE_CFG } from "./types";
 
 interface Props {
@@ -9,357 +9,435 @@ interface Props {
   onBid: () => void;
 }
 
+function FileItem({ file }: { file: any }) {
+  const formatSize = (bytes: number) => {
+    if (!bytes) return "—";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <a
+      href={file.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 16px", background: "rgba(255,255,255,0.04)",
+        borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)",
+        textDecoration: "none", transition: "all 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+        e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+      }}
+    >
+      <span style={{ fontSize: 24 }}>📄</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {file.name}
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(148,163,184,0.5)", marginTop: 2 }}>
+          {formatSize(file.size)}
+        </div>
+      </div>
+      <Download size={16} color="#a5b4fc" />
+    </a>
+  );
+}
+
 export default function AnnouncementDetailModal({ selected, detLoading, onClose, onBid }: Props) {
   if (!selected && !detLoading) return null;
 
-  const tc       = selected ? getTypeCfg(selected.ann_type) : TYPE_CFG.open;
-  const isExpired= selected?.deadline && new Date(selected.deadline) < new Date();
+  const tc = selected ? getTypeCfg(selected.ann_type) : TYPE_CFG.open;
+  const isExpired = selected?.deadline && new Date(selected.deadline) < new Date();
 
   return (
-    <div style={{ position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,0.55)",
-      backdropFilter:"blur(6px)",display:"flex",alignItems:"center",
-      justifyContent:"center",padding:"20px 16px",animation:"fadeIn .2s ease" }}
-      onClick={onClose}>
-      <div style={{ width:"100%",maxWidth:640,background:"white",borderRadius:24,
-        boxShadow:"0 32px 80px rgba(0,0,0,0.25)",
-        animation:"modalIn .25s cubic-bezier(0.34,1.56,0.64,1)",
-        maxHeight:"88vh",overflowY:"auto",display:"flex",flexDirection:"column" as const }}
-        onClick={e => e.stopPropagation()}>
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 100,
+        background: "rgba(0,0,0,0.85)", backdropFilter: "blur(16px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "20px 16px", animation: "fadeIn .2s ease",
+      }}
+      onClick={onClose}
+    >
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+
+      <div
+        style={{
+          width: "100%", maxWidth: 750, maxHeight: "88vh",
+          background: "#0f172a", borderRadius: 24,
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+          animation: "modalIn .25s cubic-bezier(0.34,1.56,0.64,1)",
+          overflowY: "auto", display: "flex", flexDirection: "column" as const,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{
+          height: 3, background: `linear-gradient(90deg, ${tc.color}, ${tc.color}44, transparent)`,
+          borderRadius: "24px 24px 0 0", flexShrink: 0,
+        }} />
 
         {detLoading ? (
-          <div style={{ padding:"70px 0",display:"flex",justifyContent:"center",
-            alignItems:"center",gap:12 }}>
-            <Loader2 size={22} style={{ color:"#6366f1",animation:"spin .8s linear infinite" }}/>
-            <span style={{ fontSize:14,color:"#94a3b8" }}>Ачаалж байна...</span>
+          <div style={{ padding: "80px 0", display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
+            <Loader2 size={22} style={{ color: "#a5b4fc", animation: "spin .8s linear infinite" }} />
+            <span style={{ fontSize: 14, color: "rgba(148,163,184,0.5)" }}>Ачаалж байна...</span>
           </div>
         ) : selected && (
           <>
-            {/* ── Colored top bar ── */}
-            <div style={{ height:4,background:`linear-gradient(90deg,${tc.color},${tc.color}77)`,
-              borderRadius:"24px 24px 0 0",flexShrink:0 }}/>
-
-            {/* ── Header ── */}
-            <div style={{ padding:"24px 26px 20px",borderBottom:"1px solid #f1f5f9",flexShrink:0 }}>
-              <div style={{ display:"flex",alignItems:"flex-start",gap:14,marginBottom:16 }}>
-                <div style={{ width:52,height:52,borderRadius:16,flexShrink:0,
-                  background:`${tc.color}15`,border:`1.5px solid ${tc.color}30`,
-                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>
+            {/* Header */}
+            <div style={{ padding: "24px 28px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0, background: "linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.02))" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 18 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 16, flexShrink: 0, background: tc.bg, border: `1.5px solid ${tc.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
                   {tc.emoji}
                 </div>
-                <div style={{ flex:1,minWidth:0 }}>
-                  {/* Tags */}
-                  <div style={{ display:"flex",gap:6,flexWrap:"wrap" as const,marginBottom:9 }}>
-                    <span style={{ fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,
-                      background:tc.bg,color:tc.color,border:`1px solid ${tc.border}` }}>
-                      {tc.label}
-                    </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 99, background: tc.bg, color: tc.color, border: `1px solid ${tc.border}` }}>{tc.label}</span>
                     {selected.is_urgent && (
-                      <span style={{ fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,
-                        background:"#fef2f2",color:"#ef4444",border:"1px solid #fecaca" }}>
-                        ⚡ Яаралтай
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 99, background: "rgba(239,68,68,0.12)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)", display: "flex", alignItems: "center", gap: 4 }}>
+                        <Zap size={10} style={{ fill: "#fca5a5" }} /> Яаралтай
                       </span>
                     )}
                     {isExpired && (
-                      <span style={{ fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:99,
-                        background:"#fef2f2",color:"#dc2626",border:"1px solid #fecaca" }}>
-                        ⏰ Хугацаа дууссан
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 99, background: "rgba(239,68,68,0.08)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", gap: 4 }}>
+                        <Clock size={10} /> Хугацаа дууссан
                       </span>
                     )}
                     {selected.announcement_number && (
-                      <span style={{ fontSize:11,padding:"3px 10px",borderRadius:99,
-                        background:"#f8fafc",color:"#94a3b8",border:"1px solid #e2e8f0",
-                        fontFamily:"monospace" }}>
-                        #{selected.announcement_number}
+                      <span style={{ fontSize: 11, padding: "4px 12px", borderRadius: 99, background: "rgba(255,255,255,0.04)", color: "rgba(148,163,184,0.6)", border: "1px solid rgba(255,255,255,0.08)", fontFamily: "monospace" }}>
+                        <Hash size={10} style={{ display: "inline", marginRight: 4 }} />{selected.announcement_number}
+                      </span>
+                    )}
+                    {selected.procurement_kind && (
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 99, background: "rgba(192,132,252,0.1)", color: "#c4b5fd", border: "1px solid rgba(192,132,252,0.2)" }}>
+                        {selected.procurement_kind === "goods" ? "📦 Бараа" : selected.procurement_kind === "service" ? "🔧 Үйлчилгээ" : selected.procurement_kind}
                       </span>
                     )}
                   </div>
-                  <h2 style={{ fontSize:19,fontWeight:800,color:"#0f172a",
-                    margin:0,lineHeight:1.3,letterSpacing:"-0.02em" }}>
-                    {selected.title}
-                  </h2>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.92)", margin: 0, lineHeight: 1.3, letterSpacing: "-0.02em" }}>{selected.title}</h2>
                 </div>
-                <button onClick={onClose}
-                  style={{ background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,
-                    padding:9,cursor:"pointer",display:"flex",flexShrink:0,transition:"all .15s" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background="#fee2e2"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background="#f8fafc"}>
-                  <X size={16} style={{ color:"#64748b" }}/>
+                <button onClick={onClose} style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(148,163,184,0.5)", flexShrink: 0, transition: "all 0.15s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = "rgba(148,163,184,0.5)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}>
+                  <X size={16} />
                 </button>
               </div>
-
-              {/* Meta chips */}
-              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
                 {selected.deadline && (
-                  <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 13px",
-                    borderRadius:12,background:isExpired?"#fff1f2":"#f0fdf4",
-                    border:`1px solid ${isExpired?"#fecaca":"#bbf7d0"}` }}>
-                    <div style={{ width:28,height:28,borderRadius:9,flexShrink:0,
-                      background:isExpired?"#fee2e2":"#dcfce7",
-                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>
-                      📅
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: isExpired ? "rgba(239,68,68,0.06)" : "rgba(16,185,129,0.06)", border: `1px solid ${isExpired ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)"}` }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, background: isExpired ? "rgba(239,68,68,0.12)" : "rgba(16,185,129,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Calendar size={14} style={{ color: isExpired ? "#f87171" : "#34d399" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.08em",
-                        textTransform:"uppercase" as const,
-                        color:isExpired?"#dc2626":"#15803d" }}>Дуусах огноо</div>
-                      <div style={{ fontSize:12,fontWeight:700,
-                        color:isExpired?"#dc2626":"#166534",marginTop:1 }}>
-                        {new Date(selected.deadline).toLocaleDateString("mn-MN")}
-                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: isExpired ? "#f87171" : "#34d399" }}>Дуусах огноо</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: isExpired ? "#fca5a5" : "#6ee7b7", marginTop: 2 }}>{new Date(selected.deadline).toLocaleDateString("mn-MN")}</div>
                     </div>
                   </div>
                 )}
                 {(selected.budget_from || selected.budget_to) && (
-                  <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 13px",
-                    borderRadius:12,background:"#fffbeb",border:"1px solid #fde68a" }}>
-                    <div style={{ width:28,height:28,borderRadius:9,flexShrink:0,
-                      background:"#fef3c7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>
-                      💰
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, background: "rgba(245,158,11,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <DollarSign size={14} style={{ color: "#fbbf24" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.08em",
-                        textTransform:"uppercase" as const,color:"#b45309" }}>Төсөв</div>
-                      <div style={{ fontSize:12,fontWeight:700,color:"#92400e",marginTop:1 }}>
-                        {Number(selected.budget_from).toLocaleString()}
-                        {selected.budget_to?`–${Number(selected.budget_to).toLocaleString()}`:""} ₮
-                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fbbf24" }}>Төсөв</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>{Number(selected.budget_from).toLocaleString()}{selected.budget_to ? ` – ${Number(selected.budget_to).toLocaleString()}` : ""} ₮</div>
                     </div>
                   </div>
                 )}
                 {selected.category_name && (
-                  <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 13px",
-                    borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0" }}>
-                    <div style={{ width:28,height:28,borderRadius:9,flexShrink:0,
-                      background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>
-                      📁
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <FolderOpen size={14} style={{ color: "rgba(148,163,184,0.5)" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.08em",
-                        textTransform:"uppercase" as const,color:"#64748b" }}>Ангилал</div>
-                      <div style={{ fontSize:12,fontWeight:700,color:"#334155",marginTop:1 }}>
-                        {selected.category_name}
-                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(148,163,184,0.5)" }}>Ангилал</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{selected.category_name}</div>
                     </div>
                   </div>
                 )}
                 {selected.view_count !== undefined && (
-                  <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 13px",
-                    borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0" }}>
-                    <div style={{ width:28,height:28,borderRadius:9,flexShrink:0,
-                      background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>
-                      👁
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Eye size={14} style={{ color: "rgba(148,163,184,0.5)" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.08em",
-                        textTransform:"uppercase" as const,color:"#64748b" }}>Үзсэн</div>
-                      <div style={{ fontSize:12,fontWeight:700,color:"#334155",marginTop:1 }}>
-                        {selected.view_count} удаа
-                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(148,163,184,0.5)" }}>Үзсэн</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{selected.view_count} удаа</div>
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* ── Body ── */}
-            <div style={{ padding:"22px 26px",display:"flex",flexDirection:"column" as const,gap:22,flex:1 }}>
+            {/* Body */}
+            <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 24, flex: 1 }}>
 
-              {/* Тайлбар */}
-              {selected.description && (
+              {/* Supply Period */}
+              {(selected.supply_start_date || selected.supply_end_date) && (
                 <div>
-                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:12 }}>
-                    <div style={{ width:4,height:18,borderRadius:99,
-                      background:`linear-gradient(180deg,${tc.color},${tc.color}55)` }}/>
-                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",letterSpacing:"-0.01em" }}>
-                      Тайлбар
-                    </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #60a5fa, #60a5fa44)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Нийлүүлэх хугацаа</span>
                   </div>
-                  <div style={{ fontSize:14,color:"#334155",lineHeight:1.9,background:"#f8fafc",
-                    borderRadius:14,padding:"16px 18px",border:"1px solid #f1f5f9",
-                    borderLeft:`3px solid ${tc.color}33` }}>
-                    {/^<(li|ul|ol|p|div|h[1-6]|strong|em|br|table)/i.test(selected.description.trim()) ? (
-                      <div dangerouslySetInnerHTML={{ __html:
-                        selected.description.trim().startsWith("<li")
-                          ? `<ul style="padding-left:20px;margin:0;line-height:1.9">${selected.description}</ul>`
-                          : selected.description }}/>
-                    ) : (
-                      <p style={{ margin:0,whiteSpace:"pre-wrap" as const }}>{selected.description}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {selected.supply_start_date && (
+                      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)" }}>
+                        <div style={{ fontSize: 10, color: "#60a5fa", marginBottom: 6, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}><Calendar size={11} /> Эхлэх</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#93c5fd" }}>{new Date(selected.supply_start_date).toLocaleDateString("mn-MN")}</div>
+                      </div>
+                    )}
+                    {selected.supply_end_date && (
+                      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)" }}>
+                        <div style={{ fontSize: 10, color: "#60a5fa", marginBottom: 6, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}><Calendar size={11} /> Дуусах</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#93c5fd" }}>{new Date(selected.supply_end_date).toLocaleDateString("mn-MN")}</div>
+                      </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Шаардлага */}
-              {selected.requirements && (
+              {/* Locations */}
+              {(selected.central_location || selected.branch_location) && (
                 <div>
-                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:12 }}>
-                    <div style={{ width:4,height:18,borderRadius:99,
-                      background:"linear-gradient(180deg,#f59e0b,#f59e0b55)" }}/>
-                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",letterSpacing:"-0.01em" }}>
-                      Нийлүүлэгчид тавих шаардлага
-                    </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #34d399, #34d39944)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Байршил</span>
                   </div>
-                  <div style={{ borderRadius:14,overflow:"hidden",border:"1px solid #fde68a" }}>
-                    {selected.requirements.split("\n")
-                      .filter((l: string) => l.trim())
-                      .map((line: string, i: number, arr: string[]) => {
-                        const isKey = /хамгийн|өсөлт|эцэст|эхэнд|доод|өндөр|жилийн/i.test(line);
-                        return (
-                          <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:12,
-                            padding:"11px 16px",
-                            background:isKey?"#fffbeb":"white",
-                            borderBottom:i<arr.length-1?"1px solid #fef3c7":"none" }}>
-                            <div style={{ width:22,height:22,borderRadius:7,flexShrink:0,
-                              background:isKey?"#fde68a":"#f1f5f9",
-                              display:"flex",alignItems:"center",justifyContent:"center",
-                              fontSize:10,fontWeight:800,
-                              color:isKey?"#92400e":"#94a3b8",marginTop:1 }}>
-                              {i+1}
-                            </div>
-                            <span style={{ fontSize:13,lineHeight:1.65,flex:1,
-                              color:isKey?"#78350f":"#475569",fontWeight:isKey?600:400 }}>
-                              {line}
-                            </span>
-                            {isKey && (
-                              <span style={{ fontSize:10,padding:"2px 8px",borderRadius:99,
-                                background:"#fde68a",color:"#92400e",fontWeight:700,flexShrink:0 }}>
-                                ⭐
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {selected.central_location && (
+                      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                        <div style={{ fontSize: 10, color: "#34d399", marginBottom: 6, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} /> Төв байршил</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#6ee7b7" }}>{selected.central_location}</div>
+                      </div>
+                    )}
+                    {selected.branch_location && (
+                      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                        <div style={{ fontSize: 10, color: "#34d399", marginBottom: 6, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} /> Салбар байршил</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#6ee7b7" }}>{selected.branch_location}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Үйл ажиллагааны чиглэл */}
+              {/* Description */}
+              {selected.description && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: `linear-gradient(180deg, ${tc.color}, ${tc.color}44)` }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Тайлбар</span>
+                  </div>
+                  <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, background: "rgba(255,255,255,0.02)", borderRadius: 14, padding: "16px 18px", border: "1px solid rgba(255,255,255,0.05)", borderLeft: `3px solid ${tc.color}33` }}>
+                    {/^</.test(selected.description.trim()) ? (
+                      <div dangerouslySetInnerHTML={{ __html: selected.description.trim().startsWith("<li") ? `<ul style="padding-left:20px;margin:0;line-height:1.9">${selected.description}</ul>` : selected.description }} />
+                    ) : (
+                      <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{selected.description}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Requirements - FIXED for HTML */}
+              {selected.requirements && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #fbbf24, #fbbf2444)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Нийлүүлэгчид тавих шаардлага</span>
+                  </div>
+                  <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, background: "rgba(255,255,255,0.02)", borderRadius: 14, padding: "18px 20px", border: "1px solid rgba(245,158,11,0.15)", borderLeft: "3px solid rgba(245,158,11,0.3)" }}>
+                    {/^</.test(selected.requirements.trim()) ? (
+                      <div dangerouslySetInnerHTML={{ __html: selected.requirements }} style={{ lineHeight: 1.9 }} />
+                    ) : selected.requirements.includes("\n") ? (
+                      selected.requirements.split("\n").filter((l: string) => l.trim()).map((line: string, i: number, arr: string[]) => (
+                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "6px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(245,158,11,0.06)" : "none" }}>
+                          <span style={{ minWidth: 22, height: 22, borderRadius: 7, background: "rgba(245,158,11,0.15)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fbbf24" }}>{i + 1}</span>
+                          <span style={{ flex: 1, color: "rgba(255,255,255,0.6)" }}>{line}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{selected.requirements}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Activity Directions */}
               {(selected.activity_directions ?? []).length > 0 && (
                 <div>
-                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:12 }}>
-                    <div style={{ width:4,height:18,borderRadius:99,
-                      background:"linear-gradient(180deg,#8b5cf6,#8b5cf655)" }}/>
-                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",letterSpacing:"-0.01em" }}>
-                      Үйл ажиллагааны чиглэл
-                    </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #a78bfa, #a78bfa44)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Үйл ажиллагааны чиглэл 121</span>
                   </div>
-                  <div style={{ display:"flex",flexWrap:"wrap" as const,gap:8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {(selected.activity_directions ?? []).map((d: string) => (
-                      <span key={d} style={{ fontSize:12,padding:"7px 16px",borderRadius:99,
-                        background:"linear-gradient(135deg,#f5f3ff,#ede9fe)",
-                        color:"#6d28d9",border:"1px solid #ddd6fe",fontWeight:600,
-                        display:"flex",alignItems:"center",gap:5 }}>
-                        <span style={{ width:5,height:5,borderRadius:"50%",background:"#8b5cf6" }}/>
-                        {d}
+                      <span key={d} style={{ fontSize: 12, padding: "7px 16px", borderRadius: 99, background: "rgba(139,92,246,0.1)", color: "#c4b5fd", border: "1px solid rgba(139,92,246,0.25)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#a78bfa" }} />{d}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* RFQ дэлгэрэнгүй */}
+              {/* RFQ Details */}
               {selected.ann_type === "rfq" && (selected.rfq_quantity || selected.rfq_delivery_place) && (
                 <div>
-                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:12 }}>
-                    <div style={{ width:4,height:18,borderRadius:99,
-                      background:"linear-gradient(180deg,#f59e0b,#f59e0b55)" }}/>
-                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a" }}>
-                      Үнийн санал дэлгэрэнгүй
-                    </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #fbbf24, #fbbf2444)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Үнийн санал дэлгэрэнгүй</span>
                   </div>
-                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     {selected.rfq_quantity && (
-                      <div style={{ padding:"14px 16px",borderRadius:14,background:"#fffbeb",border:"1px solid #fde68a" }}>
-                        <div style={{ fontSize:10,color:"#92400e",marginBottom:5,fontWeight:700,
-                          letterSpacing:"0.08em",textTransform:"uppercase" as const }}>Тоо хэмжээ</div>
-                        <div style={{ fontSize:16,fontWeight:800,color:"#78350f" }}>
-                          {selected.rfq_quantity} {selected.rfq_unit}
-                        </div>
+                      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                        <div style={{ fontSize: 10, color: "#fbbf24", marginBottom: 6, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}><Package size={11} /> Тоо хэмжээ</div>
+                        <div style={{ fontSize: 17, fontWeight: 800, color: "#fbbf24" }}>{selected.rfq_quantity} {selected.rfq_unit}</div>
                       </div>
                     )}
                     {selected.rfq_delivery_place && (
-                      <div style={{ padding:"14px 16px",borderRadius:14,background:"#f0fdf4",border:"1px solid #bbf7d0" }}>
-                        <div style={{ fontSize:10,color:"#15803d",marginBottom:5,fontWeight:700,
-                          letterSpacing:"0.08em",textTransform:"uppercase" as const }}>Хүргэх газар</div>
-                        <div style={{ fontSize:14,fontWeight:700,color:"#166534" }}>
-                          {selected.rfq_delivery_place}
-                        </div>
+                      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                        <div style={{ fontSize: 10, color: "#34d399", marginBottom: 6, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} /> Хүргэх газар</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#6ee7b7" }}>{selected.rfq_delivery_place}</div>
                       </div>
                     )}
                     {selected.rfq_delivery_date && (
-                      <div style={{ padding:"14px 16px",borderRadius:14,background:"#f0fdf4",border:"1px solid #bbf7d0" }}>
-                        <div style={{ fontSize:10,color:"#15803d",marginBottom:5,fontWeight:700,
-                          letterSpacing:"0.08em",textTransform:"uppercase" as const }}>Хүргэлтийн огноо</div>
-                        <div style={{ fontSize:14,fontWeight:700,color:"#166534" }}>
-                          {new Date(selected.rfq_delivery_date).toLocaleDateString("mn-MN")}
-                        </div>
+                      <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                        <div style={{ fontSize: 10, color: "#34d399", marginBottom: 6, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}><Calendar size={11} /> Хүргэлтийн огноо</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#6ee7b7" }}>{new Date(selected.rfq_delivery_date).toLocaleDateString("mn-MN")}</div>
                       </div>
                     )}
                   </div>
                   {selected.rfq_specs && (
-                    <div style={{ marginTop:10,fontSize:13,color:"#475569",
-                      background:"#f8fafc",borderRadius:12,padding:"14px 16px",
-                      border:"1px solid #f1f5f9",whiteSpace:"pre-wrap" as const }}>
-                      {selected.rfq_specs}
+                    <div style={{ marginTop: 10, fontSize: 13, color: "rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.05)", whiteSpace: "pre-wrap" }}>{selected.rfq_specs}</div>
+                  )}
+                </div>
+              )}
+
+              {/* Client & Contact Info */}
+              {(selected.client_company || selected.contact_phone || selected.responsible_person_name) && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #fb923c, #fb923c44)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Холбоо барих мэдээлэл</span>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 14, padding: "16px", border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {selected.client_company && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Building2 size={14} style={{ color: "rgba(148,163,184,0.4)", flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: "rgba(148,163,184,0.5)", width: 80, flexShrink: 0 }}>Компани</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>{selected.client_company}</span>
+                      </div>
+                    )}
+                    {selected.contact_phone && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Phone size={14} style={{ color: "rgba(148,163,184,0.4)", flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: "rgba(148,163,184,0.5)", width: 80, flexShrink: 0 }}>Утас</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>{selected.contact_phone}</span>
+                      </div>
+                    )}
+                    {selected.responsible_person_name && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <User size={14} style={{ color: "rgba(148,163,184,0.4)", flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: "rgba(148,163,184,0.5)", width: 80, flexShrink: 0 }}>Хариуцагч</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>
+                          {selected.responsible_person_name}
+                          {selected.responsible_position && <span style={{ fontSize: 11, color: "rgba(148,163,184,0.5)", marginLeft: 6 }}>({selected.responsible_position})</span>}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Buyer Documents */}
+              {(selected.buyer_attachments?.length > 0 || selected.buyer_doc_info) && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #818cf8, #818cf844)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Худалдан авагчийн баримт бичиг</span>
+                  </div>
+                  {selected.buyer_doc_info && (
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.6)", lineHeight: 1.6, marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}
+                      dangerouslySetInnerHTML={{ __html: selected.buyer_doc_info }} />
+                  )}
+                  {selected.buyer_attachments?.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {selected.buyer_attachments.map((file: any, idx: number) => (
+                        <FileItem key={idx} file={file} />
+                      ))}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Footer info card */}
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",
-                padding:"14px 18px",borderRadius:14,
-                background:"linear-gradient(135deg,#f8fafc,#f1f5f9)",
-                border:"1px solid #e2e8f0" }}>
-                <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-                  <div style={{ width:34,height:34,borderRadius:10,
-                    background:`${tc.color}15`,border:`1px solid ${tc.color}25`,
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontSize:14,fontWeight:700,color:tc.color }}>
+              {/* Supplier Required Documents */}
+              {(selected.supplier_required_docs?.length > 0 || selected.supplier_doc_info) && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 99, background: "linear-gradient(180deg, #34d399, #34d39944)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Нийлүүлэгчид шаардлагатай бичиг баримт</span>
+                  </div>
+                  {selected.supplier_doc_info && (
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.6)", lineHeight: 1.6, marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}
+                      dangerouslySetInnerHTML={{ __html: selected.supplier_doc_info }} />
+                  )}
+                  {selected.supplier_required_docs?.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {selected.supplier_required_docs.map((file: any, idx: number) => (
+                        <FileItem key={idx} file={file} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Footer info */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#a5b4fc" }}>
                     {selected.created_by_name?.[0] ?? "B"}
                   </div>
                   <div>
-                    <div style={{ fontSize:13,fontWeight:700,color:"#0f172a" }}>
-                      {selected.created_by_name ?? "Bodi Group"}
-                    </div>
-                    <div style={{ fontSize:11,color:"#94a3b8",marginTop:1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{selected.created_by_name ?? "Bodi Group"}</div>
+                    <div style={{ fontSize: 11, color: "rgba(148,163,184,0.4)", marginTop: 2 }}>
+                      <Calendar size={10} style={{ display: "inline", marginRight: 4 }} />
                       {new Date(selected.created_at).toLocaleDateString("mn-MN")} нийтэлсэн
                     </div>
                   </div>
                 </div>
-                {selected.bid_count > 0 && (
-                  <div style={{ textAlign:"right" as const,padding:"8px 14px",
-                    borderRadius:10,background:"white",border:"1px solid #e2e8f0" }}>
-                    <div style={{ fontSize:18,fontWeight:800,color:"#6366f1",lineHeight:1 }}>
-                      {selected.bid_count}
-                    </div>
-                    <div style={{ fontSize:10,color:"#94a3b8",marginTop:2 }}>хүсэлт</div>
+                {selected.application_count > 0 && (
+                  <div style={{ textAlign: "right", padding: "10px 16px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "#a5b4fc", lineHeight: 1 }}>{selected.application_count}</div>
+                    <div style={{ fontSize: 10, color: "rgba(148,163,184,0.5)", marginTop: 2 }}>хүсэлт</div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* ── Footer ── */}
-            <div style={{ padding:"0 26px 26px",display:"flex",
-              justifyContent:"space-between",alignItems:"center",gap:12,flexShrink:0 }}>
+            {/* Footer Actions */}
+            <div style={{ padding: "0 28px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexShrink: 0 }}>
               <button onClick={onClose}
-                style={{ padding:"10px 22px",borderRadius:12,border:"1px solid #e2e8f0",
-                  background:"white",color:"#64748b",fontSize:13,fontWeight:600,
-                  cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:7,
-                  transition:"all .15s" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background="#f8fafc"; (e.currentTarget as HTMLElement).style.borderColor="#cbd5e1"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background="white"; (e.currentTarget as HTMLElement).style.borderColor="#e2e8f0"; }}>
-                <ArrowLeft size={14}/> Буцах
+                style={{ padding: "12px 24px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(148,163,184,0.7)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}>
+                <ArrowLeft size={14} /> Буцах
               </button>
               <button onClick={onBid}
-                style={{ padding:"10px 28px",borderRadius:12,border:"none",
-                  background:`linear-gradient(135deg,${tc.color},${tc.color}cc)`,
-                  color:"white",fontSize:13,fontWeight:700,cursor:"pointer",
-                  fontFamily:"inherit",display:"flex",alignItems:"center",gap:8,
-                  boxShadow:`0 4px 18px ${tc.color}44`,transition:"all .15s" }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform="translateY(-1px)"}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform="translateY(0)"}>
-                📨 Хүсэлт гаргах
+                style={{ padding: "12px 32px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${tc.color}dd, ${tc.color})`, color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, boxShadow: `0 4px 20px ${tc.color}44`, transition: "all 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 6px 24px ${tc.color}66`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 4px 20px ${tc.color}44`; }}>
+                <Send size={14} /> Хүсэлт гаргах
               </button>
             </div>
           </>
