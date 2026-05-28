@@ -106,6 +106,15 @@ type Person = {
   return_reason?: string;
 };
 
+type RecentCompany = {
+  id: string;
+  company_name: string;
+  register_number?: string;
+  email: string;
+  status: string;
+  created_at?: string;
+};
+
 type DashStats = {
   total_companies: number;
   total_persons: number;
@@ -116,6 +125,8 @@ type DashStats = {
   returned_companies: number;
   returned_persons: number;
   new_this_month: number;
+  new_last_month: number;
+  trend_this_month: number;
   monthly: { month: string; companies: number; persons: number }[];
 };
 
@@ -297,6 +308,16 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
       label: "Идэвхгүй",
       color: "#94a3b8",
       bg: "rgba(148,163,184,0.1)",
+    },
+    new: {
+      label: "Бүртгэл үүсгэж буй",
+      color: "#22d3ee",
+      bg: "rgba(34,211,238,0.12)",
+    },
+    returned: {
+      label: "Буцаагдсан",
+      color: "#f43f5e",
+      bg: "rgba(244,63,94,0.12)",
     },
   };
 
@@ -666,7 +687,7 @@ function StatCard({
         >
           <Icon size={20} style={{ color }} />
         </div>
-        {trend !== undefined && (
+        {trend !== undefined && trend !== null && (
           <span
             style={{
               fontSize: 11,
@@ -1719,7 +1740,10 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [dirs, setDirs] = useState<{ id: number; label: string }[]>([]);
+
+  // ── Хянах самбарын бодит өгөгдөл ──
   const [recentPersons, setRecentPersons] = useState<Person[]>([]);
+  const [recentCompanies, setRecentCompanies] = useState<RecentCompany[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
 
   const [stats, setStats] = useState<DashStats>({
@@ -1732,104 +1756,44 @@ export default function AdminDashboard() {
     returned_companies: 0,
     returned_persons: 0,
     new_this_month: 0,
+    new_last_month: 0,
+    trend_this_month: 0,
     monthly: [],
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
-  const fetchStats = useCallback(async () => {
+  // ── Нэгдсэн dashboard endpoint-оос бүх датаг авах ──
+  const fetchDashboard = useCallback(async () => {
     setStatsLoading(true);
+    setRecentLoading(true);
     try {
-      const [cAll, cPend, cActive, pAll, pPend, pActive] =
-        await Promise.allSettled([
-          fetch(`${API}/api/organizations?limit=1`, { headers: authH() }).then(
-            (r) => r.json(),
-          ),
-          fetch(`${API}/api/organizations?status=pending&limit=1`, {
-            headers: authH(),
-          }).then((r) => r.json()),
-          fetch(`${API}/api/organizations?status=active&limit=1`, {
-            headers: authH(),
-          }).then((r) => r.json()),
-          fetch(`${API}/api/persons?limit=1`, { headers: authH() }).then((r) =>
-            r.json(),
-          ),
-          fetch(`${API}/api/persons?status=pending&limit=1`, {
-            headers: authH(),
-          }).then((r) => r.json()),
-          fetch(`${API}/api/persons?status=active&limit=1`, {
-            headers: authH(),
-          }).then((r) => r.json()),
-        ]);
-
-      const cAllD = cAll.status === "fulfilled" ? cAll.value : null;
-      const cPendD = cPend.status === "fulfilled" ? cPend.value : null;
-      const cActD = cActive.status === "fulfilled" ? cActive.value : null;
-      const pAllD = pAll.status === "fulfilled" ? pAll.value : null;
-      const pPendD = pPend.status === "fulfilled" ? pPend.value : null;
-      const pActD = pActive.status === "fulfilled" ? pActive.value : null;
-
-      const totalC = cAllD?.total ?? cAllD?.organizations?.length ?? 0;
-      const totalP = pAllD?.total ?? pAllD?.persons?.length ?? 0;
-      const pendC = cPendD?.total ?? cPendD?.organizations?.length ?? 0;
-      const pendP = pPendD?.total ?? pPendD?.persons?.length ?? 0;
-      const actC = cActD?.total ?? cActD?.organizations?.length ?? 0;
-      const actP = pActD?.total ?? pActD?.persons?.length ?? 0;
-
-      const [cRecent, pRecent] = await Promise.allSettled([
-        fetch(`${API}/api/organizations?limit=200&sort=created_at`, {
-          headers: authH(),
-        }).then((r) => r.json()),
-        fetch(`${API}/api/persons?limit=200&sort=created_at`, {
-          headers: authH(),
-        }).then((r) => r.json()),
-      ]);
-
-      const cList =
-        cRecent.status === "fulfilled"
-          ? (cRecent.value.organizations ?? [])
-          : [];
-      const pList =
-        pRecent.status === "fulfilled" ? (pRecent.value.persons ?? []) : [];
-
-      const months: { month: string; companies: number; persons: number }[] =
-        [];
-      const now = new Date();
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const label = `${d.getMonth() + 1}-р`;
-        const y = d.getFullYear(),
-          m = d.getMonth();
-        const cCount = cList.filter((c: any) => {
-          const dt = new Date(c.created_at);
-          return dt.getFullYear() === y && dt.getMonth() === m;
-        }).length;
-        const pCount = pList.filter((p: any) => {
-          const dt = new Date(p.created_at);
-          return dt.getFullYear() === y && dt.getMonth() === m;
-        }).length;
-        months.push({ month: label, companies: cCount, persons: pCount });
-      }
-
-      const thisMonth = months[months.length - 1];
-      const newThisMonth =
-        (thisMonth?.companies ?? 0) + (thisMonth?.persons ?? 0);
+      const res = await fetch(`${API}/api/dashboard/stats`, {
+        headers: authH(),
+      });
+      const d = await res.json();
+      if (!d.success) throw new Error(d.message ?? "Алдаа");
 
       setStats({
-        total_companies: totalC,
-        total_persons: totalP,
-        pending_companies: pendC,
-        pending_persons: pendP,
-        active_companies: actC,
-        active_persons: actP,
-        returned_companies: 0,
-        returned_persons: 0,
-        new_this_month: newThisMonth,
-        monthly: months,
+        total_companies: d.stats.total_companies ?? 0,
+        total_persons: d.stats.total_persons ?? 0,
+        pending_companies: d.stats.pending_companies ?? 0,
+        pending_persons: d.stats.pending_persons ?? 0,
+        active_companies: d.stats.active_companies ?? 0,
+        active_persons: d.stats.active_persons ?? 0,
+        returned_companies: d.stats.returned_companies ?? 0,
+        returned_persons: d.stats.returned_persons ?? 0,
+        new_this_month: d.stats.new_this_month ?? 0,
+        new_last_month: d.stats.new_last_month ?? 0,
+        trend_this_month: d.stats.trend_this_month ?? 0,
+        monthly: d.stats.monthly ?? [],
       });
+      setRecentPersons(d.recent_persons ?? []);
+      setRecentCompanies(d.recent_companies ?? []);
     } catch (e) {
-      console.error(e);
+      console.error("fetchDashboard:", e);
     } finally {
       setStatsLoading(false);
+      setRecentLoading(false);
     }
   }, []);
 
@@ -1981,28 +1945,7 @@ export default function AdminDashboard() {
       setAdmins(d.admins ?? []);
     } catch (e: any) {
       setAdminsError(e.message || "Алдаа");
-      setAdmins([
-        {
-          id: "1",
-          company_name: "ProcureX",
-          first_name: "Болормаа",
-          last_name: "Дорж",
-          phone: "99001122",
-          email: "bolor@procurex.mn",
-          role: "admin",
-          status: "active",
-        },
-        {
-          id: "2",
-          company_name: "ProcureX",
-          first_name: "Ганбаатар",
-          last_name: "Нямаа",
-          phone: "88223344",
-          email: "ganaa@procurex.mn",
-          role: "admin",
-          status: "active",
-        },
-      ]);
+      setAdmins([]);
     } finally {
       setAdminsLoading(false);
     }
@@ -2040,20 +1983,6 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const fetchRecent = useCallback(async () => {
-    setRecentLoading(true);
-    try {
-      const res = await fetch(`${API}/api/persons?limit=10`, {
-        headers: authH(),
-      });
-      const d = await res.json();
-      if (d.success) setRecentPersons(d.persons ?? []);
-    } catch {
-    } finally {
-      setRecentLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     if (nav === "admins") fetchAdmins();
   }, [nav, fetchAdmins]);
@@ -2064,11 +1993,8 @@ export default function AdminDashboard() {
     if (nav === "companies") fetchCompanies();
   }, [nav, fetchCompanies]);
   useEffect(() => {
-    if (nav === "dashboard") {
-      fetchRecent();
-      fetchStats();
-    }
-  }, [nav, fetchRecent, fetchStats]);
+    if (nav === "dashboard") fetchDashboard();
+  }, [nav, fetchDashboard]);
   useEffect(() => {
     fetch(`${API}/api/activity-directions`)
       .then((r) => r.json())
@@ -2417,11 +2343,10 @@ export default function AdminDashboard() {
     width: 36,
     height: 36,
     borderRadius: 12,
-    background: "transparent", // ✅ Дэвсгэрийг ил тод болгосон
+    background: "transparent",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    // boxShadow: "0 6px 14px rgba(99,102,241,0.3)", // ✅ Сүүдрийг арилгасан
   }}
 >
   <img src="/images/logosolo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
@@ -2548,7 +2473,7 @@ export default function AdminDashboard() {
                 <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>
                   {item.label}
                 </span>
-                {item.badge > 0 && ( // ✅ badge нь заавал number байна
+                {item.badge > 0 && (
                   <span
                     style={{
                       background: "#ef4444",
@@ -2780,7 +2705,7 @@ export default function AdminDashboard() {
                 className="animate-fade-up"
                 style={{ display: "flex", flexDirection: "column", gap: 24 }}
               >
-                {/* Stats Grid */}
+                {/* Stats Grid — зөвхөн "Энэ сард" дээр бодит trend % харагдана */}
                 <div
                   style={{
                     display: "grid",
@@ -2793,7 +2718,6 @@ export default function AdminDashboard() {
                     value={stats.total_companies + stats.total_persons}
                     icon={Users}
                     color="#8b5cf6"
-                    trend={12}
                     loading={statsLoading}
                   />
                   <StatCard
@@ -2801,7 +2725,6 @@ export default function AdminDashboard() {
                     value={stats.pending_companies + stats.pending_persons}
                     icon={Clock}
                     color="#f59e0b"
-                    trend={-3}
                     loading={statsLoading}
                   />
                   <StatCard
@@ -2809,7 +2732,6 @@ export default function AdminDashboard() {
                     value={stats.active_companies + stats.active_persons}
                     icon={CheckCircle2}
                     color="#10b981"
-                    trend={8}
                     loading={statsLoading}
                   />
                   <StatCard
@@ -2817,12 +2739,12 @@ export default function AdminDashboard() {
                     value={stats.new_this_month}
                     icon={TrendingUp}
                     color="#22d3ee"
-                    trend={15}
+                    trend={stats.trend_this_month}
                     loading={statsLoading}
                   />
                 </div>
 
-                {/* Charts Row - Enhanced Design */}
+                {/* Charts Row */}
                 <div
                   style={{
                     display: "grid",
@@ -2830,7 +2752,7 @@ export default function AdminDashboard() {
                     gap: 24,
                   }}
                 >
-                  {/* Area Chart - Premium Design */}
+                  {/* Area Chart */}
                   <div
                     style={{
                       background:
@@ -2854,7 +2776,6 @@ export default function AdminDashboard() {
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    {/* Decorative glow */}
                     <div
                       style={{
                         position: "absolute",
@@ -3012,7 +2933,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Ring Chart - Premium Design */}
+                  {/* Ring Chart */}
                   <div
                     style={{
                       background:
@@ -3036,7 +2957,6 @@ export default function AdminDashboard() {
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    {/* Decorative glow */}
                     <div
                       style={{
                         position: "absolute",
@@ -3113,7 +3033,6 @@ export default function AdminDashboard() {
                           justifyContent: "center",
                         }}
                       >
-                        {/* Ring Chart with glow effect */}
                         <div
                           style={{
                             position: "relative",
@@ -3123,7 +3042,6 @@ export default function AdminDashboard() {
                           <RingChart data={ringData} />
                         </div>
 
-                        {/* Legend with progress bars */}
                         <div
                           style={{
                             flex: 1,
@@ -3357,7 +3275,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Recent Registrations */}
+                {/* ── Recent Persons ── */}
                 <div className="glass-card">
                   <div
                     style={{
@@ -3377,7 +3295,7 @@ export default function AdminDashboard() {
                           margin: 0,
                         }}
                       >
-                        Сүүлийн бүртгэлүүд
+                        Сүүлийн хувь хүний бүртгэлүүд
                       </h3>
                       <p
                         style={{
@@ -3386,14 +3304,11 @@ export default function AdminDashboard() {
                           marginTop: 2,
                         }}
                       >
-                        Хувь хүний бүртгэл
+                        Хамгийн сүүлд бүртгүүлсэн 5 хувь хүн
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        fetchRecent();
-                        fetchStats();
-                      }}
+                      onClick={fetchDashboard}
                       style={{
                         background: "rgba(99,102,241,0.08)",
                         border: "1px solid rgba(99,102,241,0.2)",
@@ -3501,7 +3416,6 @@ export default function AdminDashboard() {
                                     "transparent";
                                 }}
                               >
-                                {/* Name Column */}
                                 <td style={{ padding: "12px 16px" }}>
                                   <div
                                     style={{
@@ -3541,8 +3455,6 @@ export default function AdminDashboard() {
                                     </span>
                                   </div>
                                 </td>
-
-                                {/* Email Column */}
                                 <td
                                   style={{
                                     padding: "12px 16px",
@@ -3552,8 +3464,6 @@ export default function AdminDashboard() {
                                 >
                                   {person.email}
                                 </td>
-
-                                {/* Register Number Column */}
                                 <td
                                   style={{
                                     padding: "12px 16px",
@@ -3564,13 +3474,9 @@ export default function AdminDashboard() {
                                 >
                                   {person.register_number || "—"}
                                 </td>
-
-                                {/* Status Column */}
                                 <td style={{ padding: "12px 16px" }}>
                                   <Badge status={person.status} />
                                 </td>
-
-                                {/* Date Column */}
                                 <td
                                   style={{
                                     padding: "12px 16px",
@@ -3615,6 +3521,250 @@ export default function AdminDashboard() {
                                   }}
                                 >
                                   Шинэ бүртгэл бүртгүүлэхэд энд харагдана
+                                </p>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Recent Companies (Шинэ хэсэг) ── */}
+                <div className="glass-card">
+                  <div
+                    style={{
+                      padding: "18px 24px",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <h3
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: "white",
+                          margin: 0,
+                        }}
+                      >
+                        Сүүлийн компанийн бүртгэлүүд
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: 11,
+                          color: "rgba(255,255,255,0.35)",
+                          marginTop: 2,
+                        }}
+                      >
+                        Хамгийн сүүлд бүртгүүлсэн 5 компани
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setNav("companies")}
+                      style={{
+                        background: "rgba(34,211,238,0.08)",
+                        border: "1px solid rgba(34,211,238,0.2)",
+                        borderRadius: 10,
+                        padding: "6px 14px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        color: "#67e8f9",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background =
+                          "rgba(34,211,238,0.15)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background =
+                          "rgba(34,211,238,0.08)";
+                      }}
+                    >
+                      Бүгдийг харах <ArrowRight size={12} />
+                    </button>
+                  </div>
+
+                  {recentLoading ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        padding: 48,
+                      }}
+                    >
+                      <Loader2
+                        size={24}
+                        style={{
+                          color: "#22d3ee",
+                          animation: "spin 0.8s linear infinite",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: "auto" }}>
+                      <table
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          minWidth: 600,
+                        }}
+                      >
+                        <thead>
+                          <tr
+                            style={{
+                              borderBottom: "1px solid rgba(255,255,255,0.06)",
+                            }}
+                          >
+                            <TableHeader>Компанийн нэр</TableHeader>
+                            <TableHeader>Регистр</TableHeader>
+                            <TableHeader>И-мэйл</TableHeader>
+                            <TableHeader>Статус</TableHeader>
+                            <TableHeader>Огноо</TableHeader>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recentCompanies.slice(0, 5).map((company, idx) => {
+                            const colorsList = [
+                              "#22d3ee",
+                              "#3b82f6",
+                              "#8b5cf6",
+                              "#ec4899",
+                              "#f59e0b",
+                            ];
+                            const avatarColor =
+                              colorsList[idx % colorsList.length];
+
+                            return (
+                              <tr
+                                key={company.id}
+                                style={{
+                                  borderBottom:
+                                    "1px solid rgba(255,255,255,0.04)",
+                                  transition: "background 0.2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background =
+                                    "rgba(255,255,255,0.03)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background =
+                                    "transparent";
+                                }}
+                              >
+                                <td style={{ padding: "12px 16px" }}>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 12,
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 10,
+                                        background: `${avatarColor}15`,
+                                        border: `1px solid ${avatarColor}25`,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      <Building2
+                                        size={16}
+                                        style={{ color: avatarColor }}
+                                      />
+                                    </div>
+                                    <span
+                                      style={{
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        color: "rgba(255,255,255,0.85)",
+                                      }}
+                                    >
+                                      {company.company_name}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "12px 16px",
+                                    fontSize: 11,
+                                    fontFamily: "monospace",
+                                    color: "rgba(148,163,184,0.5)",
+                                  }}
+                                >
+                                  {company.register_number || "—"}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "12px 16px",
+                                    fontSize: 12,
+                                    color: "rgba(148,163,184,0.6)",
+                                  }}
+                                >
+                                  {company.email}
+                                </td>
+                                <td style={{ padding: "12px 16px" }}>
+                                  <Badge status={company.status} />
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "12px 16px",
+                                    fontSize: 11,
+                                    color: "rgba(148,163,184,0.4)",
+                                  }}
+                                >
+                                  {company.created_at
+                                    ? new Date(
+                                        company.created_at,
+                                      ).toLocaleDateString("mn-MN")
+                                    : "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {recentCompanies.length === 0 && (
+                            <tr>
+                              <td
+                                colSpan={5}
+                                style={{
+                                  padding: "60px 20px",
+                                  textAlign: "center",
+                                  color: "rgba(255,255,255,0.35)",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 48,
+                                    marginBottom: 12,
+                                    opacity: 0.3,
+                                  }}
+                                >
+                                  🏢
+                                </div>
+                                <p style={{ margin: 0 }}>
+                                  Компанийн бүртгэл байхгүй
+                                </p>
+                                <p
+                                  style={{
+                                    margin: "6px 0 0",
+                                    fontSize: 11,
+                                    color: "rgba(148,163,184,0.25)",
+                                  }}
+                                >
+                                  Шинэ компани бүртгүүлэхэд энд харагдана
                                 </p>
                               </td>
                             </tr>
@@ -3738,7 +3888,6 @@ export default function AdminDashboard() {
                   )}
                 </div>
 
-                {/* Admins Table Section */}
                 <div
                   style={{
                     background: "rgba(12,16,35,0.6)",
@@ -3857,7 +4006,6 @@ export default function AdminDashboard() {
                                       "transparent";
                                   }}
                                 >
-                                  {/* Name Column */}
                                   <td
                                     style={{
                                       padding: "14px 16px",
@@ -3918,7 +4066,6 @@ export default function AdminDashboard() {
                                     </div>
                                   </td>
 
-                                  {/* Company */}
                                   <td
                                     style={{
                                       padding: "14px 16px",
@@ -3930,7 +4077,6 @@ export default function AdminDashboard() {
                                     {a.company_name || "—"}
                                   </td>
 
-                                  {/* Email */}
                                   <td
                                     style={{
                                       padding: "14px 16px",
@@ -3942,7 +4088,6 @@ export default function AdminDashboard() {
                                     {a.email}
                                   </td>
 
-                                  {/* Role */}
                                   <td
                                     style={{
                                       padding: "14px 16px",
@@ -3976,7 +4121,6 @@ export default function AdminDashboard() {
                                     </span>
                                   </td>
 
-                                  {/* Menu Permissions */}
                                   <td
                                     style={{
                                       padding: "14px 16px",
@@ -4033,7 +4177,6 @@ export default function AdminDashboard() {
                                     )}
                                   </td>
 
-                                  {/* Status */}
                                   <td
                                     style={{
                                       padding: "14px 16px",
@@ -4066,7 +4209,6 @@ export default function AdminDashboard() {
                                     </button>
                                   </td>
 
-                                  {/* Actions */}
                                   <td
                                     style={{
                                       padding: "14px 16px",
@@ -4121,7 +4263,6 @@ export default function AdminDashboard() {
                                             size={13}
                                             style={{ color: "#a5b4fc" }}
                                           />
-                                          {/* ✅ Icon only - текст арилгасан */}
                                         </button>
 
                                         <button

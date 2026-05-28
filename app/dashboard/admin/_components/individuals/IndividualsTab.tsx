@@ -243,6 +243,19 @@ export function IndividualsTab({
   const showToast = data.showToast ?? (() => {});
   const persons = localPersons ?? data.persons ?? [];
 
+  const isSuperAdmin = (() => {
+    try {
+      const u = JSON.parse(
+        localStorage.getItem("super_admin_user") ||
+          localStorage.getItem("user") ||
+          "{}",
+      );
+      return u.role === "super_admin";
+    } catch {
+      return false;
+    }
+  })();
+
   // Count by status
   const statusCounts = {
     new: persons.filter((p: any) => p.status === "new").length,
@@ -451,34 +464,36 @@ export function IndividualsTab({
 
             {/* Action buttons */}
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => setShowExport(true)}
-                style={{
-                  padding: "9px 14px",
-                  borderRadius: 10,
-                  background: "#1e293b",
-                  border: "1px solid #334155",
-                  color: "#a78bfa",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#ede9fe";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#f5f3ff";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                <Download size={14} /> Excel татах
-              </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setShowExport(true)}
+                  style={{
+                    padding: "9px 14px",
+                    borderRadius: 10,
+                    background: "#1e293b",
+                    border: "1px solid #334155",
+                    color: "#a78bfa",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fontFamily: "inherit",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#ede9fe";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#f5f3ff";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  <Download size={14} /> Excel татах
+                </button>
+              )}
               <button
                 onClick={refreshData}
                 disabled={loading}

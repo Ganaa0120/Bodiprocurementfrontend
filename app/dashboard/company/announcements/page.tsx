@@ -1330,7 +1330,7 @@ export default function CompanyAnnouncementsPage() {
                         <div style={{ fontSize: 10, color: "#6d28d9", marginBottom: 2, fontWeight: 600, textTransform: "uppercase" }}>
                           Төв байршил
                         </div>
-                        <div style={{ fontSize: 14, color: "#4c1d95" }}>{selected.central_location}</div>
+                        <div style={{ fontSize: 14, color: "#090909" }}>{selected.central_location}</div>
                       </div>
                     )}
                     {selected.branch_location && (
@@ -1338,7 +1338,7 @@ export default function CompanyAnnouncementsPage() {
                         <div style={{ fontSize: 10, color: "#6d28d9", marginBottom: 2, fontWeight: 600, textTransform: "uppercase" }}>
                           Салбар байршил
                         </div>
-                        <div style={{ fontSize: 14, color: "#4c1d95" }}>{selected.branch_location}</div>
+                        <div style={{ fontSize: 14, color: "#090909" }}>{selected.branch_location}</div>
                       </div>
                     )}
                     {selected.address_details && (
@@ -1346,7 +1346,7 @@ export default function CompanyAnnouncementsPage() {
                         <div style={{ fontSize: 10, color: "#6d28d9", marginBottom: 2, fontWeight: 600, textTransform: "uppercase" }}>
                           Дэлгэрэнгүй хаяг
                         </div>
-                        <div style={{ fontSize: 14, color: "#4c1d95" }}>{selected.address_details}</div>
+                        <div style={{ fontSize: 14, color: "#090909" }}>{selected.address_details}</div>
                       </div>
                     )}
                   </div>

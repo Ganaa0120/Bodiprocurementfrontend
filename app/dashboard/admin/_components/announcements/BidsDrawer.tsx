@@ -13,10 +13,28 @@ import {
   ChevronRight,
   Send,
   Package,
+  Crown,
+  TrendingUp,
+  MessageSquare,
 } from "lucide-react";
 import { BID_STATUS } from "./constants";
 import type { Ann } from "./types";
 import { useState } from "react";
+
+/* ============================================================
+   Туслах функцууд — хүргэлт хүртэлх хоног
+   ============================================================ */
+function daysUntil(date: string) {
+  return Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
+}
+
+function deliveryLabel(date: string): { text: string; color: string } {
+  const d = daysUntil(date);
+  if (d > 1) return { text: `${d} хоногийн дараа`, color: "#60a5fa" };
+  if (d === 1) return { text: "Маргааш", color: "#fbbf24" };
+  if (d === 0) return { text: "Өнөөдөр", color: "#fbbf24" };
+  return { text: `${Math.abs(d)} хоног хэтэрсэн`, color: "#f87171" };
+}
 
 /* ============================================================
    FileItem — нэг файлыг харуулах + татах товч
@@ -101,12 +119,14 @@ function BidDetailModal({
   bid,
   ann,
   supplierInfo,
+  lowestPrice,
   onClose,
   onUpdateStatus,
 }: {
   bid: any;
   ann: Ann;
   supplierInfo: any;
+  lowestPrice?: number | null;
   onClose: () => void;
   onUpdateStatus?: (bidId: string, status: string) => void;
 }) {
@@ -115,10 +135,16 @@ function BidDetailModal({
   const isPending = bid.status === "submitted" || bid.status === "pending";
   const priceOffer = bid.price_offer || bid.budget_offer;
   const deliveryDate = bid.delivery_date;
+  const note = bid.note || bid.message || bid.comment || bid.description;
   const attachments: any[] = Array.isArray(bid.attachments)
     ? bid.attachments
     : [];
   const hasAttachments = attachments.length > 0;
+
+  const isLowest =
+    lowestPrice != null && priceOffer && Number(priceOffer) === lowestPrice;
+  const priceDiff =
+    lowestPrice != null && priceOffer ? Number(priceOffer) - lowestPrice : 0;
 
   const supplierName =
     bid.supplier_name || supplierInfo?.company_name || "Нийлүүлэгч";
@@ -343,7 +369,10 @@ function BidDetailModal({
                   background: "rgba(16,185,129,0.06)",
                   borderRadius: 16,
                   padding: "18px 20px",
-                  border: "1px solid rgba(16,185,129,0.2)",
+                  border: `1px solid ${
+                    isLowest ? "rgba(16,185,129,0.45)" : "rgba(16,185,129,0.2)"
+                  }`,
+                  position: "relative",
                 }}
               >
                 <div
@@ -359,6 +388,25 @@ function BidDetailModal({
                 >
                   <Wallet size={14} />
                   Үнийн санал
+                  {isLowest && (
+                    <span
+                      style={{
+                        marginLeft: "auto",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: 30,
+                        background: "rgba(16,185,129,0.18)",
+                        color: "#34d399",
+                      }}
+                    >
+                      <Crown size={11} />
+                      Хамгийн хямд
+                    </span>
+                  )}
                 </div>
                 <div
                   style={{
@@ -379,6 +427,22 @@ function BidDetailModal({
                 >
                   {ann.currency ?? "MNT"}
                 </div>
+                {!isLowest && priceDiff > 0 && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#fbbf24",
+                      marginTop: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <TrendingUp size={11} />
+                    Хамгийн хямдаас +{priceDiff.toLocaleString()}{" "}
+                    {ann.currency ?? "MNT"}
+                  </div>
+                )}
               </div>
             )}
             {deliveryDate && (
@@ -418,6 +482,16 @@ function BidDetailModal({
                     day: "2-digit",
                   })}
                 </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: deliveryLabel(deliveryDate).color,
+                    marginTop: 4,
+                    fontWeight: 600,
+                  }}
+                >
+                  {deliveryLabel(deliveryDate).text}
+                </div>
               </div>
             )}
           </div>
@@ -436,6 +510,42 @@ function BidDetailModal({
               }}
             >
               ⚠️ Үнийн санал болон хүргэлтийн огноо оруулаагүй байна
+            </div>
+          )}
+
+          {/* Нийлүүлэгчийн тайлбар / тэмдэглэл */}
+          {note && (
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "rgba(148,163,184,0.5)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <MessageSquare size={12} />
+                Нийлүүлэгчийн тайлбар
+              </div>
+              <div
+                style={{
+                  padding: "14px 16px",
+                  background: "rgba(255,255,255,0.03)",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.8)",
+                  lineHeight: 1.55,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {note}
+              </div>
             </div>
           )}
 
@@ -630,6 +740,74 @@ function BidDetailModal({
 }
 
 /* ============================================================
+   StatTile — дүгнэлт самбарын нэг нүүр
+   ============================================================ */
+function StatTile({
+  label,
+  value,
+  color,
+  sub,
+}: {
+  label: string;
+  value: string | number;
+  color: string;
+  sub?: string;
+}) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        background: "rgba(255,255,255,0.03)",
+        borderRadius: 14,
+        padding: "12px 14px",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 9,
+          fontWeight: 700,
+          color: "rgba(148,163,184,0.5)",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          marginBottom: 6,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 18,
+          fontWeight: 800,
+          color,
+          lineHeight: 1.1,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {value}
+      </div>
+      {sub && (
+        <div
+          style={{
+            fontSize: 10,
+            color: "rgba(148,163,184,0.45)",
+            marginTop: 3,
+          }}
+        >
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
    BidsDrawer — хажуугийн drawer (ирсэн хүсэлтүүдийн жагсаалт)
    ============================================================ */
 export function BidsDrawer({
@@ -660,6 +838,24 @@ export function BidsDrawer({
     setIsDetailModalOpen(false);
   };
 
+  /* ---- Дүгнэлт тооцоолол ---- */
+  const prices = bids
+    .map((b) => Number(b.price_offer || b.budget_offer))
+    .filter((p) => p > 0);
+  const lowestPrice = prices.length ? Math.min(...prices) : null;
+  const avgPrice = prices.length
+    ? Math.round(prices.reduce((a, c) => a + c, 0) / prices.length)
+    : null;
+
+  const pendingCount = bids.filter(
+    (b) => b.status === "submitted" || b.status === "pending",
+  ).length;
+  const acceptedCount = bids.filter(
+    (b) => b.status === "accepted" || b.status === "approved",
+  ).length;
+  const rejectedCount = bids.filter((b) => b.status === "rejected").length;
+  const currency = ann.currency ?? "MNT";
+
   return (
     <>
       {isDetailModalOpen && selectedBid && (
@@ -667,6 +863,7 @@ export function BidsDrawer({
           bid={selectedBid}
           ann={ann}
           supplierInfo={supplierInfo}
+          lowestPrice={lowestPrice}
           onClose={() => setIsDetailModalOpen(false)}
           onUpdateStatus={handleStatusUpdate}
         />
@@ -832,235 +1029,423 @@ export function BidsDrawer({
                 </p>
               </div>
             ) : (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 14 }}
-              >
-                {bids.map((b) => {
-                  const bs = BID_STATUS[b.status] ?? BID_STATUS.submitted;
-                  const isPending =
-                    b.status === "submitted" || b.status === "pending";
-                  const isAccepted =
-                    b.status === "accepted" || b.status === "approved";
-                  const isRejected = b.status === "rejected";
-                  const hasAttachments =
-                    b.attachments && b.attachments.length > 0;
-                  const priceOffer = b.price_offer || b.budget_offer;
-                  const deliveryDate = b.delivery_date;
+              <>
+                {/* ============ ДҮГНЭЛТ САМБАР ============ */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    marginBottom: 20,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <StatTile
+                    label="Нийт"
+                    value={bids.length}
+                    color="#a5b4fc"
+                    sub={`${pendingCount} хүлээгдэж буй`}
+                  />
+                  {lowestPrice != null && (
+                    <StatTile
+                      label="Хамгийн хямд"
+                      value={`${lowestPrice.toLocaleString()} ${currency}`}
+                      color="#34d399"
+                    />
+                  )}
+                  {avgPrice != null && (
+                    <StatTile
+                      label="Дундаж үнэ"
+                      value={`${avgPrice.toLocaleString()} ${currency}`}
+                      color="#60a5fa"
+                    />
+                  )}
+                </div>
 
-                  return (
-                    <div
-                      key={b.id}
-                      className="bid-card"
-                      onClick={() => openDetailModal(b)}
-                      style={{
-                        background: "rgba(255,255,255,0.03)",
-                        borderRadius: 20,
-                        padding: "18px 20px",
-                        border: `1px solid ${
-                          isAccepted
-                            ? "rgba(16,185,129,0.25)"
-                            : isRejected
-                              ? "rgba(239,68,68,0.2)"
-                              : "rgba(255,255,255,0.08)"
-                        }`,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {/* Supplier info */}
-                      <div
+                {/* Төлвийн товч тойм */}
+                {(acceptedCount > 0 || rejectedCount > 0) && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      marginBottom: 20,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {acceptedCount > 0 && (
+                      <span
                         style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "4px 12px",
+                          borderRadius: 30,
+                          background: "rgba(16,185,129,0.1)",
+                          color: "#34d399",
+                          border: "1px solid rgba(16,185,129,0.2)",
                           display: "flex",
                           alignItems: "center",
-                          gap: 14,
-                          marginBottom: 14,
+                          gap: 5,
                         }}
                       >
-                        <div
-                          style={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 14,
-                            flexShrink: 0,
-                            background:
-                              b.supplier_type === "company"
-                                ? "rgba(139,92,246,0.15)"
-                                : "rgba(99,102,241,0.15)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 24,
-                            border: `1px solid ${
-                              b.supplier_type === "company"
-                                ? "rgba(139,92,246,0.3)"
-                                : "rgba(99,102,241,0.3)"
-                            }`,
-                          }}
-                        >
-                          {b.supplier_type === "company" ? "🏢" : "👤"}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <CheckCircle2 size={11} />
+                        {acceptedCount} зөвшөөрсөн
+                      </span>
+                    )}
+                    {rejectedCount > 0 && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "4px 12px",
+                          borderRadius: 30,
+                          background: "rgba(239,68,68,0.1)",
+                          color: "#f87171",
+                          border: "1px solid rgba(239,68,68,0.2)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <XCircle size={11} />
+                        {rejectedCount} татгалзсан
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* ============ КАРТУУД ============ */}
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 14 }}
+                >
+                  {bids.map((b) => {
+                    const bs = BID_STATUS[b.status] ?? BID_STATUS.submitted;
+                    const isPending =
+                      b.status === "submitted" || b.status === "pending";
+                    const isAccepted =
+                      b.status === "accepted" || b.status === "approved";
+                    const isRejected = b.status === "rejected";
+                    const hasAttachments =
+                      b.attachments && b.attachments.length > 0;
+                    const priceOffer = b.price_offer || b.budget_offer;
+                    const deliveryDate = b.delivery_date;
+                    const note =
+                      b.note || b.message || b.comment || b.description;
+                    const isLowest =
+                      lowestPrice != null &&
+                      priceOffer &&
+                      Number(priceOffer) === lowestPrice;
+                    const priceDiff =
+                      lowestPrice != null && priceOffer
+                        ? Number(priceOffer) - lowestPrice
+                        : 0;
+
+                    return (
+                      <div
+                        key={b.id}
+                        className="bid-card"
+                        onClick={() => openDetailModal(b)}
+                        style={{
+                          background: isLowest
+                            ? "rgba(16,185,129,0.04)"
+                            : "rgba(255,255,255,0.03)",
+                          borderRadius: 20,
+                          padding: "18px 20px",
+                          border: `1px solid ${
+                            isLowest
+                              ? "rgba(16,185,129,0.35)"
+                              : isAccepted
+                                ? "rgba(16,185,129,0.25)"
+                                : isRejected
+                                  ? "rgba(239,68,68,0.2)"
+                                  : "rgba(255,255,255,0.08)"
+                          }`,
+                          cursor: "pointer",
+                          position: "relative",
+                        }}
+                      >
+                        {/* Хамгийн хямд тэмдэг */}
+                        {isLowest && (
                           <div
                             style={{
-                              fontSize: 15,
+                              position: "absolute",
+                              top: 14,
+                              right: 16,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontSize: 10,
                               fontWeight: 700,
-                              color: "rgba(255,255,255,0.88)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
+                              padding: "3px 10px",
+                              borderRadius: 30,
+                              background: "rgba(16,185,129,0.15)",
+                              color: "#34d399",
+                              border: "1px solid rgba(16,185,129,0.3)",
                             }}
                           >
-                            {b.supplier_name ||
-                              supplierInfo?.company_name ||
-                              "—"}
+                            <Crown size={11} />
+                            Хамгийн хямд
                           </div>
+                        )}
+
+                        {/* Supplier info */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 14,
+                            marginBottom: 14,
+                          }}
+                        >
                           <div
                             style={{
-                              fontSize: 11,
-                              color: "rgba(148,163,184,0.5)",
+                              width: 48,
+                              height: 48,
+                              borderRadius: 14,
+                              flexShrink: 0,
+                              background:
+                                b.supplier_type === "company"
+                                  ? "rgba(139,92,246,0.15)"
+                                  : "rgba(99,102,241,0.15)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 24,
+                              border: `1px solid ${
+                                b.supplier_type === "company"
+                                  ? "rgba(139,92,246,0.3)"
+                                  : "rgba(99,102,241,0.3)"
+                              }`,
+                            }}
+                          >
+                            {b.supplier_type === "company" ? "🏢" : "👤"}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: 15,
+                                fontWeight: 700,
+                                color: "rgba(255,255,255,0.88)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                paddingRight: isLowest ? 90 : 0,
+                              }}
+                            >
+                              {b.supplier_name ||
+                                supplierInfo?.company_name ||
+                                "—"}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "rgba(148,163,184,0.5)",
+                                display: "flex",
+                                gap: 10,
+                                marginTop: 4,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {b.supplier_number && (
+                                <span>№ {b.supplier_number}</span>
+                              )}
+                              {b.supplier_email && (
+                                <span>📧 {b.supplier_email}</span>
+                              )}
+                              {b.supplier_phone && (
+                                <span>📞 {b.supplier_phone}</span>
+                              )}
+                            </div>
+                          </div>
+                          {!isLowest && (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                padding: "5px 14px",
+                                borderRadius: 30,
+                                background: bs.bg,
+                                color: bs.color,
+                                border: `1px solid ${bs.color}20`,
+                                flexShrink: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              {isAccepted && <CheckCircle2 size={10} />}
+                              {isRejected && <XCircle size={10} />}
+                              {isPending && <Clock size={10} />}
+                              {bs.label}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Quick info chips */}
+                        {(priceOffer || deliveryDate || hasAttachments) && (
+                          <div
+                            style={{
                               display: "flex",
                               gap: 10,
-                              marginTop: 4,
+                              marginBottom: note ? 12 : 14,
                               flexWrap: "wrap",
                             }}
                           >
-                            {b.supplier_number && (
-                              <span>№ {b.supplier_number}</span>
+                            {priceOffer && (
+                              <div
+                                style={{
+                                  background: "rgba(16,185,129,0.06)",
+                                  borderRadius: 10,
+                                  padding: "5px 12px",
+                                  border: "1px solid rgba(16,185,129,0.15)",
+                                  fontSize: 12,
+                                  color: "#34d399",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <Wallet size={12} />
+                                {Number(priceOffer).toLocaleString()}{" "}
+                                {ann.currency}
+                              </div>
                             )}
-                            {b.supplier_email && (
-                              <span>📧 {b.supplier_email}</span>
+                            {!isLowest && priceDiff > 0 && (
+                              <div
+                                style={{
+                                  background: "rgba(245,158,11,0.06)",
+                                  borderRadius: 10,
+                                  padding: "5px 12px",
+                                  border: "1px solid rgba(245,158,11,0.15)",
+                                  fontSize: 12,
+                                  color: "#fbbf24",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <TrendingUp size={12} />+
+                                {priceDiff.toLocaleString()}
+                              </div>
                             )}
-                            {b.supplier_phone && (
-                              <span>📞 {b.supplier_phone}</span>
+                            {deliveryDate && (
+                              <div
+                                style={{
+                                  background: "rgba(59,130,246,0.06)",
+                                  borderRadius: 10,
+                                  padding: "5px 12px",
+                                  border: "1px solid rgba(59,130,246,0.15)",
+                                  fontSize: 12,
+                                  color: "#60a5fa",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <Calendar size={12} />
+                                {new Date(deliveryDate).toLocaleDateString(
+                                  "mn-MN",
+                                )}
+                                <span
+                                  style={{
+                                    color: deliveryLabel(deliveryDate).color,
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  · {deliveryLabel(deliveryDate).text}
+                                </span>
+                              </div>
+                            )}
+                            {hasAttachments && (
+                              <div
+                                style={{
+                                  background: "rgba(99,102,241,0.06)",
+                                  borderRadius: 10,
+                                  padding: "5px 12px",
+                                  border: "1px solid rgba(99,102,241,0.15)",
+                                  fontSize: 12,
+                                  color: "#a5b4fc",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <File size={12} />
+                                {b.attachments.length} файл
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: "5px 14px",
-                            borderRadius: 30,
-                            background: bs.bg,
-                            color: bs.color,
-                            border: `1px solid ${bs.color}20`,
-                            flexShrink: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          {isAccepted && <CheckCircle2 size={10} />}
-                          {isRejected && <XCircle size={10} />}
-                          {isPending && <Clock size={10} />}
-                          {bs.label}
-                        </span>
-                      </div>
+                        )}
 
-                      {/* Quick info chips */}
-                      {(priceOffer || deliveryDate || hasAttachments) && (
+                        {/* Нийлүүлэгчийн тайлбар (тойм) */}
+                        {note && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 8,
+                              marginBottom: 14,
+                              padding: "10px 12px",
+                              background: "rgba(255,255,255,0.02)",
+                              borderRadius: 10,
+                              border: "1px solid rgba(255,255,255,0.05)",
+                            }}
+                          >
+                            <MessageSquare
+                              size={13}
+                              color="rgba(148,163,184,0.5)"
+                              style={{ flexShrink: 0, marginTop: 1 }}
+                            />
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: "rgba(255,255,255,0.65)",
+                                lineHeight: 1.5,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {note}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Footer */}
                         <div
                           style={{
                             display: "flex",
-                            gap: 10,
-                            marginBottom: 14,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {priceOffer && (
-                            <div
-                              style={{
-                                background: "rgba(16,185,129,0.06)",
-                                borderRadius: 10,
-                                padding: "5px 12px",
-                                border: "1px solid rgba(16,185,129,0.15)",
-                                fontSize: 12,
-                                color: "#34d399",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                              }}
-                            >
-                              <Wallet size={12} />
-                              {Number(priceOffer).toLocaleString()}{" "}
-                              {ann.currency}
-                            </div>
-                          )}
-                          {deliveryDate && (
-                            <div
-                              style={{
-                                background: "rgba(59,130,246,0.06)",
-                                borderRadius: 10,
-                                padding: "5px 12px",
-                                border: "1px solid rgba(59,130,246,0.15)",
-                                fontSize: 12,
-                                color: "#60a5fa",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                              }}
-                            >
-                              <Calendar size={12} />
-                              {new Date(deliveryDate).toLocaleDateString(
-                                "mn-MN",
-                              )}
-                            </div>
-                          )}
-                          {hasAttachments && (
-                            <div
-                              style={{
-                                background: "rgba(99,102,241,0.06)",
-                                borderRadius: 10,
-                                padding: "5px 12px",
-                                border: "1px solid rgba(99,102,241,0.15)",
-                                fontSize: 12,
-                                color: "#a5b4fc",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                              }}
-                            >
-                              <File size={12} />
-                              {b.attachments.length} файл
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Footer */}
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginTop: 8,
-                          paddingTop: 12,
-                          borderTop: "1px solid rgba(255,255,255,0.05)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: "rgba(148,163,184,0.35)",
-                          }}
-                        >
-                          {new Date(b.submitted_at).toLocaleString("mn-MN")}
-                        </span>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: "#a5b4fc",
-                            display: "flex",
+                            justifyContent: "space-between",
                             alignItems: "center",
-                            gap: 6,
+                            marginTop: 8,
+                            paddingTop: 12,
+                            borderTop: "1px solid rgba(255,255,255,0.05)",
                           }}
                         >
-                          Дэлгэрэнгүй <ChevronRight size={14} />
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: "rgba(148,163,184,0.35)",
+                            }}
+                          >
+                            {new Date(b.submitted_at).toLocaleString("mn-MN")}
+                          </span>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#a5b4fc",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            Дэлгэрэнгүй <ChevronRight size={14} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>
