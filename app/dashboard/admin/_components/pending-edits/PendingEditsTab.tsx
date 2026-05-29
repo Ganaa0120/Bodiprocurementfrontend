@@ -1,6 +1,7 @@
 // app/dashboard/admin/_components/pending-edits/PendingEditsTab.tsx
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import * as React from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   RefreshCw,
   Loader2,
@@ -17,10 +18,11 @@ const tok = () =>
   localStorage.getItem("token") ||
   "";
 
-// Талбарын нэрсийг Mongolian-аар харуулах
+// ── Талбарын Mongolian нэрс ─────────────────────────────────────
 const FIELD_LABELS: Record<string, string> = {
   company_name: "Байгууллагын нэр",
   company_name_en: "Англи нэр",
+  company_type: "Байгууллагын төрөл",
   phone: "Утас",
   register_number: "Регистрийн дугаар",
   state_registry_number: "Улсын бүртгэл №",
@@ -30,6 +32,8 @@ const FIELD_LABELS: Record<string, string> = {
   vat_number: "НӨАТ дугаар",
   is_iso_certified: "ISO сертификат",
   has_special_permission: "Тусгай зөвшөөрөлтэй",
+  special_permission_number: "Тусгай зөвшөөрлийн дугаар",
+  special_permission_expiry: "Тусгай зөвшөөрлийн хугацаа",
   aimag_niislel: "Аймаг/Нийслэл",
   sum_duureg: "Сум/Дүүрэг",
   bag_horoo: "Баг/Хороо",
@@ -43,6 +47,7 @@ const FIELD_LABELS: Record<string, string> = {
   iban: "IBAN",
   currency: "Валют",
   beneficial_owners: "Эзэмшигчид",
+  final_beneficial_owners: "Эцсийн өмчлөгчид",
   executive_directors: "Гүйцэтгэх захирал",
   special_permissions: "Тусгай зөвшөөрлүүд",
   company_logo_url: "Лого",
@@ -55,17 +60,380 @@ const FIELD_LABELS: Record<string, string> = {
   notification_preference: "Мэдэгдэл хүлээн авах",
 };
 
-const fmtVal = (v: any): string => {
+// Хүний дотоод талбарын нэрс
+const PERSON_FIELD_LABELS: Record<string, string> = {
+  last_name: "Овог",
+  first_name: "Нэр",
+  family_name: "Эцгийн нэр",
+  phone: "Утас",
+  email: "Имэйл",
+  position: "Албан тушаал",
+  register_number: "Регистр",
+  share_percent: "Хувь",
+  ownership_percent: "Эзэмшлийн хувь",
+  is_foreign: "Гадаад иргэн",
+  passport_number: "Паспорт",
+  citizenship: "Иргэншил",
+  birth_date: "Төрсөн огноо",
+  gender: "Хүйс",
+  address: "Хаяг",
+};
+
+const DATE_FIELDS = ["established_date", "special_permission_expiry"];
+const DIRECTION_FIELDS = ["activity_directions"];
+const PEOPLE_FIELDS = [
+  "beneficial_owners",
+  "final_beneficial_owners",
+  "executive_directors",
+];
+
+const labelSupply = (s: string) =>
+  s === "service"
+    ? "Үйлчилгээ"
+    : s === "goods"
+      ? "Бараа"
+      : s === "all"
+        ? "Аль аль нь"
+        : s;
+const labelNotification = (n: string) =>
+  n === "selected_dirs"
+    ? "Сонгосон чиглэлээр"
+    : n === "all"
+      ? "Бүх чиглэлээр"
+      : n;
+
+// ── Helpers ──────────────────────────────────────────────────────
+function parseArr(v: any): any[] {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") {
+    try {
+      const p = JSON.parse(v);
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function personName(p: any): string {
+  if (!p || typeof p !== "object") return String(p ?? "");
+  const n = [p.last_name, p.first_name].filter(Boolean).join(" ");
+  return n || p.family_name || p.name || "Тодорхойгүй";
+}
+
+function formatDirections(raw: any, dirMap: Map<number, string>): string {
+  const arr = parseArr(raw);
+  if (arr.length === 0) return "—";
+  const nameOf = (id: any) => dirMap.get(Number(id)) || `#${id}`;
+  return (
+    arr
+      .map((item: any) => {
+        if (typeof item === "number" || typeof item === "string")
+          return nameOf(item);
+        if (item && typeof item === "object") {
+          const mainLabel = item.main_id != null ? nameOf(item.main_id) : "";
+          const subLabels = Array.isArray(item.sub_ids)
+            ? item.sub_ids.map(nameOf)
+            : [];
+          if (subLabels.length > 0)
+            return mainLabel
+              ? `${mainLabel}: ${subLabels.join(", ")}`
+              : subLabels.join(", ");
+          return mainLabel;
+        }
+        return "";
+      })
+      .filter(Boolean)
+      .join("; ") || "—"
+  );
+}
+
+// Үндсэн утга форматлагч (PEOPLE_FIELDS-ийг тусдаа PersonDiff component-аар үзүүлнэ)
+function fmtVal(v: any, key: string, dirMap: Map<number, string>): string {
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "boolean") return v ? "Тийм" : "Үгүй";
+
+  if (DIRECTION_FIELDS.includes(key)) return formatDirections(v, dirMap);
+  if (key === "supply_direction") return labelSupply(String(v));
+  if (key === "notification_preference") return labelNotification(String(v));
+  if (DATE_FIELDS.includes(key)) {
+    const s = String(v);
+    return s.length >= 10 ? s.slice(0, 10) : s;
+  }
+
   if (Array.isArray(v)) {
     if (v.length === 0) return "—";
-    if (typeof v[0] === "object") return `${v.length} мөр`;
+    if (typeof v[0] === "object") return `${v.length} зүйл`;
     return v.join(", ");
   }
-  if (typeof v === "object") return JSON.stringify(v);
+  if (typeof v === "object") {
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return "—";
+    }
+  }
   return String(v);
-};
+}
+
+// ── Person array-ийн доторх field-level diff ─────────────────────
+type PersonChange =
+  | { type: "added"; index: number; person: any }
+  | { type: "removed"; index: number; person: any }
+  | {
+      type: "changed";
+      index: number;
+      name: string;
+      changes: { field: string; old: any; new: any }[];
+    };
+
+function computePersonDiff(oldRaw: any, newRaw: any): PersonChange[] {
+  const oldList = parseArr(oldRaw);
+  const newList = parseArr(newRaw);
+  const max = Math.max(oldList.length, newList.length);
+  const out: PersonChange[] = [];
+
+  for (let i = 0; i < max; i++) {
+    const o = oldList[i];
+    const n = newList[i];
+    if (!o && n) {
+      out.push({ type: "added", index: i, person: n });
+    } else if (o && !n) {
+      out.push({ type: "removed", index: i, person: o });
+    } else if (o && n) {
+      const keys = new Set([
+        ...Object.keys(o || {}),
+        ...Object.keys(n || {}),
+      ]);
+      const changes: { field: string; old: any; new: any }[] = [];
+      for (const k of keys) {
+        const ov = o[k] ?? null;
+        const nv = n[k] ?? null;
+        if (JSON.stringify(ov) !== JSON.stringify(nv)) {
+          changes.push({ field: k, old: ov, new: nv });
+        }
+      }
+      if (changes.length > 0) {
+        out.push({ type: "changed", index: i, name: personName(o), changes });
+      }
+    }
+  }
+  return out;
+}
+
+function PersonDiff({
+  oldRaw,
+  newRaw,
+}: {
+  oldRaw: any;
+  newRaw: any;
+}) {
+  const items = computePersonDiff(oldRaw, newRaw);
+
+  if (items.length === 0)
+    return (
+      <div style={{ fontSize: 12, color: "rgba(148,163,184,0.5)", padding: 8 }}>
+        Бодит өөрчлөлт алга
+      </div>
+    );
+
+  const fmt = (v: any) =>
+    v === null || v === undefined || v === ""
+      ? "—"
+      : typeof v === "boolean"
+        ? v
+          ? "Тийм"
+          : "Үгүй"
+        : typeof v === "object"
+          ? JSON.stringify(v)
+          : String(v);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {items.map((item, idx) => {
+        if (item.type === "added") {
+          return (
+            <div
+              key={idx}
+              style={{
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "rgba(16,185,129,0.06)",
+                border: "1px solid rgba(16,185,129,0.2)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "rgba(16,185,129,0.9)",
+                  marginBottom: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                + {personName(item.person)}
+                <span
+                  style={{
+                    fontSize: 9,
+                    padding: "1px 7px",
+                    borderRadius: 20,
+                    background: "rgba(16,185,129,0.15)",
+                    color: "rgba(16,185,129,0.9)",
+                  }}
+                >
+                  Шинээр нэмсэн
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr",
+                  gap: "4px 12px",
+                  fontSize: 11,
+                }}
+              >
+                {Object.entries(item.person)
+                  .filter(([, v]) => v != null && v !== "")
+                  .map(([k, v]) => (
+                    <Fragment key={k}>
+                      <span style={{ color: "rgba(148,163,184,0.5)" }}>
+                        {PERSON_FIELD_LABELS[k] ?? k}:
+                      </span>
+                      <span style={{ color: "rgba(255,255,255,0.85)" }}>
+                        {fmt(v)}
+                      </span>
+                    </Fragment>
+                  ))}
+              </div>
+            </div>
+          );
+        }
+        if (item.type === "removed") {
+          return (
+            <div
+              key={idx}
+              style={{
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "rgba(239,68,68,0.06)",
+                border: "1px solid rgba(239,68,68,0.2)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "rgba(239,68,68,0.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                − {personName(item.person)}
+                <span
+                  style={{
+                    fontSize: 9,
+                    padding: "1px 7px",
+                    borderRadius: 20,
+                    background: "rgba(239,68,68,0.15)",
+                    color: "rgba(239,68,68,0.9)",
+                  }}
+                >
+                  Хасагдсан
+                </span>
+              </div>
+            </div>
+          );
+        }
+        // changed
+        return (
+          <div
+            key={idx}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 8,
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "rgba(96,165,250,0.9)",
+                marginBottom: 8,
+              }}
+            >
+              {item.name}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {item.changes.map((c) => (
+                <div
+                  key={c.field}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "120px 1fr",
+                    gap: 10,
+                    fontSize: 11,
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "rgba(148,163,184,0.6)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {PERSON_FIELD_LABELS[c.field] ?? c.field}:
+                  </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        background: "rgba(239,68,68,0.08)",
+                        border: "1px solid rgba(239,68,68,0.2)",
+                        color: "rgba(255,255,255,0.65)",
+                        fontSize: 11,
+                      }}
+                    >
+                      {fmt(c.old)}
+                    </span>
+                    <span style={{ color: "rgba(148,163,184,0.5)" }}>→</span>
+                    <span
+                      style={{
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        background: "rgba(16,185,129,0.08)",
+                        border: "1px solid rgba(16,185,129,0.2)",
+                        color: "rgba(255,255,255,0.9)",
+                        fontWeight: 500,
+                        fontSize: 11,
+                      }}
+                    >
+                      {fmt(c.new)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 type PendingEdit = {
   id: string;
@@ -85,11 +453,13 @@ type PendingEdit = {
 
 function DiffModal({
   edit,
+  dirMap,
   onClose,
   onAction,
   showToast,
 }: {
   edit: PendingEdit;
+  dirMap: Map<number, string>;
   onClose: () => void;
   onAction: () => void;
   showToast: (m: string, ok?: boolean) => void;
@@ -145,8 +515,24 @@ function DiffModal({
     }
   };
 
-  const fields = Object.keys(edit.changed_fields || {});
+  // No-op-уудыг шүүх (хуучин/шинэ форматласны дараа адил байвал)
+  const allFields = Object.keys(edit.changed_fields || {});
+  const fields = allFields.filter((key) => {
+    if (PEOPLE_FIELDS.includes(key)) {
+      // Per-person diff тооцоолоод бодит өөрчлөлт байгаа эсэхийг шалгана
+      const diff = computePersonDiff(
+        edit.old_values?.[key],
+        edit.changed_fields?.[key],
+      );
+      return diff.length > 0;
+    }
+    const oldStr = fmtVal(edit.old_values?.[key], key, dirMap);
+    const newStr = fmtVal(edit.changed_fields?.[key], key, dirMap);
+    return oldStr !== newStr;
+  });
   const files = Object.keys(edit.new_files || {});
+
+  const hiddenCount = allFields.length - fields.length;
 
   return (
     <div
@@ -217,7 +603,18 @@ function DiffModal({
                 fontWeight: 600,
               }}
             >
-              {fields.length + files.length} талбар өөрчлөгдсөн
+              {fields.length + files.length} талбар бодит өөрчлөгдсөн
+              {hiddenCount > 0 && (
+                <span
+                  style={{
+                    color: "rgba(148,163,184,0.4)",
+                    fontWeight: 400,
+                    marginLeft: 6,
+                  }}
+                >
+                  ({hiddenCount} нь зөвхөн форматын зөрүү)
+                </span>
+              )}
             </div>
           </div>
           <button
@@ -240,7 +637,7 @@ function DiffModal({
         <div
           style={{
             padding: "20px 24px",
-            maxHeight: "55vh",
+            maxHeight: "60vh",
             overflowY: "auto",
           }}
         >
@@ -253,110 +650,142 @@ function DiffModal({
                 color: "rgba(148,163,184,0.4)",
               }}
             >
-              Өөрчлөгдсөн талбар байхгүй
+              Бодит өөрчлөлт байхгүй
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {fields.map((key) => (
-                <div
-                  key={key}
-                  style={{
-                    background: "rgba(255,255,255,0.025)",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                    borderRadius: 10,
-                    padding: "12px 14px",
-                  }}
-                >
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {fields.map((key) => {
+                const isPerson = PEOPLE_FIELDS.includes(key);
+                const isDirection = DIRECTION_FIELDS.includes(key);
+
+                return (
                   <div
+                    key={key}
                     style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "rgba(96,165,250,0.85)",
-                      marginBottom: 8,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {FIELD_LABELS[key] ?? key}
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 24px 1fr",
-                      gap: 10,
-                      alignItems: "center",
+                      background: "rgba(255,255,255,0.025)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      borderRadius: 10,
+                      padding: "12px 14px",
                     }}
                   >
                     <div
                       style={{
-                        background: "rgba(239,68,68,0.06)",
-                        border: "1px solid rgba(239,68,68,0.2)",
-                        borderRadius: 8,
-                        padding: "8px 11px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "rgba(96,165,250,0.85)",
+                        marginBottom: 10,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: 9,
-                          color: "rgba(239,68,68,0.6)",
-                          marginBottom: 3,
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                        }}
-                      >
-                        ХУУЧИН
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "rgba(255,255,255,0.65)",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {fmtVal(edit.old_values?.[key])}
-                      </div>
+                      {FIELD_LABELS[key] ?? key}
+                      {isPerson && (
+                        <span
+                          style={{
+                            marginLeft: 8,
+                            fontSize: 9,
+                            fontWeight: 600,
+                            padding: "1px 7px",
+                            borderRadius: 20,
+                            background: "rgba(167,139,250,0.12)",
+                            color: "rgba(167,139,250,0.9)",
+                            textTransform: "none",
+                            letterSpacing: 0,
+                          }}
+                        >
+                          Дотоод өөрчлөлт
+                        </span>
+                      )}
                     </div>
-                    <div
-                      style={{
-                        textAlign: "center",
-                        color: "rgba(148,163,184,0.4)",
-                      }}
-                    >
-                      →
-                    </div>
-                    <div
-                      style={{
-                        background: "rgba(16,185,129,0.06)",
-                        border: "1px solid rgba(16,185,129,0.2)",
-                        borderRadius: 8,
-                        padding: "8px 11px",
-                      }}
-                    >
+
+                    {isPerson ? (
+                      <PersonDiff
+                        oldRaw={edit.old_values?.[key]}
+                        newRaw={edit.changed_fields?.[key]}
+                      />
+                    ) : (
                       <div
                         style={{
-                          fontSize: 9,
-                          color: "rgba(16,185,129,0.7)",
-                          marginBottom: 3,
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 24px 1fr",
+                          gap: 10,
+                          alignItems: "center",
                         }}
                       >
-                        ШИНЭ
+                        <div
+                          style={{
+                            background: "rgba(239,68,68,0.06)",
+                            border: "1px solid rgba(239,68,68,0.2)",
+                            borderRadius: 8,
+                            padding: "8px 11px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 9,
+                              color: "rgba(239,68,68,0.6)",
+                              marginBottom: 3,
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                            }}
+                          >
+                            ХУУЧИН
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "rgba(255,255,255,0.65)",
+                              wordBreak: "break-word",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {fmtVal(edit.old_values?.[key], key, dirMap)}
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            textAlign: "center",
+                            color: "rgba(148,163,184,0.4)",
+                          }}
+                        >
+                          →
+                        </div>
+                        <div
+                          style={{
+                            background: "rgba(16,185,129,0.06)",
+                            border: "1px solid rgba(16,185,129,0.2)",
+                            borderRadius: 8,
+                            padding: "8px 11px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 9,
+                              color: "rgba(16,185,129,0.7)",
+                              marginBottom: 3,
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                            }}
+                          >
+                            ШИНЭ
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "rgba(255,255,255,0.85)",
+                              wordBreak: "break-word",
+                              fontWeight: 500,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {fmtVal(edit.changed_fields?.[key], key, dirMap)}
+                          </div>
+                        </div>
                       </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "rgba(255,255,255,0.85)",
-                          wordBreak: "break-word",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {fmtVal(edit.changed_fields?.[key])}
-                      </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {files.map((key) => (
                 <div
@@ -440,7 +869,7 @@ function DiffModal({
                         fontWeight: 500,
                       }}
                     >
-                      Шинэ файл
+                      Шинэ файл харах
                     </a>
                   </div>
                 </div>
@@ -619,6 +1048,26 @@ export function PendingEditsTab({
   const [edits, setEdits] = useState<PendingEdit[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<PendingEdit | null>(null);
+  const [dirMap, setDirMap] = useState<Map<number, string>>(new Map());
+
+  // Чиглэлийн ID → нэр map
+  useEffect(() => {
+    fetch(`${API}/api/activity-directions`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.success) return;
+        const map = new Map<number, string>();
+        const add = (arr: any[]) =>
+          arr?.forEach((x: any) => {
+            if (x && x.id != null) map.set(Number(x.id), x.label);
+            if (Array.isArray(x.children)) add(x.children);
+          });
+        if (Array.isArray(d.flat)) add(d.flat);
+        else add(d.directions ?? []);
+        setDirMap(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -653,6 +1102,7 @@ export function PendingEditsTab({
       {selected && (
         <DiffModal
           edit={selected}
+          dirMap={dirMap}
           onClose={() => setSelected(null)}
           onAction={() => {
             setSelected(null);
@@ -866,7 +1316,7 @@ export function PendingEditsTab({
                       flexShrink: 0,
                     }}
                   >
-                    <Eye size={12} /> Diff харах
+                    <Eye size={12} /> Өөрчлөлт харах
                   </button>
                 </div>
               ))}

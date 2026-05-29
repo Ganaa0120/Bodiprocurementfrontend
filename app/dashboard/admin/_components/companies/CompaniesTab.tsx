@@ -165,12 +165,18 @@ export function CompaniesTab({ data }: { data: any }) {
         .toLowerCase()
         .includes(search.toLowerCase()),
     )
-    .filter((c: any) => !statusFilter || c.status === statusFilter);
+    .filter((c: any) => {
+      if (!statusFilter) return true;
+      if (statusFilter === "active")
+        return c.status === "active" || c.status === "approved";
+      return c.status === statusFilter;
+    });
 
-  // Status counts (бүх компаниас)
+  // Status counts (бүх компаниас) — approved-ыг active гэж тоолох
   const statusCounts = (data.companies ?? []).reduce(
     (acc: Record<string, number>, c: any) => {
-      acc[c.status || "unknown"] = (acc[c.status || "unknown"] || 0) + 1;
+      const s = c.status === "approved" ? "active" : c.status || "unknown";
+      acc[s] = (acc[s] || 0) + 1;
       return acc;
     },
     {},

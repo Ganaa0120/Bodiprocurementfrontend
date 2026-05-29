@@ -2063,6 +2063,14 @@ export default function AdminDashboard() {
       .includes(search.toLowerCase()),
   );
 
+  // parent_id → нэр map (дэд админы харьяалал харуулахад)
+  const parentMap = new Map(
+    admins.map((a) => [
+      a.id,
+      [a.last_name, a.first_name].filter(Boolean).join(" ") || a.email,
+    ]),
+  );
+
   const ringData = [
     {
       label: "Идэвхтэй",
@@ -3940,6 +3948,7 @@ export default function AdminDashboard() {
                             <Th h="Компани" />
                             <Th h="И-мэйл" />
                             <Th h="Эрх" />
+                            <Th h="Харьяа админ" />
                             <Th h="Цэсний эрх" />
                             <Th h="Статус" />
                             <Th h="" />
@@ -3949,7 +3958,7 @@ export default function AdminDashboard() {
                           {filteredAdmins.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={7}
+                                colSpan={8}
                                 style={{
                                   padding: "60px 20px",
                                   textAlign: "center",
@@ -4094,31 +4103,87 @@ export default function AdminDashboard() {
                                       verticalAlign: "middle",
                                     }}
                                   >
-                                    <span
-                                      style={{
-                                        fontSize: 10,
-                                        fontWeight: 600,
-                                        padding: "4px 12px",
-                                        borderRadius: 30,
-                                        background:
-                                          a.role === "super_admin"
-                                            ? "rgba(239,68,68,0.12)"
-                                            : "rgba(99,102,241,0.12)",
-                                        color:
-                                          a.role === "super_admin"
-                                            ? "#f87171"
-                                            : "#a5b4fc",
-                                        border: `1px solid ${
-                                          a.role === "super_admin"
-                                            ? "rgba(239,68,68,0.25)"
-                                            : "rgba(99,102,241,0.25)"
-                                        }`,
-                                      }}
-                                    >
-                                      {a.role === "super_admin"
+                                    {(() => {
+                                      const isSuper = a.role === "super_admin";
+                                      const isSub = !isSuper && !!a.parent_id;
+                                      const label = isSuper
                                         ? "Super Admin"
-                                        : "Mini Admin"}
-                                    </span>
+                                        : isSub
+                                          ? "Дэд админ"
+                                          : "Mini Admin";
+                                      const bg = isSuper
+                                        ? "rgba(239,68,68,0.12)"
+                                        : isSub
+                                          ? "rgba(34,211,238,0.12)"
+                                          : "rgba(99,102,241,0.12)";
+                                      const color = isSuper
+                                        ? "#f87171"
+                                        : isSub
+                                          ? "#67e8f9"
+                                          : "#a5b4fc";
+                                      const border = isSuper
+                                        ? "rgba(239,68,68,0.25)"
+                                        : isSub
+                                          ? "rgba(34,211,238,0.25)"
+                                          : "rgba(99,102,241,0.25)";
+                                      return (
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            fontWeight: 600,
+                                            padding: "4px 12px",
+                                            borderRadius: 30,
+                                            background: bg,
+                                            color,
+                                            border: `1px solid ${border}`,
+                                          }}
+                                        >
+                                          {label}
+                                        </span>
+                                      );
+                                    })()}
+                                  </td>
+
+                                  <td
+                                    style={{
+                                      padding: "14px 16px",
+                                      verticalAlign: "middle",
+                                      fontSize: 12,
+                                      color: "rgba(148,163,184,0.65)",
+                                    }}
+                                  >
+                                    {a.parent_id ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 6,
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            color: "rgba(34,211,238,0.7)",
+                                            fontSize: 10,
+                                          }}
+                                        >
+                                          ↳
+                                        </span>
+                                        <span
+                                          style={{
+                                            color: "rgba(255,255,255,0.78)",
+                                            fontWeight: 500,
+                                          }}
+                                        >
+                                          {parentMap.get(a.parent_id) ?? "—"}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span
+                                        style={{ color: "rgba(148,163,184,0.3)" }}
+                                      >
+                                        —
+                                      </span>
+                                    )}
                                   </td>
 
                                   <td
