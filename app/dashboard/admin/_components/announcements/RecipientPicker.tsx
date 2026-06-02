@@ -131,8 +131,12 @@ export function RecipientPicker({ form, setForm, directions, accentColor, option
             border:"1px solid rgba(255,255,255,0.08)",borderRadius:9,
             padding:"0 30px 0 12px",fontSize:12,color:"rgba(255,255,255,0.75)",
             outline:"none",cursor:"pointer",fontFamily:"inherit",appearance:"none" as const }}>
-          <option value="">— Бүх үйл ажиллагааны чиглэл —</option>
-          {directions.map(d => <option key={d.id} value={d.label}>{d.label}</option>)}
+          <option value="" className="bg-slate-800 text-white">— Бүх үйл ажиллагааны чиглэл —</option>
+{directions.map(d => (
+  <option key={d.id} value={d.label} className="bg-slate-800 text-white">
+    {d.label}
+  </option>
+))}
         </select>
         <ChevronDown size={13} style={{ position:"absolute",right:10,top:"50%",
           transform:"translateY(-50%)",color:"rgba(148,163,184,0.4)",pointerEvents:"none" }}/>

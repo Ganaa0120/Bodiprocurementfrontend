@@ -2347,18 +2347,26 @@ export default function AdminDashboard() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div
-  style={{
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    background: "transparent",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  }}
->
-  <img src="/images/logosolo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-</div>
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  background: "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src="/images/logosolo.png"
+                  alt="Logo"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
               <div>
                 <div
                   style={{
@@ -4179,7 +4187,9 @@ export default function AdminDashboard() {
                                       </div>
                                     ) : (
                                       <span
-                                        style={{ color: "rgba(148,163,184,0.3)" }}
+                                        style={{
+                                          color: "rgba(148,163,184,0.3)",
+                                        }}
                                       >
                                         —
                                       </span>

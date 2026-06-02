@@ -484,7 +484,12 @@ export default function CompanyAnnouncementsPage() {
     const docs: string[] = [];
     for (const line of lines) {
       const clean = line.replace(/^[•\-*\d]+\.?\s*/, "").trim();
-      if (clean && !clean.startsWith("✔") && clean.length > 2 && clean.length < 200) {
+      if (
+        clean &&
+        !clean.startsWith("✔") &&
+        clean.length > 2 &&
+        clean.length < 200
+      ) {
         docs.push(clean);
       }
     }
@@ -516,8 +521,9 @@ export default function CompanyAnnouncementsPage() {
     const token = localStorage.getItem("token");
     try {
       const attachments = Object.entries(uploadedFiles).flatMap(
-        ([docName, files]) => files.map((f) => ({ ...f, docName })),
-      );
+    ([docName, files]) => files.map((f) => ({ ...f, docName })),
+  );
+
 
       const res = await fetch(`${API}/api/announcements/${selected.id}/bids`, {
         method: "POST",
@@ -565,7 +571,9 @@ export default function CompanyAnnouncementsPage() {
   });
 
   const fmtMoney = (v: any) => (v ? Number(v).toLocaleString() : "—");
-  const tc = selected ? (TYPE_CFG[selected.ann_type] ?? TYPE_CFG.open) : TYPE_CFG.open;
+  const tc = selected
+    ? (TYPE_CFG[selected.ann_type] ?? TYPE_CFG.open)
+    : TYPE_CFG.open;
   const daysLeft = selected?.deadline
     ? Math.ceil((new Date(selected.deadline).getTime() - Date.now()) / 86400000)
     : null;
@@ -659,10 +667,20 @@ export default function CompanyAnnouncementsPage() {
 
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 22 : 30 }}>
-        <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>
+        <h1
+          style={{
+            fontSize: isMobile ? 22 : 26,
+            fontWeight: 800,
+            color: "#0f172a",
+            margin: 0,
+            letterSpacing: "-0.02em",
+          }}
+        >
           Зарлалууд
         </h1>
-        <p style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>Нийтлэгдсэн худалдан авалтын зарлалууд</p>
+        <p style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
+          Нийтлэгдсэн худалдан авалтын зарлалууд
+        </p>
       </div>
 
       {/* Tabs + Search */}
@@ -704,7 +722,9 @@ export default function CompanyAnnouncementsPage() {
                   gap: 7,
                   whiteSpace: "nowrap",
                   flexShrink: 0,
-                  border: active ? `1.5px solid ${t?.color ?? "#0072BC"}` : "1.5px solid #e2e8f0",
+                  border: active
+                    ? `1.5px solid ${t?.color ?? "#0072BC"}`
+                    : "1.5px solid #e2e8f0",
                   background: active ? `${t?.color ?? "#0072BC"}10` : "white",
                   color: active ? (t?.color ?? "#0072BC") : "#64748b",
                 }}
@@ -773,22 +793,65 @@ export default function CompanyAnnouncementsPage() {
             onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
           >
-            <RefreshCw size={14} style={{ color: "#64748b", animation: loading ? "spin 1s linear infinite" : undefined }} />
+            <RefreshCw
+              size={14}
+              style={{
+                color: "#64748b",
+                animation: loading ? "spin 1s linear infinite" : undefined,
+              }}
+            />
           </button>
         </div>
       </div>
 
       {/* List */}
       {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: 80, gap: 12 }}>
-          <Loader2 size={20} style={{ color: "#0072BC", animation: "spin .8s linear infinite" }} />
-          <span style={{ fontSize: 14, color: "#94a3b8" }}>Ачаалж байна...</span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 80,
+            gap: 12,
+          }}
+        >
+          <Loader2
+            size={20}
+            style={{ color: "#0072BC", animation: "spin .8s linear infinite" }}
+          />
+          <span style={{ fontSize: 14, color: "#94a3b8" }}>
+            Ачаалж байна...
+          </span>
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "80px 20px", background: "white", borderRadius: 18, border: "1px solid #f1f5f9" }}>
-          <FileText size={36} style={{ color: "#cbd5e1", display: "block", margin: "0 auto 14px" }} />
-          <p style={{ fontSize: 14, color: "#94a3b8", margin: 0, fontWeight: 500 }}>
-            {search ? "Хайлтад тохирох зарлал олдсонгүй" : "Зарлал байхгүй байна"}
+        <div
+          style={{
+            textAlign: "center",
+            padding: "80px 20px",
+            background: "white",
+            borderRadius: 18,
+            border: "1px solid #f1f5f9",
+          }}
+        >
+          <FileText
+            size={36}
+            style={{
+              color: "#cbd5e1",
+              display: "block",
+              margin: "0 auto 14px",
+            }}
+          />
+          <p
+            style={{
+              fontSize: 14,
+              color: "#94a3b8",
+              margin: 0,
+              fontWeight: 500,
+            }}
+          >
+            {search
+              ? "Хайлтад тохирох зарлал олдсонгүй"
+              : "Зарлал байхгүй байна"}
           </p>
         </div>
       ) : (
@@ -811,17 +874,34 @@ export default function CompanyAnnouncementsPage() {
                   transition: "transform .15s, box-shadow .15s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(15,23,42,0.08)";
+                  e.currentTarget.style.boxShadow =
+                    "0 8px 24px rgba(15,23,42,0.08)";
                   e.currentTarget.style.transform = "translateY(-2px)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
+                  e.currentTarget.style.boxShadow =
+                    "0 1px 3px rgba(0,0,0,0.04)";
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
                 {/* Card content - ижил */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flexDirection: isMobile ? "column" : "row" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 14,
+                    flexDirection: isMobile ? "column" : "row",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 14,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <div
                       style={{
                         width: 44,
@@ -839,7 +919,15 @@ export default function CompanyAnnouncementsPage() {
                       {t.emoji}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          flexWrap: "wrap",
+                          marginBottom: 6,
+                        }}
+                      >
                         <span
                           style={{
                             fontSize: 11,
@@ -911,20 +999,50 @@ export default function CompanyAnnouncementsPage() {
                             WebkitBoxOrient: "vertical",
                           }}
                         >
-                          {a.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200)}
+                          {a.description
+                            .replace(/<[^>]*>/g, " ")
+                            .replace(/\s+/g, " ")
+                            .trim()
+                            .slice(0, 200)}
                         </p>
                       )}
-                      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", rowGap: 4 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 14,
+                          flexWrap: "wrap",
+                          rowGap: 4,
+                        }}
+                      >
                         {a.category_name && (
-                          <span style={{ fontSize: 11, color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: "#94a3b8",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
                             <FolderOpen size={11} /> {a.category_name}
                           </span>
                         )}
                         {(a.budget_from || a.budget_to) && (
-                          <span style={{ fontSize: 11, color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: "#94a3b8",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
                             <Wallet size={11} />
                             {fmtMoney(a.budget_from)}
-                            {a.budget_to ? ` — ${fmtMoney(a.budget_to)}` : ""} {a.currency}
+                            {a.budget_to
+                              ? ` — ${fmtMoney(a.budget_to)}`
+                              : ""}{" "}
+                            {a.currency}
                           </span>
                         )}
                         {a.deadline && (
@@ -960,12 +1078,31 @@ export default function CompanyAnnouncementsPage() {
                     }}
                   >
                     <div style={{ textAlign: isMobile ? "left" : "right" }}>
-                      <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: "#94a3b8",
+                          marginBottom: 2,
+                        }}
+                      >
                         {new Date(a.created_at).toLocaleDateString("mn-MN")}
                       </div>
-                      {a.created_by_name && <div style={{ fontSize: 10, color: "#cbd5e1" }}>{a.created_by_name}</div>}
+                      {a.created_by_name && (
+                        <div style={{ fontSize: 10, color: "#cbd5e1" }}>
+                          {a.created_by_name}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: t.color, display: "flex", alignItems: "center", gap: 4 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: t.color,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
                       Дэлгэрэнгүй →
                     </div>
                   </div>
@@ -1001,7 +1138,9 @@ export default function CompanyAnnouncementsPage() {
               background: "white",
               borderRadius: isMobile ? "24px 24px 0 0" : 24,
               boxShadow: "0 32px 80px rgba(15,23,42,0.4)",
-              animation: isMobile ? "slideUp .35s cubic-bezier(0.34,1.3,0.64,1)" : "modalIn .25s cubic-bezier(0.34,1.3,0.64,1)",
+              animation: isMobile
+                ? "slideUp .35s cubic-bezier(0.34,1.3,0.64,1)"
+                : "modalIn .25s cubic-bezier(0.34,1.3,0.64,1)",
               maxHeight: isMobile ? "94vh" : "92vh",
               overflowY: "auto",
               display: "flex",
@@ -1059,7 +1198,11 @@ export default function CompanyAnnouncementsPage() {
                 }}
               >
                 <span style={{ fontSize: 16 }}>{tc.emoji}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: tc.color }}>{tc.label}</span>
+                <span
+                  style={{ fontSize: 12, fontWeight: 700, color: tc.color }}
+                >
+                  {tc.label}
+                </span>
               </div>
 
               <h2
@@ -1076,8 +1219,17 @@ export default function CompanyAnnouncementsPage() {
                 {selected.title}
               </h2>
 
-              {(selected.is_urgent || isExpired || (daysLeft !== null && daysLeft >= 0 && daysLeft <= 7)) && (
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 14 }}>
+              {(selected.is_urgent ||
+                isExpired ||
+                (daysLeft !== null && daysLeft >= 0 && daysLeft <= 7)) && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    flexWrap: "wrap",
+                    marginTop: 14,
+                  }}
+                >
                   {selected.is_urgent && (
                     <span
                       style={{
@@ -1108,7 +1260,9 @@ export default function CompanyAnnouncementsPage() {
                       ⏱ Хугацаа дууссан
                     </span>
                   ) : (
-                    daysLeft !== null && daysLeft >= 0 && daysLeft <= 7 && (
+                    daysLeft !== null &&
+                    daysLeft >= 0 &&
+                    daysLeft <= 7 && (
                       <span
                         style={{
                           fontSize: 11,
@@ -1117,10 +1271,16 @@ export default function CompanyAnnouncementsPage() {
                           borderRadius: 99,
                           background: daysLeft <= 3 ? "#fff7ed" : "#fefce8",
                           color: daysLeft <= 3 ? "#c2410c" : "#a16207",
-                          border: daysLeft <= 3 ? "1px solid #fed7aa" : "1px solid #fde68a",
+                          border:
+                            daysLeft <= 3
+                              ? "1px solid #fed7aa"
+                              : "1px solid #fde68a",
                         }}
                       >
-                        ⏳ {daysLeft === 0 ? "Өнөөдөр дуусна" : `${daysLeft} өдөр үлдсэн`}
+                        ⏳{" "}
+                        {daysLeft === 0
+                          ? "Өнөөдөр дуусна"
+                          : `${daysLeft} өдөр үлдсэн`}
                       </span>
                     )
                   )}
@@ -1132,7 +1292,9 @@ export default function CompanyAnnouncementsPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)",
+                gridTemplateColumns: isMobile
+                  ? "repeat(2, 1fr)"
+                  : "repeat(5, 1fr)",
                 gap: 1,
                 background: "#e2e8f0",
                 borderBottom: "1px solid #e2e8f0",
@@ -1142,8 +1304,18 @@ export default function CompanyAnnouncementsPage() {
                 <HeroStat
                   Icon={Calendar}
                   label="Дуусах огноо"
-                  value={selected.deadline ? new Date(selected.deadline).toLocaleDateString("mn-MN") : "—"}
-                  accent={isExpired ? "#dc2626" : daysLeft !== null && daysLeft <= 3 ? "#ea580c" : "#0f172a"}
+                  value={
+                    selected.deadline
+                      ? new Date(selected.deadline).toLocaleDateString("mn-MN")
+                      : "—"
+                  }
+                  accent={
+                    isExpired
+                      ? "#dc2626"
+                      : daysLeft !== null && daysLeft <= 3
+                        ? "#ea580c"
+                        : "#0f172a"
+                  }
                   isMobile={isMobile}
                 />
               </div>
@@ -1155,8 +1327,12 @@ export default function CompanyAnnouncementsPage() {
                     selected.budget_from || selected.budget_to ? (
                       <span>
                         {fmtMoney(selected.budget_from)}
-                        {selected.budget_to ? ` — ${fmtMoney(selected.budget_to)}` : ""}{" "}
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>{selected.currency}</span>
+                        {selected.budget_to
+                          ? ` — ${fmtMoney(selected.budget_to)}`
+                          : ""}{" "}
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                          {selected.currency}
+                        </span>
                       </span>
                     ) : (
                       "—"
@@ -1166,23 +1342,41 @@ export default function CompanyAnnouncementsPage() {
                 />
               </div>
               <div style={{ background: "white" }}>
-                <HeroStat Icon={FolderOpen} label="Категори" value={selected.category_name ?? "—"} isMobile={isMobile} />
+                <HeroStat
+                  Icon={FolderOpen}
+                  label="Категори"
+                  value={selected.category_name ?? "—"}
+                  isMobile={isMobile}
+                />
               </div>
               <div style={{ background: "white" }}>
                 <HeroStat
                   Icon={TrendingUp}
                   label="Худалдан авалтын төрөл"
-                  value={selected.procurement_kind === "goods" ? "Бараа" : selected.procurement_kind === "service" ? "Үйлчилгээ" : "—"}
+                  value={
+                    selected.procurement_kind === "goods"
+                      ? "Бараа"
+                      : selected.procurement_kind === "service"
+                        ? "Үйлчилгээ"
+                        : "—"
+                  }
                   isMobile={isMobile}
                 />
               </div>
               <div style={{ background: "white" }}>
-                <HeroStat Icon={Eye} label="Үзэлт" value={String(selected.view_count ?? 0)} isMobile={isMobile} />
+                <HeroStat
+                  Icon={Eye}
+                  label="Үзэлт"
+                  value={String(selected.view_count ?? 0)}
+                  isMobile={isMobile}
+                />
               </div>
             </div>
 
             {/* BODY */}
-            <div style={{ padding: isMobile ? "26px 20px" : "32px 40px", flex: 1 }}>
+            <div
+              style={{ padding: isMobile ? "26px 20px" : "32px 40px", flex: 1 }}
+            >
               {/* Тайлбар */}
               {selected.description && (
                 <Section title="Тайлбар" accent={tc.color} Icon={FileText}>
@@ -1195,7 +1389,8 @@ export default function CompanyAnnouncementsPage() {
                 <Section title="Шаардлага" accent="#d97706" Icon={Sparkles}>
                   <div
                     style={{
-                      background: "linear-gradient(135deg,#fefce8 0%,#fffbeb 100%)",
+                      background:
+                        "linear-gradient(135deg,#fefce8 0%,#fffbeb 100%)",
                       borderRadius: 14,
                       padding: isMobile ? "14px 16px" : "18px 20px",
                       border: "1px solid #fde68a",
@@ -1207,8 +1402,14 @@ export default function CompanyAnnouncementsPage() {
               )}
 
               {/* Худалдан авагчийн мэдээлэл */}
-              {(selected.client_company || selected.responsible_person_name || selected.contact_phone) && (
-                <Section title="Худалдан авагчийн мэдээлэл" accent={tc.color} Icon={Building2}>
+              {(selected.client_company ||
+                selected.responsible_person_name ||
+                selected.contact_phone) && (
+                <Section
+                  title="Худалдан авагчийн мэдээлэл"
+                  accent={tc.color}
+                  Icon={Building2}
+                >
                   <div
                     style={{
                       display: "grid",
@@ -1222,21 +1423,58 @@ export default function CompanyAnnouncementsPage() {
                   >
                     {selected.client_company && (
                       <div>
-                        <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#64748b",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Байгууллага
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{selected.client_company}</div>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {selected.client_company}
+                        </div>
                       </div>
                     )}
                     {selected.responsible_person_name && (
                       <div>
-                        <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#64748b",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Хариуцлагатай хүн
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
                           {selected.responsible_person_name}
                           {selected.responsible_position && (
-                            <span style={{ fontSize: 12, color: "#64748b", fontWeight: 400, marginLeft: 6 }}>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: "#64748b",
+                                fontWeight: 400,
+                                marginLeft: 6,
+                              }}
+                            >
                               ({selected.responsible_position})
                             </span>
                           )}
@@ -1245,10 +1483,26 @@ export default function CompanyAnnouncementsPage() {
                     )}
                     {selected.contact_phone && (
                       <div>
-                        <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#64748b",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Холбоо барих утас
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{selected.contact_phone}</div>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {selected.contact_phone}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1257,25 +1511,77 @@ export default function CompanyAnnouncementsPage() {
 
               {/* Худалдан авалтын хугацаа */}
               {(selected.start_date || selected.end_date) && (
-                <Section title="Худалдан авалтын хугацаа" accent={tc.color} Icon={Calendar}>
+                <Section
+                  title="Худалдан авалтын хугацаа"
+                  accent={tc.color}
+                  Icon={Calendar}
+                >
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     {selected.start_date && (
-                      <div style={{ flex: 1, background: "#f8fafc", borderRadius: 12, padding: "12px 16px", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          background: "#f8fafc",
+                          borderRadius: 12,
+                          padding: "12px 16px",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#64748b",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Эхлэх огноо
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>
-                          {new Date(selected.start_date).toLocaleDateString("mn-MN")}
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {new Date(selected.start_date).toLocaleDateString(
+                            "mn-MN",
+                          )}
                         </div>
                       </div>
                     )}
                     {selected.end_date && (
-                      <div style={{ flex: 1, background: "#f8fafc", borderRadius: 12, padding: "12px 16px", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          background: "#f8fafc",
+                          borderRadius: 12,
+                          padding: "12px 16px",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#64748b",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Дуусах огноо
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>
-                          {new Date(selected.end_date).toLocaleDateString("mn-MN")}
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {new Date(selected.end_date).toLocaleDateString(
+                            "mn-MN",
+                          )}
                         </div>
                       </div>
                     )}
@@ -1285,25 +1591,77 @@ export default function CompanyAnnouncementsPage() {
 
               {/* Хүргэлтийн хугацаа */}
               {(selected.supply_start_date || selected.supply_end_date) && (
-                <Section title="Хүргэлтийн хугацаа" accent="#d97706" Icon={Package}>
+                <Section
+                  title="Хүргэлтийн хугацаа"
+                  accent="#d97706"
+                  Icon={Package}
+                >
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     {selected.supply_start_date && (
-                      <div style={{ flex: 1, background: "#fefce8", borderRadius: 12, padding: "12px 16px", border: "1px solid #fde68a" }}>
-                        <div style={{ fontSize: 10, color: "#92400e", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          background: "#fefce8",
+                          borderRadius: 12,
+                          padding: "12px 16px",
+                          border: "1px solid #fde68a",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#92400e",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Эхлэх огноо
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#78350f" }}>
-                          {new Date(selected.supply_start_date).toLocaleDateString("mn-MN")}
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#78350f",
+                          }}
+                        >
+                          {new Date(
+                            selected.supply_start_date,
+                          ).toLocaleDateString("mn-MN")}
                         </div>
                       </div>
                     )}
                     {selected.supply_end_date && (
-                      <div style={{ flex: 1, background: "#fefce8", borderRadius: 12, padding: "12px 16px", border: "1px solid #fde68a" }}>
-                        <div style={{ fontSize: 10, color: "#92400e", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          background: "#fefce8",
+                          borderRadius: 12,
+                          padding: "12px 16px",
+                          border: "1px solid #fde68a",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#92400e",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Дуусах огноо
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#78350f" }}>
-                          {new Date(selected.supply_end_date).toLocaleDateString("mn-MN")}
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#78350f",
+                          }}
+                        >
+                          {new Date(
+                            selected.supply_end_date,
+                          ).toLocaleDateString("mn-MN")}
                         </div>
                       </div>
                     )}
@@ -1312,7 +1670,9 @@ export default function CompanyAnnouncementsPage() {
               )}
 
               {/* Байршил */}
-              {(selected.central_location || selected.branch_location || selected.address_details) && (
+              {(selected.central_location ||
+                selected.branch_location ||
+                selected.address_details) && (
                 <Section title="Байршил" accent="#7c3aed" Icon={MapPin}>
                   <div
                     style={{
@@ -1327,26 +1687,56 @@ export default function CompanyAnnouncementsPage() {
                   >
                     {selected.central_location && (
                       <div>
-                        <div style={{ fontSize: 10, color: "#6d28d9", marginBottom: 2, fontWeight: 600, textTransform: "uppercase" }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#6d28d9",
+                            marginBottom: 2,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Төв байршил
                         </div>
-                        <div style={{ fontSize: 14, color: "#090909" }}>{selected.central_location}</div>
+                        <div style={{ fontSize: 14, color: "#090909" }}>
+                          {selected.central_location}
+                        </div>
                       </div>
                     )}
                     {selected.branch_location && (
                       <div>
-                        <div style={{ fontSize: 10, color: "#6d28d9", marginBottom: 2, fontWeight: 600, textTransform: "uppercase" }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#6d28d9",
+                            marginBottom: 2,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Салбар байршил
                         </div>
-                        <div style={{ fontSize: 14, color: "#090909" }}>{selected.branch_location}</div>
+                        <div style={{ fontSize: 14, color: "#090909" }}>
+                          {selected.branch_location}
+                        </div>
                       </div>
                     )}
                     {selected.address_details && (
                       <div>
-                        <div style={{ fontSize: 10, color: "#6d28d9", marginBottom: 2, fontWeight: 600, textTransform: "uppercase" }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#6d28d9",
+                            marginBottom: 2,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                          }}
+                        >
                           Дэлгэрэнгүй хаяг
                         </div>
-                        <div style={{ fontSize: 14, color: "#090909" }}>{selected.address_details}</div>
+                        <div style={{ fontSize: 14, color: "#090909" }}>
+                          {selected.address_details}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1354,52 +1744,167 @@ export default function CompanyAnnouncementsPage() {
               )}
 
               {/* RFQ дэлгэрэнгүй */}
-              {selected.ann_type === "rfq" && (selected.rfq_quantity || selected.rfq_delivery_place || selected.rfq_specs) && (
-                <Section title="Үнийн санал — дэлгэрэнгүй" accent="#d97706" Icon={Package}>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
-                    {selected.rfq_quantity && (
-                      <div style={{ background: "white", border: "1px solid #fde68a", borderLeft: "3px solid #d97706", borderRadius: 12, padding: "14px 16px" }}>
-                        <div style={{ fontSize: 10, color: "#92400e", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>
-                          Тоо хэмжээ
+              {selected.ann_type === "rfq" &&
+                (selected.rfq_quantity ||
+                  selected.rfq_delivery_place ||
+                  selected.rfq_specs) && (
+                  <Section
+                    title="Үнийн санал — дэлгэрэнгүй"
+                    accent="#d97706"
+                    Icon={Package}
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+                        gap: 10,
+                      }}
+                    >
+                      {selected.rfq_quantity && (
+                        <div
+                          style={{
+                            background: "white",
+                            border: "1px solid #fde68a",
+                            borderLeft: "3px solid #d97706",
+                            borderRadius: 12,
+                            padding: "14px 16px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "#92400e",
+                              marginBottom: 6,
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Тоо хэмжээ
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 16,
+                              fontWeight: 700,
+                              color: "#78350f",
+                            }}
+                          >
+                            {selected.rfq_quantity}{" "}
+                            <span style={{ fontSize: 13, color: "#a16207" }}>
+                              {selected.rfq_unit}
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: "#78350f" }}>
-                          {selected.rfq_quantity} <span style={{ fontSize: 13, color: "#a16207" }}>{selected.rfq_unit}</span>
+                      )}
+                      {selected.rfq_delivery_place && (
+                        <div
+                          style={{
+                            background: "white",
+                            border: "1px solid #a7f3d0",
+                            borderLeft: "3px solid #10b981",
+                            borderRadius: 12,
+                            padding: "14px 16px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "#065f46",
+                              marginBottom: 6,
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Хүргэлтийн газар
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "#064e3b",
+                            }}
+                          >
+                            {selected.rfq_delivery_place}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {selected.rfq_delivery_place && (
-                      <div style={{ background: "white", border: "1px solid #a7f3d0", borderLeft: "3px solid #10b981", borderRadius: 12, padding: "14px 16px" }}>
-                        <div style={{ fontSize: 10, color: "#065f46", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>
-                          Хүргэлтийн газар
+                      )}
+                      {selected.rfq_delivery_date && (
+                        <div
+                          style={{
+                            background: "white",
+                            border: "1px solid #bfdbfe",
+                            borderLeft: "3px solid #3b82f6",
+                            borderRadius: 12,
+                            padding: "14px 16px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "#1e40af",
+                              marginBottom: 6,
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Хүргэлтийн огноо
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "#1e3a8a",
+                            }}
+                          >
+                            {new Date(
+                              selected.rfq_delivery_date,
+                            ).toLocaleDateString("mn-MN")}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#064e3b" }}>{selected.rfq_delivery_place}</div>
-                      </div>
-                    )}
-                    {selected.rfq_delivery_date && (
-                      <div style={{ background: "white", border: "1px solid #bfdbfe", borderLeft: "3px solid #3b82f6", borderRadius: 12, padding: "14px 16px" }}>
-                        <div style={{ fontSize: 10, color: "#1e40af", marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>
-                          Хүргэлтийн огноо
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#1e3a8a" }}>
-                          {new Date(selected.rfq_delivery_date).toLocaleDateString("mn-MN")}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {selected.rfq_specs && (
-                    <div style={{ marginTop: 10, background: "white", border: "1px solid #e2e8f0", borderLeft: "3px solid #64748b", borderRadius: 12, padding: "14px 16px" }}>
-                      <div style={{ fontSize: 10, color: "#475569", marginBottom: 8, fontWeight: 700, textTransform: "uppercase" }}>
-                        🔧 Техникийн тодорхойлолт
-                      </div>
-                      <div style={{ fontSize: 14, color: "#334155", whiteSpace: "pre-wrap" }}>{selected.rfq_specs}</div>
+                      )}
                     </div>
-                  )}
-                </Section>
-              )}
+                    {selected.rfq_specs && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          background: "white",
+                          border: "1px solid #e2e8f0",
+                          borderLeft: "3px solid #64748b",
+                          borderRadius: 12,
+                          padding: "14px 16px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#475569",
+                            marginBottom: 8,
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          🔧 Техникийн тодорхойлолт
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            color: "#334155",
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {selected.rfq_specs}
+                        </div>
+                      </div>
+                    )}
+                  </Section>
+                )}
 
               {/* Үйл ажиллагааны чиглэл */}
               {selected.activity_directions?.length > 0 && (
-                <Section title="Үйл ажиллагааны чиглэл" accent="#7c3aed" Icon={TrendingUp}>
+                <Section
+                  title="Үйл ажиллагааны чиглэл"
+                  accent="#7c3aed"
+                  Icon={TrendingUp}
+                >
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {selected.activity_directions.map((d: string) => (
                       <span
@@ -1422,16 +1927,48 @@ export default function CompanyAnnouncementsPage() {
               )}
 
               {/* Худалдан авагчийн баримт бичгүүд */}
-              {(selected.buyer_doc_info || selected.buyer_attachments?.length > 0) && (
-                <Section title="Худалдан авагчийн баримт бичгүүд" accent="#3b82f6" Icon={FileText}>
-                  <div style={{ background: "#eff6ff", borderRadius: 14, padding: "16px 18px", border: "1px solid #bfdbfe" }}>
-                    {selected.buyer_doc_info && <SafeHTML html={selected.buyer_doc_info} />}
+              {(selected.buyer_doc_info ||
+                selected.buyer_attachments?.length > 0) && (
+                <Section
+                  title="Худалдан авагчийн баримт бичгүүд"
+                  accent="#3b82f6"
+                  Icon={FileText}
+                >
+                  <div
+                    style={{
+                      background: "#eff6ff",
+                      borderRadius: 14,
+                      padding: "16px 18px",
+                      border: "1px solid #bfdbfe",
+                    }}
+                  >
+                    {selected.buyer_doc_info && (
+                      <SafeHTML html={selected.buyer_doc_info} />
+                    )}
                     {selected.buyer_attachments?.length > 0 && (
-                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#1e40af", marginBottom: 6 }}>Хавсаргасан файлууд:</div>
-                        {selected.buyer_attachments.map((file: any, idx: number) => (
-                          <DownloadFileItem key={idx} file={file} />
-                        ))}
+                      <div
+                        style={{
+                          marginTop: 12,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: "#1e40af",
+                            marginBottom: 6,
+                          }}
+                        >
+                          Хавсаргасан файлууд:
+                        </div>
+                        {selected.buyer_attachments.map(
+                          (file: any, idx: number) => (
+                            <DownloadFileItem key={idx} file={file} />
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
@@ -1439,8 +1976,14 @@ export default function CompanyAnnouncementsPage() {
               )}
 
               {/* НИЙЛҮҮЛЭГЧИД ШААРДЛАГАТАЙ БАРИМТ БИЧГҮҮД (зарлал дотор) */}
-              {(supplierRequiredText || supplierRequiredFiles.length > 0 || supplierRequiredDocsList.length > 0) && (
-                <Section title="Нийлүүлэгчид шаардлагатай баримт бичгүүд" accent="#10b981" Icon={ShieldCheck}>
+              {(supplierRequiredText ||
+                supplierRequiredFiles.length > 0 ||
+                supplierRequiredDocsList.length > 0) && (
+                <Section
+                  title="Нийлүүлэгчид шаардлагатай баримт бичгүүд"
+                  accent="#10b981"
+                  Icon={ShieldCheck}
+                >
                   <div
                     style={{
                       background: "#ecfdf5",
@@ -1449,7 +1992,9 @@ export default function CompanyAnnouncementsPage() {
                       border: "1px solid #a7f3d0",
                     }}
                   >
-                    {supplierRequiredText && <SafeHTML html={supplierRequiredText} />}
+                    {supplierRequiredText && (
+                      <SafeHTML html={supplierRequiredText} />
+                    )}
 
                     {supplierRequiredFiles.length > 0 && (
                       <div style={{ marginTop: 16 }}>
@@ -1467,10 +2012,18 @@ export default function CompanyAnnouncementsPage() {
                           <FileCheck size={12} />
                           Хавсаргасан баримт бичгүүд (татах):
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {supplierRequiredFiles.map((file: any, idx: number) => (
-                            <DownloadFileItem key={idx} file={file} />
-                          ))}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                          }}
+                        >
+                          {supplierRequiredFiles.map(
+                            (file: any, idx: number) => (
+                              <DownloadFileItem key={idx} file={file} />
+                            ),
+                          )}
                         </div>
                       </div>
                     )}
@@ -1492,7 +2045,14 @@ export default function CompanyAnnouncementsPage() {
                   marginTop: 8,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    minWidth: 0,
+                  }}
+                >
                   {selected.created_by_name ? (
                     <>
                       <div
@@ -1525,19 +2085,48 @@ export default function CompanyAnnouncementsPage() {
                         >
                           {selected.created_by_name}
                         </div>
-                        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
-                          Нийтэлсэн • {new Date(selected.created_at).toLocaleDateString("mn-MN")}
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#94a3b8",
+                            marginTop: 1,
+                          }}
+                        >
+                          Нийтэлсэн •{" "}
+                          {new Date(selected.created_at).toLocaleDateString(
+                            "mn-MN",
+                          )}
                         </div>
                       </div>
                     </>
                   ) : (
-                    <span style={{ fontSize: 13, color: "#94a3b8" }}>Bodi Group</span>
+                    <span style={{ fontSize: 13, color: "#94a3b8" }}>
+                      Bodi Group
+                    </span>
                   )}
                 </div>
                 {(selected.bid_count ?? 0) > 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 99, background: "white", border: "1px solid #bae6fd" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "6px 12px",
+                      borderRadius: 99,
+                      background: "white",
+                      border: "1px solid #bae6fd",
+                    }}
+                  >
                     <Send size={11} color="#0072BC" />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#0072BC" }}>{selected.bid_count} хүсэлт</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#0072BC",
+                      }}
+                    >
+                      {selected.bid_count} хүсэлт
+                    </span>
                   </div>
                 )}
               </div>
@@ -1555,7 +2144,9 @@ export default function CompanyAnnouncementsPage() {
                 display: "flex",
                 gap: 10,
                 boxShadow: "0 -4px 14px rgba(0,0,0,0.04)",
-                paddingBottom: isMobile ? "calc(14px + env(safe-area-inset-bottom))" : 18,
+                paddingBottom: isMobile
+                  ? "calc(14px + env(safe-area-inset-bottom))"
+                  : 18,
               }}
             >
               <button
@@ -1571,8 +2162,12 @@ export default function CompanyAnnouncementsPage() {
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#f8fafc")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "white")
+                }
               >
                 Хаах
               </button>
@@ -1588,7 +2183,9 @@ export default function CompanyAnnouncementsPage() {
                   padding: "13px 26px",
                   borderRadius: 12,
                   border: "none",
-                  background: isExpired ? "#e2e8f0" : "linear-gradient(135deg,#0072BC,#3b9be0)",
+                  background: isExpired
+                    ? "#e2e8f0"
+                    : "linear-gradient(135deg,#0072BC,#3b9be0)",
                   color: isExpired ? "#94a3b8" : "white",
                   fontSize: 14,
                   fontWeight: 700,
@@ -1597,10 +2194,18 @@ export default function CompanyAnnouncementsPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
-                  boxShadow: isExpired ? "none" : "0 8px 20px rgba(0,114,188,0.35)",
+                  boxShadow: isExpired
+                    ? "none"
+                    : "0 8px 20px rgba(0,114,188,0.35)",
                 }}
               >
-                {isExpired ? "Хугацаа дууссан" : <><Send size={15} /> Хүсэлт илгээх</>}
+                {isExpired ? (
+                  "Хугацаа дууссан"
+                ) : (
+                  <>
+                    <Send size={15} /> Хүсэлт илгээх
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1633,20 +2238,32 @@ export default function CompanyAnnouncementsPage() {
               background: "white",
               borderRadius: isMobile ? "24px 24px 0 0" : 24,
               boxShadow: "0 32px 80px rgba(15,23,42,0.5)",
-              animation: isMobile ? "slideUp .3s cubic-bezier(0.34,1.3,0.64,1)" : "modalIn .25s cubic-bezier(0.34,1.3,0.64,1)",
+              animation: isMobile
+                ? "slideUp .3s cubic-bezier(0.34,1.3,0.64,1)"
+                : "modalIn .25s cubic-bezier(0.34,1.3,0.64,1)",
               maxHeight: "92vh",
               overflowY: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {bidDone ? (
-              <div style={{ padding: "60px 32px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+              <div
+                style={{
+                  padding: "60px 32px",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 18,
+                }}
+              >
                 <div
                   style={{
                     width: 88,
                     height: 88,
                     borderRadius: "50%",
-                    background: "linear-gradient(135deg,#10b981 0%,#059669 100%)",
+                    background:
+                      "linear-gradient(135deg,#10b981 0%,#059669 100%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1656,23 +2273,48 @@ export default function CompanyAnnouncementsPage() {
                   <CheckCircle2 size={48} color="white" strokeWidth={2.5} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>Хүсэлт илгээгдлээ!</div>
-                  <div style={{ fontSize: 14, color: "#64748b", lineHeight: 1.55, maxWidth: 320 }}>
-                    Таны хүсэлтийг хүлээж авлаа. Админ хариуг тань удахгүй мэдэгдэх болно.
+                  <div
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 800,
+                      color: "#0f172a",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Хүсэлт илгээгдлээ!
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      color: "#64748b",
+                      lineHeight: 1.55,
+                      maxWidth: 320,
+                    }}
+                  >
+                    Таны хүсэлтийг хүлээж авлаа. Админ хариуг тань удахгүй
+                    мэдэгдэх болно.
                   </div>
                 </div>
               </div>
             ) : (
               <>
                 {/* HEADER */}
-                <div style={{ padding: isMobile ? "22px 22px 18px" : "26px 28px 22px", borderBottom: "1px solid #f1f5f9" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div
+                  style={{
+                    padding: isMobile ? "22px 22px 18px" : "26px 28px 22px",
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 14 }}
+                  >
                     <div
                       style={{
                         width: 50,
                         height: 50,
                         borderRadius: 14,
-                        background: "linear-gradient(135deg,#0072BC 0%,#3b9be0 100%)",
+                        background:
+                          "linear-gradient(135deg,#0072BC 0%,#3b9be0 100%)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -1682,8 +2324,25 @@ export default function CompanyAnnouncementsPage() {
                       <Send size={22} color="white" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>Хүсэлт гаргах</div>
-                      <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 800,
+                          color: "#0f172a",
+                        }}
+                      >
+                        Хүсэлт гаргах
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#94a3b8",
+                          marginTop: 2,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {selected.title}
                       </div>
                     </div>
@@ -1723,8 +2382,23 @@ export default function CompanyAnnouncementsPage() {
                         gap: 10,
                       }}
                     >
-                      <AlertCircle size={16} style={{ color: "#dc2626", flexShrink: 0, marginTop: 1 }} />
-                      <div style={{ fontSize: 13, color: "#991b1b", lineHeight: 1.5 }}>{bidError}</div>
+                      <AlertCircle
+                        size={16}
+                        style={{
+                          color: "#dc2626",
+                          flexShrink: 0,
+                          marginTop: 1,
+                        }}
+                      />
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "#991b1b",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {bidError}
+                      </div>
                     </div>
                   )}
 
@@ -1735,7 +2409,8 @@ export default function CompanyAnnouncementsPage() {
                     style={{
                       marginBottom: 22,
                       padding: "18px 20px",
-                      background: "linear-gradient(135deg,#f0f9ff 0%,#eef2ff 100%)",
+                      background:
+                        "linear-gradient(135deg,#f0f9ff 0%,#eef2ff 100%)",
                       borderRadius: 14,
                       border: "1px solid #bae6fd",
                     }}
@@ -1806,7 +2481,8 @@ export default function CompanyAnnouncementsPage() {
                             fontWeight: 500,
                           }}
                         >
-                          {Number(priceOffer).toLocaleString()} {selected.currency || "MNT"}
+                          {Number(priceOffer).toLocaleString()}{" "}
+                          {selected.currency || "MNT"}
                         </div>
                       )}
                     </div>
@@ -1822,7 +2498,8 @@ export default function CompanyAnnouncementsPage() {
                           marginBottom: 6,
                         }}
                       >
-                        Хүргэлтийн огноо <span style={{ color: "#dc2626" }}>*</span>
+                        Хүргэлтийн огноо{" "}
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="date"
@@ -1846,7 +2523,13 @@ export default function CompanyAnnouncementsPage() {
                         }}
                       >
                         Нэмэлт тайлбар{" "}
-                        <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "#94a3b8",
+                            fontWeight: 400,
+                          }}
+                        >
                           (заавал биш)
                         </span>
                       </label>
@@ -1861,7 +2544,6 @@ export default function CompanyAnnouncementsPage() {
                   </div>
 
                   {/* Шаардлагатай баримт бичгүүд хавсаргах */}
-                  {supplierRequiredDocsList.length > 0 && (
                     <div style={{ marginBottom: 24 }}>
                       <div
                         style={{
@@ -1874,13 +2556,34 @@ export default function CompanyAnnouncementsPage() {
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
+                          flexWrap: "wrap",
                         }}
                       >
                         <FileText size={12} />
-                        Шаардлагатай баримт бичгүүд
-                        {totalFiles === 0 && (
-                          <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 400 }}>
-                            (заавал хавсаргах шаардлагатай)
+                        {supplierRequiredDocsList.length > 0
+                          ? "Шаардлагатай баримт бичгүүд"
+                          : "Хавсралт файл"}
+                        {supplierRequiredDocsList.length > 0 &&
+                          totalFiles === 0 && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: "#ef4444",
+                                fontWeight: 400,
+                              }}
+                            >
+                              (заавал хавсаргах шаардлагатай)
+                            </span>
+                          )}
+                        {supplierRequiredDocsList.length === 0 && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: "#94a3b8",
+                              fontWeight: 400,
+                            }}
+                          >
+                            (заавал биш)
                           </span>
                         )}
                       </div>
@@ -1893,128 +2596,276 @@ export default function CompanyAnnouncementsPage() {
                           border: "1px solid #a7f3d0",
                         }}
                       >
-                        {supplierRequiredDocsList.map((doc, idx) => {
-                          const files = uploadedFiles[doc] || [];
-                          const hasFiles = files.length > 0;
-                          return (
-                            <div
-                              key={idx}
-                              style={{
-                                marginBottom: idx < supplierRequiredDocsList.length - 1 ? 16 : 0,
-                                border: hasFiles ? "1px solid #d1fae5" : "1px dashed #d1fae5",
-                                borderRadius: 12,
-                                overflow: "hidden",
-                                background: hasFiles ? "white" : "transparent",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  padding: "12px 16px",
-                                  background: hasFiles ? "#f0fdf4" : "transparent",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  flexWrap: "wrap",
-                                  gap: 10,
-                                }}
-                              >
+                        {supplierRequiredDocsList.length > 0
+                          ? /* ── Зарлал дээр тусгайлан шаардсан баримт бичгүүд ── */
+                            supplierRequiredDocsList.map((doc, idx) => {
+                              const files = uploadedFiles[doc] || [];
+                              const hasFiles = files.length > 0;
+                              return (
                                 <div
+                                  key={idx}
                                   style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 10,
-                                    flexWrap: "wrap",
+                                    marginBottom:
+                                      idx < supplierRequiredDocsList.length - 1
+                                        ? 16
+                                        : 0,
+                                    border: hasFiles
+                                      ? "1px solid #d1fae5"
+                                      : "1px dashed #d1fae5",
+                                    borderRadius: 12,
+                                    overflow: "hidden",
+                                    background: hasFiles
+                                      ? "white"
+                                      : "transparent",
                                   }}
                                 >
-                                  <FileText size={16} color={hasFiles ? "#059669" : "#94a3b8"} />
-                                  <p>Файл аа оруулна уу</p>
-                                  {!hasFiles && (
-                                    <span
+                                  <div
+                                    style={{
+                                      padding: "12px 16px",
+                                      background: hasFiles
+                                        ? "#f0fdf4"
+                                        : "transparent",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      flexWrap: "wrap",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div
                                       style={{
-                                        fontSize: 10,
-                                        padding: "2px 8px",
-                                        borderRadius: 30,
-                                        background: "#fef2f2",
-                                        color: "#dc2626",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 10,
+                                        flexWrap: "wrap",
+                                        flex: 1,
+                                        minWidth: 0,
                                       }}
                                     >
-                                      шаардлагатай
-                                    </span>
-                                  )}
-                                  {hasFiles && (
-                                    <span
+                                      <FileText
+                                        size={16}
+                                        color={hasFiles ? "#059669" : "#94a3b8"}
+                                      />
+                                      <span
+                                        style={{
+                                          fontSize: 13,
+                                          color: "#0f172a",
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        {doc}
+                                      </span>
+                                      {!hasFiles && (
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            padding: "2px 8px",
+                                            borderRadius: 30,
+                                            background: "#fef2f2",
+                                            color: "#dc2626",
+                                          }}
+                                        >
+                                          шаардлагатай
+                                        </span>
+                                      )}
+                                      {hasFiles && (
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            padding: "2px 10px",
+                                            borderRadius: 30,
+                                            background: "#d1fae5",
+                                            color: "#065f46",
+                                            fontWeight: 500,
+                                          }}
+                                        >
+                                          {files.length} файл
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setCurrentDoc(doc);
+                                        fileInputRef.current?.click();
+                                      }}
+                                      disabled={uploading || bidSaving}
                                       style={{
-                                        fontSize: 10,
-                                        padding: "2px 10px",
-                                        borderRadius: 30,
-                                        background: "#d1fae5",
-                                        color: "#065f46",
+                                        padding: "6px 14px",
+                                        borderRadius: 8,
+                                        background: "#059669",
+                                        border: "none",
+                                        color: "white",
+                                        fontSize: 12,
                                         fontWeight: 500,
+                                        cursor:
+                                          uploading || bidSaving
+                                            ? "not-allowed"
+                                            : "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        opacity:
+                                          uploading || bidSaving ? 0.6 : 1,
                                       }}
                                     >
-                                      {files.length} файл
-                                    </span>
+                                      <Plus size={14} /> Файл нэмэх
+                                    </button>
+                                  </div>
+
+                                  {hasFiles && (
+                                    <div
+                                      style={{
+                                        padding: "12px 16px",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 10,
+                                        borderTop: "1px solid #d1fae5",
+                                      }}
+                                    >
+                                      {files.map((file, fileIdx) => (
+                                        <UploadFileItem
+                                          key={fileIdx}
+                                          file={file}
+                                          onRemove={() =>
+                                            handleRemoveFile(doc, fileIdx)
+                                          }
+                                          onView={() =>
+                                            handleViewFile(file.url, file.name)
+                                          }
+                                        />
+                                      ))}
+                                    </div>
                                   )}
                                 </div>
-                                <button
-                                  onClick={() => {
-                                    setCurrentDoc(doc);
-                                    fileInputRef.current?.click();
-                                  }}
-                                  disabled={uploading || bidSaving}
-                                  style={{
-                                    padding: "6px 14px",
-                                    borderRadius: 8,
-                                    background: "#059669",
-                                    border: "none",
-                                    color: "white",
-                                    fontSize: 12,
-                                    fontWeight: 500,
-                                    cursor: uploading || bidSaving ? "not-allowed" : "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    opacity: uploading || bidSaving ? 0.6 : 1,
-                                    transition: "all 0.15s",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    if (!uploading && !bidSaving) e.currentTarget.style.background = "#047857";
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    if (!uploading && !bidSaving) e.currentTarget.style.background = "#059669";
-                                  }}
-                                >
-                                  <Plus size={14} />
-                                  Файл нэмэх
-                                </button>
-                              </div>
-
-                              {hasFiles && (
+                              );
+                            })
+                          : /* ── Ерөнхий хавсралт (зарлал дээр баримт бичиг шаардаагүй үед) ── */
+                            (() => {
+                              const genericFiles =
+                                uploadedFiles["general"] || [];
+                              const hasFiles = genericFiles.length > 0;
+                              return (
                                 <div
                                   style={{
-                                    padding: "12px 16px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 10,
-                                    borderTop: "1px solid #d1fae5",
+                                    border: hasFiles
+                                      ? "1px solid #d1fae5"
+                                      : "1px dashed #d1fae5",
+                                    borderRadius: 12,
+                                    overflow: "hidden",
+                                    background: hasFiles
+                                      ? "white"
+                                      : "transparent",
                                   }}
                                 >
-                                  {files.map((file, fileIdx) => (
-                                    <UploadFileItem
-                                      key={fileIdx}
-                                      file={file}
-                                      onRemove={() => handleRemoveFile(doc, fileIdx)}
-                                      onView={() => handleViewFile(file.url, file.name)}
-                                    />
-                                  ))}
+                                  <div
+                                    style={{
+                                      padding: "12px 16px",
+                                      background: hasFiles
+                                        ? "#f0fdf4"
+                                        : "transparent",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      flexWrap: "wrap",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 10,
+                                        flexWrap: "wrap",
+                                        flex: 1,
+                                        minWidth: 0,
+                                      }}
+                                    >
+                                      <FileText
+                                        size={16}
+                                        color={hasFiles ? "#059669" : "#94a3b8"}
+                                      />
+                                      <span
+                                        style={{
+                                          fontSize: 13,
+                                          color: "#0f172a",
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        Үнийн санал, бусад хавсралт файл
+                                      </span>
+                                      {hasFiles && (
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            padding: "2px 10px",
+                                            borderRadius: 30,
+                                            background: "#d1fae5",
+                                            color: "#065f46",
+                                            fontWeight: 500,
+                                          }}
+                                        >
+                                          {genericFiles.length} файл
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setCurrentDoc("general");
+                                        fileInputRef.current?.click();
+                                      }}
+                                      disabled={uploading || bidSaving}
+                                      style={{
+                                        padding: "6px 14px",
+                                        borderRadius: 8,
+                                        background: "#059669",
+                                        border: "none",
+                                        color: "white",
+                                        fontSize: 12,
+                                        fontWeight: 500,
+                                        cursor:
+                                          uploading || bidSaving
+                                            ? "not-allowed"
+                                            : "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        opacity:
+                                          uploading || bidSaving ? 0.6 : 1,
+                                      }}
+                                    >
+                                      <Plus size={14} /> Файл нэмэх
+                                    </button>
+                                  </div>
+
+                                  {hasFiles && (
+                                    <div
+                                      style={{
+                                        padding: "12px 16px",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 10,
+                                        borderTop: "1px solid #d1fae5",
+                                      }}
+                                    >
+                                      {genericFiles.map((file, fileIdx) => (
+                                        <UploadFileItem
+                                          key={fileIdx}
+                                          file={file}
+                                          onRemove={() =>
+                                            handleRemoveFile("general", fileIdx)
+                                          }
+                                          onView={() =>
+                                            handleViewFile(file.url, file.name)
+                                          }
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                              );
+                            })()}
                       </div>
                     </div>
-                  )}
 
                   {/* Уншигдсан hidden file input */}
                   <input
@@ -2055,10 +2906,24 @@ export default function CompanyAnnouncementsPage() {
                     >
                       <Building2 size={12} /> Таны мэдээлэл
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 12,
+                      }}
+                    >
                       {[
-                        { Icon: Building2, label: "Байгууллага", value: user?.company_name },
-                        { Icon: Hash, label: "Нийлүүлэгчийн дугаар", value: user?.supplier_number },
+                        {
+                          Icon: Building2,
+                          label: "Байгууллага",
+                          value: user?.company_name,
+                        },
+                        {
+                          Icon: Hash,
+                          label: "Нийлүүлэгчийн дугаар",
+                          value: user?.supplier_number,
+                        },
                         { Icon: Mail, label: "И-мэйл", value: user?.email },
                         { Icon: Phone, label: "Утас", value: user?.phone },
                       ]
@@ -2066,7 +2931,14 @@ export default function CompanyAnnouncementsPage() {
                         .map((row) => {
                           const RowIcon = row.Icon;
                           return (
-                            <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                            <div
+                              key={row.label}
+                              style={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: 10,
+                              }}
+                            >
                               <div
                                 style={{
                                   width: 28,
@@ -2083,8 +2955,26 @@ export default function CompanyAnnouncementsPage() {
                                 <RowIcon size={13} color="#64748b" />
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2, fontWeight: 500 }}>{row.label}</div>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", wordBreak: "break-word" }}>{row.value}</div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: "#94a3b8",
+                                    marginBottom: 2,
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {row.label}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: "#0f172a",
+                                    wordBreak: "break-word",
+                                  }}
+                                >
+                                  {row.value}
+                                </div>
                               </div>
                             </div>
                           );
@@ -2113,24 +3003,26 @@ export default function CompanyAnnouncementsPage() {
                   )}
 
                   {/* Хэрэв шаардлагатай баримт бичиг байхгүй бол анхааруулга */}
-                  {supplierRequiredDocsList.length > 0 && totalFiles === 0 && !bidSaving && (
-                    <div
-                      style={{
-                        padding: "8px 12px",
-                        background: "#fef2f2",
-                        borderRadius: 8,
-                        fontSize: 11,
-                        color: "#dc2626",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        marginBottom: 16,
-                      }}
-                    >
-                      <AlertCircle size={12} />
-                      Та бүх шаардлагатай баримт бичгүүдийг хавсаргана уу
-                    </div>
-                  )}
+                  {supplierRequiredDocsList.length > 0 &&
+                    totalFiles === 0 &&
+                    !bidSaving && (
+                      <div
+                        style={{
+                          padding: "8px 12px",
+                          background: "#fef2f2",
+                          borderRadius: 8,
+                          fontSize: 11,
+                          color: "#dc2626",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          marginBottom: 16,
+                        }}
+                      >
+                        <AlertCircle size={12} />
+                        Та бүх шаардлагатай баримт бичгүүдийг хавсаргана уу
+                      </div>
+                    )}
 
                   {/* Үйлдлийн товчнууд */}
                   <div style={{ display: "flex", gap: 10 }}>
@@ -2176,19 +3068,24 @@ export default function CompanyAnnouncementsPage() {
                       onMouseEnter={(e) => {
                         if (!bidSaving) {
                           e.currentTarget.style.transform = "translateY(-2px)";
-                          e.currentTarget.style.boxShadow = "0 12px 28px rgba(0,114,188,0.45)";
+                          e.currentTarget.style.boxShadow =
+                            "0 12px 28px rgba(0,114,188,0.45)";
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!bidSaving) {
                           e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,114,188,0.35)";
+                          e.currentTarget.style.boxShadow =
+                            "0 8px 20px rgba(0,114,188,0.35)";
                         }
                       }}
                     >
                       {bidSaving ? (
                         <>
-                          <Loader2 size={15} style={{ animation: "spin .8s linear infinite" }} />
+                          <Loader2
+                            size={15}
+                            style={{ animation: "spin .8s linear infinite" }}
+                          />
                           Илгээж байна...
                         </>
                       ) : (
