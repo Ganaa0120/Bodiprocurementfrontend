@@ -32,6 +32,46 @@ import dynamic from "next/dynamic";
 import { RecipientPicker } from "./RecipientPicker";
 import type { Ann, AnnType, AttachedFile } from "./types";
 
+// ════════════════════════════════════════════════════════════════
+//  Mongolia: Aimag, Ulaanbaatar dүүрэг
+// ════════════════════════════════════════════════════════════════
+const MN_LOCATIONS = [
+  "Улаанбаатар",
+  "Архангай",
+  "Баян-Өлгий",
+  "Баянхонгор",
+  "Булган",
+  "Говь-Алтай",
+  "Говьсүмбэр",
+  "Дархан-Уул",
+  "Дорноговь",
+  "Дорнод",
+  "Дундговь",
+  "Завхан",
+  "Орхон",
+  "Өвөрхангай",
+  "Өмнөговь",
+  "Сэлэнгэ",
+  "Сүхбаатар",
+  "Төв",
+  "Увс",
+  "Ховд",
+  "Хөвсгөл",
+  "Хэнтий",
+];
+
+const UB_DISTRICTS = [
+  "Багануур дүүрэг",
+  "Багахангай дүүрэг",
+  "Баянгол дүүрэг",
+  "Баянзүрх дүүрэг",
+  "Налайх дүүрэг",
+  "Сонгинохайрхан дүүрэг",
+  "Сүхбаатар дүүрэг",
+  "Хан-Уул дүүрэг",
+  "Чингэлтэй дүүрэг",
+];
+
 // Dynamic import - SSR алдааг засах
 const RichTextEditor = dynamic(
   () => import("./RichEditor").then((mod) => mod.RichTextEditor),
@@ -47,7 +87,10 @@ const RichTextEditor = dynamic(
           background: "rgba(255,255,255,0.03)",
         }}
       >
-        <Loader2 size={20} style={{ animation: "spin 0.8s linear infinite", color: "#94a3b8" }} />
+        <Loader2
+          size={20}
+          style={{ animation: "spin 0.8s linear infinite", color: "#94a3b8" }}
+        />
       </div>
     ),
   },
@@ -67,7 +110,12 @@ const defaultForm = (ann?: Ann | null) => ({
   deadline: ann?.deadline?.slice(0, 10) ?? "",
   status: ann?.status ?? "draft",
   is_urgent: ann?.is_urgent ?? false,
-  activity_directions: ann?.activity_directions ?? ([] as string[]),
+  activity_directions:
+    ann?.activity_directions ??
+    ([] as Array<{
+      main_id: number;
+      sub_ids: number[];
+    }>),
   rfq_quantity: ann?.rfq_quantity?.toString() ?? "",
   rfq_unit: ann?.rfq_unit ?? "",
   rfq_delivery_place: ann?.rfq_delivery_place ?? "",
@@ -270,7 +318,10 @@ function FilePicker({
         }}
       >
         {uploading ? (
-          <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} />
+          <Loader2
+            size={14}
+            style={{ animation: "spin 0.8s linear infinite" }}
+          />
         ) : (
           <Upload size={14} />
         )}
@@ -285,7 +336,14 @@ function FilePicker({
       </label>
 
       {files.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            marginTop: 10,
+          }}
+        >
           {files.map((f, i) => (
             <div
               key={i}
@@ -299,7 +357,10 @@ function FilePicker({
                 border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-              <Paperclip size={12} style={{ color: accentColor, flexShrink: 0 }} />
+              <Paperclip
+                size={12}
+                style={{ color: accentColor, flexShrink: 0 }}
+              />
               <a
                 href={f.url}
                 target="_blank"
@@ -385,6 +446,7 @@ export function AnnModal({
   const [cats, setCats] = useState<any[]>([]);
   const [dirs, setDirs] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [expandedMains, setExpandedMains] = useState<Set<number>>(new Set());
   const [error, setError] = useState("");
 
   const annType = (mode === "edit" ? ann?.ann_type : step) ?? "open";
@@ -417,7 +479,9 @@ export function AnnModal({
 
   const safeClose = useCallback(() => {
     if (isDirty && mode === "create") {
-      const ok = window.confirm("Бөглөсөн мэдээлэл устах болно. Үнэхээр гарах уу?");
+      const ok = window.confirm(
+        "Бөглөсөн мэдээлэл устах болно. Үнэхээр гарах уу?",
+      );
       if (!ok) return;
     }
     onClose();
@@ -454,42 +518,86 @@ export function AnnModal({
       .catch(() => {});
   }, []);
 
-  // ⭐ Auto-fill contact_phone — өөрийн profile-ийг fetch хийх
-  // (хэрэв /api/admins/me байхгүй бол silently fail болно)
-  useEffect(() => {
-    if (mode !== "create" || form.contact_phone) return;
-    const tryEndpoints = [
-      `${API}/api/admins/me`,
-      `${API}/api/auth/me`,
-      `${API}/api/me`,
-    ];
-    (async () => {
-      for (const url of tryEndpoints) {
-        try {
-          const res = await fetch(url, { headers: authH() });
-          if (!res.ok) continue;
-          const d = await res.json();
-          const user = d.admin ?? d.user ?? d.data ?? d;
-          const phone = user?.phone ?? user?.contact_phone;
-          if (phone) {
-            setForm((p) => ({ ...p, contact_phone: phone }));
-            break;
-          }
-        } catch {
-          /* silent */
+  // ⭐ Auto-fill contact_phone — /api/auth/me-ээс утсыг авна
+useEffect(() => {
+  if (mode !== "create" || form.contact_phone) return;
+  (async () => {
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { headers: authH() });
+      if (!res.ok) return;
+      const d = await res.json();
+      const user = d.admin ?? d.user ?? d.data ?? d;
+      const phone = user?.phone ?? user?.contact_phone;
+      if (phone) {
+        setForm((p) => ({ ...p, contact_phone: phone }));
+      }
+    } catch {
+      /* silent */
+    }
+  })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [mode]);
+
+  const toggleExpand = (mainId: number) => {
+    setExpandedMains((prev) => {
+      const next = new Set(prev);
+      if (next.has(mainId)) next.delete(mainId);
+      else next.add(mainId);
+      return next;
+    });
+  };
+
+  const toggleSub = (mainId: number, subId: number) => {
+    setForm((p) => {
+      const dirs: Array<{ main_id: number; sub_ids: number[] }> = [
+        ...(p.activity_directions as any),
+      ];
+      const idx = dirs.findIndex((d) => d.main_id === mainId);
+      if (idx === -1) {
+        dirs.push({ main_id: mainId, sub_ids: [subId] });
+      } else {
+        const cur = dirs[idx];
+        const subIds = cur.sub_ids ?? [];
+        if (subIds.includes(subId)) {
+          const next = subIds.filter((s) => s !== subId);
+          if (next.length === 0) dirs.splice(idx, 1);
+          else dirs[idx] = { ...cur, sub_ids: next };
+        } else {
+          dirs[idx] = { ...cur, sub_ids: [...subIds, subId] };
         }
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+      return { ...p, activity_directions: dirs as any };
+    });
+  };
 
-  const toggleDir = (l: string) =>
-    setForm((p) => ({
-      ...p,
-      activity_directions: p.activity_directions.includes(l)
-        ? p.activity_directions.filter((x) => x !== l)
-        : [...p.activity_directions, l],
-    }));
+  const toggleAllSubs = (main: any) => {
+    setForm((p) => {
+      const dirs: Array<{ main_id: number; sub_ids: number[] }> = [
+        ...(p.activity_directions as any),
+      ];
+      const idx = dirs.findIndex((d) => d.main_id === main.id);
+      const allChildIds = (main.children ?? []).map((c: any) => c.id);
+      const cur = idx === -1 ? null : dirs[idx];
+      const allSelected =
+        cur && allChildIds.every((id: number) => cur.sub_ids?.includes(id));
+
+      if (allSelected) {
+        if (idx !== -1) dirs.splice(idx, 1);
+      } else {
+        if (idx === -1) {
+          dirs.push({ main_id: main.id, sub_ids: allChildIds });
+        } else {
+          dirs[idx] = { ...cur!, sub_ids: allChildIds };
+        }
+      }
+      return { ...p, activity_directions: dirs as any };
+    });
+  };
+
+  const getMainSelection = (mainId: number) =>
+    (form.activity_directions as any[]).find(
+      (d: any) => d.main_id === mainId,
+    ) as { main_id: number; sub_ids: number[] } | undefined;
 
   // ════════════════════════════════════════════════════════════════
   //  SAVE
@@ -587,9 +695,22 @@ export function AnnModal({
             @keyframes spin { to { transform: rotate(360deg); } }
           `}</style>
 
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 24,
+            }}
+          >
             <div>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "white", margin: 0 }}>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "white",
+                  margin: 0,
+                }}
+              >
                 Урилагын төрөл сонгох
               </h2>
               <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
@@ -622,64 +743,79 @@ export function AnnModal({
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {(Object.entries(TYPE) as [AnnType, (typeof TYPE)[AnnType]][]).map(([t, c]) => {
-              const I = c.icon;
-              return (
-                <button
-                  key={t}
-                  onClick={() => setStep(t)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 16,
-                    padding: "16px 20px",
-                    borderRadius: 16,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    background: "#334155",
-                    border: `1px solid ${c.color}30`,
-                    transition: "all 0.15s",
-                    width: "100%",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = c.color;
-                    e.currentTarget.style.background = `${c.color}15`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = `${c.color}30`;
-                    e.currentTarget.style.background = "#334155";
-                  }}
-                >
-                  <div
+            {(Object.entries(TYPE) as [AnnType, (typeof TYPE)[AnnType]][]).map(
+              ([t, c]) => {
+                const I = c.icon;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setStep(t)}
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 14,
-                      flexShrink: 0,
-                      background: `${c.color}20`,
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
+                      gap: 16,
+                      padding: "16px 20px",
+                      borderRadius: 16,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      background: "#334155",
+                      border: `1px solid ${c.color}30`,
+                      transition: "all 0.15s",
+                      width: "100%",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = c.color;
+                      e.currentTarget.style.background = `${c.color}15`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = `${c.color}30`;
+                      e.currentTarget.style.background = "#334155";
                     }}
                   >
-                    <I size={22} style={{ color: c.color }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "white", marginBottom: 4 }}>
-                      {t === "open"
-                        ? "Тендер нээлттэй"
-                        : t === "targeted"
-                          ? "Тендер хаалттай"
-                          : "Үнийн санал"}
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 14,
+                        flexShrink: 0,
+                        background: `${c.color}20`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <I size={22} style={{ color: c.color }} />
                     </div>
-                    <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.4 }}>
-                      {c.desc}
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: "white",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {t === "open"
+                          ? "Тендер нээлттэй"
+                          : t === "targeted"
+                            ? "Тендер хаалттай"
+                            : "Үнийн санал"}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#94a3b8",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {c.desc}
+                      </div>
                     </div>
-                  </div>
-                  <ChevronDown size={16} style={{ color: "#64748b" }} />
-                </button>
-              );
-            })}
+                    <ChevronDown size={16} style={{ color: "#64748b" }} />
+                  </button>
+                );
+              },
+            )}
           </div>
         </div>
       </div>
@@ -731,7 +867,9 @@ export function AnnModal({
             <button
               onClick={() => {
                 if (isDirty) {
-                  const ok = window.confirm("Бөглөсөн мэдээлэл устах болно. Буцах уу?");
+                  const ok = window.confirm(
+                    "Бөглөсөн мэдээлэл устах болно. Буцах уу?",
+                  );
                   if (!ok) return;
                 }
                 setStep(null);
@@ -774,10 +912,19 @@ export function AnnModal({
             <TIcon size={18} style={{ color: curType.color }} />
           </div>
           <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "white", margin: 0 }}>
+            <h3
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "white",
+                margin: 0,
+              }}
+            >
               {mode === "create" ? "Шинэ" : "Засах"} — {curType.label}
             </h3>
-            <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{curType.desc}</p>
+            <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+              {curType.desc}
+            </p>
           </div>
           <button
             onClick={safeClose}
@@ -805,7 +952,13 @@ export function AnnModal({
         </div>
 
         {/* BODY */}
-        <div style={{ padding: "20px 24px", maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>
+        <div
+          style={{
+            padding: "20px 24px",
+            maxHeight: "calc(100vh - 160px)",
+            overflowY: "auto",
+          }}
+        >
           {error && (
             <div
               style={{
@@ -819,7 +972,10 @@ export function AnnModal({
                 marginBottom: 20,
               }}
             >
-              <AlertCircle size={14} style={{ color: "#f87171", flexShrink: 0 }} />
+              <AlertCircle
+                size={14}
+                style={{ color: "#f87171", flexShrink: 0 }}
+              />
               <span style={{ fontSize: 12, color: "#fca5a5" }}>{error}</span>
             </div>
           )}
@@ -829,7 +985,9 @@ export function AnnModal({
             <Field label="Зарын нэр" required>
               <input
                 value={form.title}
-                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, title: e.target.value }))
+                }
                 style={inputStyle}
                 placeholder="Зарлалын гарчиг"
                 onFocus={(e) => {
@@ -844,22 +1002,37 @@ export function AnnModal({
             </Field>
 
             {/* ─── 2. ҮНДСЭН МЭДЭЭЛЭЛ ─── */}
-            <Section title="Үндсэн мэдээлэл" icon={Building2} accentColor={curType.color}>
+            <Section
+              title="Үндсэн мэдээлэл"
+              icon={Building2}
+              accentColor={curType.color}
+            >
               <Field label="Захиалагч компани" required icon={Building2}>
                 <input
                   value={form.client_company}
-                  onChange={(e) => setForm((p) => ({ ...p, client_company: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, client_company: e.target.value }))
+                  }
                   style={innerInputStyle}
                   placeholder="Захиалагч компанийн нэр"
                 />
               </Field>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                }}
+              >
                 <Field label="Хариуцах ажилтны нэр" required icon={User}>
                   <input
                     value={form.responsible_person_name}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, responsible_person_name: e.target.value }))
+                      setForm((p) => ({
+                        ...p,
+                        responsible_person_name: e.target.value,
+                      }))
                     }
                     style={innerInputStyle}
                     placeholder="Овог нэр"
@@ -869,7 +1042,10 @@ export function AnnModal({
                   <input
                     value={form.responsible_position}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, responsible_position: e.target.value }))
+                      setForm((p) => ({
+                        ...p,
+                        responsible_position: e.target.value,
+                      }))
                     }
                     style={innerInputStyle}
                     placeholder="Албан тушаал"
@@ -877,10 +1053,17 @@ export function AnnModal({
                 </Field>
               </div>
 
-              <Field label="Холбоо барих утас" required icon={Phone} hint="auto-fill хийгдэнэ">
+              <Field
+                label="Холбоо барих утас"
+                required
+                icon={Phone}
+                hint="auto-fill хийгдэнэ"
+              >
                 <input
                   value={form.contact_phone}
-                  onChange={(e) => setForm((p) => ({ ...p, contact_phone: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, contact_phone: e.target.value }))
+                  }
                   style={innerInputStyle}
                   placeholder="99000000"
                   type="tel"
@@ -889,13 +1072,25 @@ export function AnnModal({
             </Section>
 
             {/* ─── 3. ОГНОО ─── */}
-            <Section title="Зарлалын хугацаа" icon={CalendarRange} accentColor={curType.color}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <Section
+              title="Зарлалын хугацаа"
+              icon={CalendarRange}
+              accentColor={curType.color}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                }}
+              >
                 <Field label="Эхлэх огноо" required icon={Calendar}>
                   <input
                     type="date"
                     value={form.start_date}
-                    onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, start_date: e.target.value }))
+                    }
                     style={innerInputStyle}
                   />
                 </Field>
@@ -903,7 +1098,9 @@ export function AnnModal({
                   <input
                     type="date"
                     value={form.end_date}
-                    onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, end_date: e.target.value }))
+                    }
                     style={innerInputStyle}
                   />
                 </Field>
@@ -912,7 +1109,9 @@ export function AnnModal({
                 <input
                   type="date"
                   value={form.deadline}
-                  onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, deadline: e.target.value }))
+                  }
                   style={innerInputStyle}
                 />
               </Field>
@@ -940,7 +1139,9 @@ export function AnnModal({
               <div style={{ position: "relative" }}>
                 <select
                   value={form.category_id}
-                  onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, category_id: e.target.value }))
+                  }
                   style={{
                     ...inputStyle,
                     cursor: "pointer",
@@ -948,7 +1149,10 @@ export function AnnModal({
                     paddingRight: 32,
                   }}
                 >
-                  <option value="" style={{ background: "#1e293b", color: "#94a3b8" }}>
+                  <option
+                    value=""
+                    style={{ background: "#1e293b", color: "#94a3b8" }}
+                  >
                     — Сонгох —
                   </option>
                   {cats.map((c) => (
@@ -976,7 +1180,14 @@ export function AnnModal({
             </Field>
 
             {/* Худалдан авалтын төрөл (Бараа/Үйлчилгээ) + Яаралтай */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "end" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                gap: 12,
+                alignItems: "end",
+              }}
+            >
               <Field label="Худалдан авалтын төрөл" required>
                 <div style={{ display: "flex", gap: 8 }}>
                   {[
@@ -1002,9 +1213,7 @@ export function AnnModal({
                           border: sel
                             ? `1px solid ${curType.color}`
                             : "1px solid rgba(255,255,255,0.12)",
-                          background: sel
-                            ? `${curType.color}20`
-                            : "#334155",
+                          background: sel ? `${curType.color}20` : "#334155",
                           color: sel ? curType.color : "#cbd5e1",
                           display: "flex",
                           alignItems: "center",
@@ -1023,7 +1232,9 @@ export function AnnModal({
 
               <button
                 type="button"
-                onClick={() => setForm((p) => ({ ...p, is_urgent: !p.is_urgent }))}
+                onClick={() =>
+                  setForm((p) => ({ ...p, is_urgent: !p.is_urgent }))
+                }
                 style={{
                   height: 44,
                   padding: "0 16px",
@@ -1050,36 +1261,214 @@ export function AnnModal({
               </button>
             </div>
 
-            {/* Activity directions */}
+            {/* Activity directions — accordion (үндсэн → дэд) */}
             {dirs.length > 0 && (
-              <Field label="Үйл ажиллагааны чиглэл" icon={Layers}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {dirs.map((d) => {
-                    const sel = form.activity_directions.includes(d.label);
+              <Field
+                label="Үйл ажиллагааны чиглэл"
+                icon={Layers}
+                hint="үндсэн дээр дарж дэд чиглэл сонгоно"
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    background: "rgba(255,255,255,0.02)",
+                    borderRadius: 12,
+                    padding: 10,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  {dirs.map((main: any) => {
+                    const expanded = expandedMains.has(main.id);
+                    const selection = getMainSelection(main.id);
+                    const selectedCount = selection?.sub_ids?.length ?? 0;
+                    const childCount = main.children?.length ?? 0;
+                    const allSelected =
+                      childCount > 0 && selectedCount === childCount;
+                    const someSelected = selectedCount > 0;
+
                     return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => toggleDir(d.label)}
+                      <div
+                        key={main.id}
                         style={{
-                          padding: "5px 12px",
-                          borderRadius: 20,
-                          fontSize: 11,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          border: sel
-                            ? `1px solid ${curType.color}`
-                            : "1px solid rgba(255,255,255,0.12)",
-                          background: sel ? `${curType.color}20` : "rgba(255,255,255,0.05)",
-                          color: sel ? curType.color : "#cbd5e1",
+                          borderRadius: 10,
+                          background: someSelected
+                            ? `${curType.color}10`
+                            : "rgba(255,255,255,0.03)",
+                          border: someSelected
+                            ? `1px solid ${curType.color}40`
+                            : "1px solid rgba(255,255,255,0.06)",
+                          overflow: "hidden",
                           transition: "all 0.15s",
                         }}
                       >
-                        {d.label}
-                      </button>
+                        {/* ── Үндсэн чиглэл (clickable header) ── */}
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(main.id)}
+                          style={{
+                            width: "100%",
+                            padding: "10px 14px",
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            color: someSelected ? curType.color : "#cbd5e1",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            textAlign: "left",
+                          }}
+                        >
+                          <ChevronDown
+                            size={14}
+                            style={{
+                              transform: expanded
+                                ? "rotate(0deg)"
+                                : "rotate(-90deg)",
+                              transition: "transform 0.15s",
+                              color: "#94a3b8",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span style={{ flex: 1 }}>{main.label}</span>
+                          {someSelected && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                padding: "2px 10px",
+                                borderRadius: 30,
+                                background: `${curType.color}25`,
+                                color: curType.color,
+                              }}
+                            >
+                              {selectedCount} / {childCount}
+                            </span>
+                          )}
+                          {childCount === 0 && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: "#64748b",
+                              }}
+                            >
+                              Дэд чиглэлгүй
+                            </span>
+                          )}
+                        </button>
+
+                        {/* ── Дэд чиглэлүүд (expanded) ── */}
+                        {expanded && childCount > 0 && (
+                          <div
+                            style={{
+                              padding: "0 14px 12px",
+                              borderTop: "1px solid rgba(255,255,255,0.05)",
+                              paddingTop: 10,
+                            }}
+                          >
+                            {/* "Бүгдийг сонгох" товч */}
+                            <button
+                              type="button"
+                              onClick={() => toggleAllSubs(main)}
+                              style={{
+                                fontSize: 10,
+                                padding: "4px 12px",
+                                borderRadius: 30,
+                                background: allSelected
+                                  ? `${curType.color}25`
+                                  : "rgba(255,255,255,0.05)",
+                                border: allSelected
+                                  ? `1px solid ${curType.color}50`
+                                  : "1px solid rgba(255,255,255,0.1)",
+                                color: allSelected ? curType.color : "#94a3b8",
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                marginBottom: 8,
+                              }}
+                            >
+                              {allSelected
+                                ? "✓ Бүгдийг арилгах"
+                                : "Бүгдийг сонгох"}
+                            </button>
+
+                            {/* Дэд чиглэл chip-үүд */}
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 6,
+                              }}
+                            >
+                              {main.children.map((child: any) => {
+                                const sel =
+                                  selection?.sub_ids?.includes(child.id) ??
+                                  false;
+                                return (
+                                  <button
+                                    key={child.id}
+                                    type="button"
+                                    onClick={() => toggleSub(main.id, child.id)}
+                                    style={{
+                                      padding: "5px 12px",
+                                      borderRadius: 20,
+                                      fontSize: 11,
+                                      fontWeight: 500,
+                                      cursor: "pointer",
+                                      border: sel
+                                        ? `1px solid ${curType.color}`
+                                        : "1px solid rgba(255,255,255,0.12)",
+                                      background: sel
+                                        ? `${curType.color}25`
+                                        : "rgba(255,255,255,0.05)",
+                                      color: sel ? curType.color : "#cbd5e1",
+                                      transition: "all 0.15s",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                    }}
+                                  >
+                                    {sel && <CheckCircle2 size={11} />}
+                                    {child.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
+
+                {/* Сонгосон чиглэлийн дүгнэлт */}
+                {form.activity_directions.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 12px",
+                      background: `${curType.color}10`,
+                      border: `1px solid ${curType.color}30`,
+                      borderRadius: 8,
+                      fontSize: 11,
+                      color: curType.color,
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <CheckCircle2 size={12} />
+                    Нийт {form.activity_directions.length} үндсэн чиглэл /{" "}
+                    {(form.activity_directions as any[]).reduce(
+                      (acc: number, d: any) => acc + (d.sub_ids?.length ?? 0),
+                      0,
+                    )}{" "}
+                    дэд чиглэл сонгогдсон
+                  </div>
+                )}
               </Field>
             )}
 
@@ -1090,32 +1479,46 @@ export function AnnModal({
                 onChange={(v) => setForm((p) => ({ ...p, description: v }))}
                 placeholder="Дэлгэрэнгүй тайлбар..."
                 files={form.attachments}
-                onFilesChange={(files) => setForm((p) => ({ ...p, attachments: files }))}
+                onFilesChange={(files) =>
+                  setForm((p) => ({ ...p, attachments: files }))
+                }
                 accentColor={curType.color}
               />
             </Field>
 
             {/* Budget */}
             <Field label="Төсөв" icon={DollarSign}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 110px", gap: 8 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 110px",
+                  gap: 8,
+                }}
+              >
                 <input
                   type="number"
                   value={form.budget_from}
-                  onChange={(e) => setForm((p) => ({ ...p, budget_from: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, budget_from: e.target.value }))
+                  }
                   style={inputStyle}
                   placeholder="Доод дүн"
                 />
                 <input
                   type="number"
                   value={form.budget_to}
-                  onChange={(e) => setForm((p) => ({ ...p, budget_to: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, budget_to: e.target.value }))
+                  }
                   style={inputStyle}
                   placeholder="Дээд дүн"
                 />
                 <div style={{ position: "relative" }}>
                   <select
                     value={form.currency}
-                    onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, currency: e.target.value }))
+                    }
                     style={{
                       ...inputStyle,
                       cursor: "pointer",
@@ -1150,19 +1553,33 @@ export function AnnModal({
 
             {/* RFQ Details */}
             {annType === "rfq" && (
-              <Section title="Үнийн санал" icon={TrendingUp} accentColor={curType.color}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <Section
+                title="Үнийн санал"
+                icon={TrendingUp}
+                accentColor={curType.color}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 10,
+                  }}
+                >
                   <input
                     type="number"
                     value={form.rfq_quantity}
-                    onChange={(e) => setForm((p) => ({ ...p, rfq_quantity: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, rfq_quantity: e.target.value }))
+                    }
                     style={innerInputStyle}
                     placeholder="Тоо хэмжээ"
                   />
                   <div style={{ position: "relative" }}>
                     <select
                       value={form.rfq_unit}
-                      onChange={(e) => setForm((p) => ({ ...p, rfq_unit: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, rfq_unit: e.target.value }))
+                      }
                       style={{
                         ...innerInputStyle,
                         cursor: "pointer",
@@ -1170,20 +1587,30 @@ export function AnnModal({
                         paddingRight: 28,
                       }}
                     >
-                      <option value="" style={{ background: "#1e293b", color: "#94a3b8" }}>
+                      <option
+                        value=""
+                        style={{ background: "#1e293b", color: "#94a3b8" }}
+                      >
                         Нэгж сонгох
                       </option>
-                      {["Ширхэг", "Багц", "Хоног", "Боодол", "Хайрцаг", "Хос", "м3", "тонн"].map(
-                        (u) => (
-                          <option
-                            key={u}
-                            value={u}
-                            style={{ background: "#1e293b", color: "white" }}
-                          >
-                            {u}
-                          </option>
-                        ),
-                      )}
+                      {[
+                        "Ширхэг",
+                        "Багц",
+                        "Хоног",
+                        "Боодол",
+                        "Хайрцаг",
+                        "Хос",
+                        "м3",
+                        "тонн",
+                      ].map((u) => (
+                        <option
+                          key={u}
+                          value={u}
+                          style={{ background: "#1e293b", color: "white" }}
+                        >
+                          {u}
+                        </option>
+                      ))}
                     </select>
                     <ChevronDown
                       size={12}
@@ -1201,7 +1628,10 @@ export function AnnModal({
                 <input
                   value={form.rfq_delivery_place}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, rfq_delivery_place: e.target.value }))
+                    setForm((p) => ({
+                      ...p,
+                      rfq_delivery_place: e.target.value,
+                    }))
                   }
                   style={innerInputStyle}
                   placeholder="Хүргэлтийн газар"
@@ -1210,13 +1640,18 @@ export function AnnModal({
                   type="date"
                   value={form.rfq_delivery_date}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, rfq_delivery_date: e.target.value }))
+                    setForm((p) => ({
+                      ...p,
+                      rfq_delivery_date: e.target.value,
+                    }))
                   }
                   style={innerInputStyle}
                 />
                 <textarea
                   value={form.rfq_specs}
-                  onChange={(e) => setForm((p) => ({ ...p, rfq_specs: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, rfq_specs: e.target.value }))
+                  }
                   rows={2}
                   style={{
                     ...innerInputStyle,
@@ -1252,13 +1687,22 @@ export function AnnModal({
               icon={Truck}
               accentColor={curType.color}
             >
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                }}
+              >
                 <Field label="Эхлэх огноо" required icon={Calendar}>
                   <input
                     type="date"
                     value={form.supply_start_date}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, supply_start_date: e.target.value }))
+                      setForm((p) => ({
+                        ...p,
+                        supply_start_date: e.target.value,
+                      }))
                     }
                     style={innerInputStyle}
                   />
@@ -1268,7 +1712,10 @@ export function AnnModal({
                     type="date"
                     value={form.supply_end_date}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, supply_end_date: e.target.value }))
+                      setForm((p) => ({
+                        ...p,
+                        supply_end_date: e.target.value,
+                      }))
                     }
                     style={innerInputStyle}
                   />
@@ -1282,32 +1729,155 @@ export function AnnModal({
               icon={MapPin}
               accentColor={curType.color}
             >
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <Field label="Худалдан авалтын төв байршил" required icon={MapPin}>
-                  <input
-                    value={form.central_location}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, central_location: e.target.value }))
-                    }
-                    style={innerInputStyle}
-                    placeholder="Жишээ: Улаанбаатар"
-                  />
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                {/* Худалдан авалтын төв байршил — Аймаг/Хот dropdown */}
+                <Field
+                  label="Худалдан авалтын төв байршил"
+                  required
+                  icon={MapPin}
+                >
+                  <div style={{ position: "relative" }}>
+                    <select
+                      value={form.central_location}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          central_location: e.target.value,
+                          // Хот өөрчлөгдвөл салбар сонголтыг арилгана
+                          branch_location: "",
+                        }))
+                      }
+                      style={{
+                        ...innerInputStyle,
+                        cursor: "pointer",
+                        appearance: "none",
+                        paddingRight: 28,
+                      }}
+                    >
+                      <option
+                        value=""
+                        style={{ background: "#1e293b", color: "#94a3b8" }}
+                      >
+                        — Аймаг/Хот сонгох —
+                      </option>
+                      {MN_LOCATIONS.map((loc) => (
+                        <option
+                          key={loc}
+                          value={loc}
+                          style={{ background: "#1e293b", color: "white" }}
+                        >
+                          {loc === "Улаанбаатар" ? "🏙 " : "📍 "}
+                          {loc}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={12}
+                      style={{
+                        position: "absolute",
+                        right: 10,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#94a3b8",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  </div>
                 </Field>
-                <Field label="Салбар байршил" required icon={MapPin}>
-                  <input
-                    value={form.branch_location}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, branch_location: e.target.value }))
-                    }
-                    style={innerInputStyle}
-                    placeholder="Жишээ: Сүхбаатар дүүрэг"
-                  />
+
+                {/* Салбар байршил — UB-д dropdown, бусдад текст input */}
+                <Field
+                  label={
+                    form.central_location === "Улаанбаатар"
+                      ? "Дүүрэг"
+                      : "Салбар байршил"
+                  }
+                  required
+                  icon={MapPin}
+                  hint={
+                    form.central_location === "Улаанбаатар"
+                      ? undefined
+                      : "Сум/багийн нэр"
+                  }
+                >
+                  {form.central_location === "Улаанбаатар" ? (
+                    <div style={{ position: "relative" }}>
+                      <select
+                        value={form.branch_location}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            branch_location: e.target.value,
+                          }))
+                        }
+                        style={{
+                          ...innerInputStyle,
+                          cursor: "pointer",
+                          appearance: "none",
+                          paddingRight: 28,
+                        }}
+                      >
+                        <option
+                          value=""
+                          style={{ background: "#1e293b", color: "#94a3b8" }}
+                        >
+                          — Дүүрэг сонгох —
+                        </option>
+                        {UB_DISTRICTS.map((d) => (
+                          <option
+                            key={d}
+                            value={d}
+                            style={{ background: "#1e293b", color: "white" }}
+                          >
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={12}
+                        style={{
+                          position: "absolute",
+                          right: 10,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "#94a3b8",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <input
+                      value={form.branch_location}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          branch_location: e.target.value,
+                        }))
+                      }
+                      style={innerInputStyle}
+                      placeholder={
+                        form.central_location
+                          ? `${form.central_location} аймгийн сум`
+                          : "Эхлээд аймаг сонгоно уу"
+                      }
+                      disabled={!form.central_location}
+                    />
+                  )}
                 </Field>
               </div>
+
               <Field label="Хаягийн дэлгэрэнгүй мэдээлэл">
                 <textarea
                   value={form.address_details}
-                  onChange={(e) => setForm((p) => ({ ...p, address_details: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, address_details: e.target.value }))
+                  }
                   rows={2}
                   style={{
                     ...innerInputStyle,
@@ -1315,7 +1885,7 @@ export function AnnModal({
                     resize: "vertical",
                     padding: "10px 14px",
                   }}
-                  placeholder="Дэлгэрэнгүй хаяг..."
+                  placeholder="Дэлгэрэнгүй хаяг (байр, гудамж, хороо г.м.)"
                 />
               </Field>
             </Section>
@@ -1341,7 +1911,9 @@ export function AnnModal({
               <Field label="Захиалагчийн баримт бичигтэй холбоотой мэдээлэл">
                 <RichTextEditor
                   value={form.buyer_doc_info}
-                  onChange={(v) => setForm((p) => ({ ...p, buyer_doc_info: v }))}
+                  onChange={(v) =>
+                    setForm((p) => ({ ...p, buyer_doc_info: v }))
+                  }
                   placeholder="Захиалагчийн талаас өгөх баримт бичгийн тайлбар..."
                   files={[]}
                   onFilesChange={() => {}}
@@ -1369,14 +1941,19 @@ export function AnnModal({
               <Field label="Нийлүүлэгчийн баримт бичигтэй холбоотой мэдээлэл">
                 <RichTextEditor
                   value={form.supplier_doc_info}
-                  onChange={(v) => setForm((p) => ({ ...p, supplier_doc_info: v }))}
+                  onChange={(v) =>
+                    setForm((p) => ({ ...p, supplier_doc_info: v }))
+                  }
                   placeholder="Нийлүүлэгчээс шаардах баримтын тайлбар..."
                   files={[]}
                   onFilesChange={() => {}}
                   accentColor={curType.color}
                 />
               </Field>
-              <Field label="Нийлүүлэгчээс авах загвар бичиг баримт" hint="олон файл">
+              <Field
+                label="Нийлүүлэгчээс авах загвар бичиг баримт"
+                hint="олон файл"
+              >
                 <FilePicker
                   files={form.supplier_required_docs}
                   onChange={(files) =>
@@ -1393,7 +1970,9 @@ export function AnnModal({
               <div style={{ position: "relative" }}>
                 <select
                   value={form.status}
-                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, status: e.target.value }))
+                  }
                   style={{
                     ...inputStyle,
                     cursor: "pointer",
@@ -1477,7 +2056,10 @@ export function AnnModal({
                 }}
               >
                 {saving ? (
-                  <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} />
+                  <Loader2
+                    size={14}
+                    style={{ animation: "spin 0.8s linear infinite" }}
+                  />
                 ) : form.status === "published" ? (
                   <Send size={14} />
                 ) : (

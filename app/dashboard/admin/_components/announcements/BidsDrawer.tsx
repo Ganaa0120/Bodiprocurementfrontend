@@ -16,10 +16,12 @@ import {
   Crown,
   TrendingUp,
   MessageSquare,
+  Users, // ⭐ ШИНЭ
+  Inbox,
 } from "lucide-react";
-import { BID_STATUS } from "./constants";
+import { API, authH, BID_STATUS } from "./constants";
 import type { Ann } from "./types";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 /* ============================================================
    Туслах функцууд — хүргэлт хүртэлх хоног
@@ -808,25 +810,217 @@ function StatTile({
 }
 
 /* ============================================================
+   ParticipantCard — нэг оролцох хүсэлтийг харуулах
+   ============================================================ */
+function ParticipantCard({
+  participant: p,
+  onViewDetail,
+}: {
+  participant: any;
+  onViewDetail?: (id: string, type: "company" | "individual") => void;
+}) {
+  return (
+    <div
+      style={{
+        background: p.has_submitted_bid
+          ? "rgba(16,185,129,0.04)"
+          : "rgba(255,255,255,0.03)",
+        borderRadius: 16,
+        padding: "16px 18px",
+        border: `1px solid ${
+          p.has_submitted_bid
+            ? "rgba(16,185,129,0.25)"
+            : "rgba(255,255,255,0.08)"
+        }`,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          marginBottom: 10,
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            flexShrink: 0,
+            background:
+              p.participant_type === "company"
+                ? "rgba(139,92,246,0.15)"
+                : "rgba(99,102,241,0.15)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 22,
+            border: `1px solid ${
+              p.participant_type === "company"
+                ? "rgba(139,92,246,0.3)"
+                : "rgba(99,102,241,0.3)"
+            }`,
+          }}
+        >
+          {p.participant_type === "company" ? "🏢" : "👤"}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.88)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {p.participant_name || "—"}
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: "rgba(148,163,184,0.5)",
+              display: "flex",
+              gap: 10,
+              marginTop: 3,
+              flexWrap: "wrap",
+            }}
+          >
+            {p.supplier_number && <span>№ {p.supplier_number}</span>}
+            {p.participant_email && <span>📧 {p.participant_email}</span>}
+            {p.participant_phone && <span>📞 {p.participant_phone}</span>}
+          </div>
+        </div>
+        {p.has_submitted_bid && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: 30,
+              background: "rgba(16,185,129,0.15)",
+              color: "#34d399",
+              border: "1px solid rgba(16,185,129,0.3)",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              flexShrink: 0,
+            }}
+          >
+            <CheckCircle2 size={11} />
+            Санал илгээсэн
+          </span>
+        )}
+      </div>
+
+      {p.message && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 8,
+            marginTop: 10,
+            padding: "10px 12px",
+            background: "rgba(255,255,255,0.02)",
+            borderRadius: 10,
+            border: "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          <MessageSquare
+            size={13}
+            color="rgba(148,163,184,0.5)"
+            style={{ flexShrink: 0, marginTop: 1 }}
+          />
+          <span
+            style={{
+              fontSize: 12,
+              color: "rgba(255,255,255,0.65)",
+              lineHeight: 1.5,
+            }}
+          >
+            {p.message}
+          </span>
+        </div>
+      )}
+
+      <div
+        style={{
+          marginTop: 10,
+          paddingTop: 10,
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <span style={{ fontSize: 10, color: "rgba(148,163,184,0.45)" }}>
+          👋 {new Date(p.created_at).toLocaleString("mn-MN")}
+        </span>
+        {onViewDetail && (
+          <button
+            onClick={() => onViewDetail(p.participant_id, p.participant_type)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              background: "rgba(99,102,241,0.12)",
+              border: "1px solid rgba(99,102,241,0.3)",
+              color: "#a5b4fc",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(99,102,241,0.22)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(99,102,241,0.12)";
+            }}
+          >
+            🔍 Дэлгэрэнгүй мэдээлэл
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
    BidsDrawer — хажуугийн drawer (ирсэн хүсэлтүүдийн жагсаалт)
    ============================================================ */
 export function BidsDrawer({
   ann,
   bids,
+  participants = [], // ⭐ ШИНЭ
   loading,
+  loadingParticipants = false, // ⭐ ШИНЭ
   onClose,
   onUpdateStatus,
   supplierInfo,
 }: {
   ann: Ann;
   bids: any[];
+  participants?: any[]; // ⭐ ШИНЭ
   loading: boolean;
+  loadingParticipants?: boolean; // ⭐ ШИНЭ
   onClose: () => void;
   onUpdateStatus: (bidId: string, status: string) => void;
   supplierInfo?: any;
 }) {
   const [selectedBid, setSelectedBid] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [tab, setTab] = useState<"bids" | "participants">("bids"); // ⭐ ШИНЭ
+  const [supplierDetail, setSupplierDetail] = useState<{
+    id: string;
+    type: "company" | "individual";
+  } | null>(null);
 
   const openDetailModal = (bid: any) => {
     setSelectedBid(bid);
@@ -866,6 +1060,13 @@ export function BidsDrawer({
           lowestPrice={lowestPrice}
           onClose={() => setIsDetailModalOpen(false)}
           onUpdateStatus={handleStatusUpdate}
+        />
+      )}
+      {supplierDetail && (
+        <SupplierDetailModal
+          supplierId={supplierDetail.id}
+          supplierType={supplierDetail.type}
+          onClose={() => setSupplierDetail(null)}
         />
       )}
 
@@ -957,7 +1158,7 @@ export function BidsDrawer({
                 flexShrink: 0,
               }}
             >
-              {bids.length} хүсэлт
+              {bids.length + participants.length} нийт
             </div>
             <button
               onClick={onClose}
@@ -983,473 +1184,1387 @@ export function BidsDrawer({
               <X size={18} />
             </button>
           </div>
+          {/* ════════════ TAB SWITCHER ════════════ */}
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              padding: "14px 28px",
+              borderBottom: "1px solid rgba(255,255,255,0.07)",
+              background: "#0d1526",
+              position: "sticky",
+              top: 73,
+              zIndex: 1,
+            }}
+          >
+            <button
+              onClick={() => setTab("bids")}
+              style={{
+                flex: 1,
+                padding: "10px 14px",
+                borderRadius: 10,
+                border:
+                  tab === "bids"
+                    ? "1px solid rgba(99,102,241,0.4)"
+                    : "1px solid rgba(255,255,255,0.06)",
+                background:
+                  tab === "bids"
+                    ? "rgba(99,102,241,0.12)"
+                    : "rgba(255,255,255,0.02)",
+                color: tab === "bids" ? "#a5b4fc" : "rgba(148,163,184,0.6)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "all 0.15s",
+              }}
+            >
+              <Inbox size={14} />
+              Санал ирүүлсэн
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "1px 8px",
+                  borderRadius: 99,
+                  background:
+                    tab === "bids"
+                      ? "rgba(99,102,241,0.25)"
+                      : "rgba(255,255,255,0.05)",
+                  color: tab === "bids" ? "#c7d2fe" : "rgba(148,163,184,0.5)",
+                }}
+              >
+                {bids.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setTab("participants")}
+              style={{
+                flex: 1,
+                padding: "10px 14px",
+                borderRadius: 10,
+                border:
+                  tab === "participants"
+                    ? "1px solid rgba(16,185,129,0.4)"
+                    : "1px solid rgba(255,255,255,0.06)",
+                background:
+                  tab === "participants"
+                    ? "rgba(16,185,129,0.10)"
+                    : "rgba(255,255,255,0.02)",
+                color:
+                  tab === "participants" ? "#34d399" : "rgba(148,163,184,0.6)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "all 0.15s",
+              }}
+            >
+              <Users size={14} />
+              Оролцох хүсэлт
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "1px 8px",
+                  borderRadius: 99,
+                  background:
+                    tab === "participants"
+                      ? "rgba(16,185,129,0.25)"
+                      : "rgba(255,255,255,0.05)",
+                  color:
+                    tab === "participants"
+                      ? "#6ee7b7"
+                      : "rgba(148,163,184,0.5)",
+                }}
+              >
+                {participants.length}
+              </span>
+            </button>
+          </div>
 
           {/* Content */}
           <div style={{ padding: "24px 28px" }}>
-            {loading ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: 60,
-                  gap: 14,
-                }}
-              >
-                <Loader2
-                  size={28}
-                  style={{
-                    color: "#a5b4fc",
-                    animation: "spin 0.8s linear infinite",
-                  }}
-                />
-                <span style={{ fontSize: 13, color: "rgba(148,163,184,0.4)" }}>
-                  Ачаалж байна...
-                </span>
-              </div>
-            ) : bids.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                <FileText
-                  size={48}
-                  style={{
-                    color: "rgba(148,163,184,0.15)",
-                    margin: "0 auto 16px",
-                    display: "block",
-                  }}
-                />
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: "rgba(148,163,184,0.4)",
-                    margin: 0,
-                  }}
-                >
-                  Хүсэлт ирээгүй байна
-                </p>
-              </div>
-            ) : (
+            {/* ════════════ TAB: BIDS ════════════ */}
+            {tab === "bids" && (
               <>
-                {/* ============ ДҮГНЭЛТ САМБАР ============ */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    marginBottom: 20,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <StatTile
-                    label="Нийт"
-                    value={bids.length}
-                    color="#a5b4fc"
-                    sub={`${pendingCount} хүлээгдэж буй`}
-                  />
-                  {lowestPrice != null && (
-                    <StatTile
-                      label="Хамгийн хямд"
-                      value={`${lowestPrice.toLocaleString()} ${currency}`}
-                      color="#34d399"
-                    />
-                  )}
-                  {avgPrice != null && (
-                    <StatTile
-                      label="Дундаж үнэ"
-                      value={`${avgPrice.toLocaleString()} ${currency}`}
-                      color="#60a5fa"
-                    />
-                  )}
-                </div>
-
-                {/* Төлвийн товч тойм */}
-                {(acceptedCount > 0 || rejectedCount > 0) && (
+                {loading ? (
                   <div
                     style={{
                       display: "flex",
-                      gap: 8,
-                      marginBottom: 20,
-                      flexWrap: "wrap",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: 60,
+                      gap: 14,
                     }}
                   >
-                    {acceptedCount > 0 && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: "4px 12px",
-                          borderRadius: 30,
-                          background: "rgba(16,185,129,0.1)",
-                          color: "#34d399",
-                          border: "1px solid rgba(16,185,129,0.2)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                      >
-                        <CheckCircle2 size={11} />
-                        {acceptedCount} зөвшөөрсөн
-                      </span>
-                    )}
-                    {rejectedCount > 0 && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: "4px 12px",
-                          borderRadius: 30,
-                          background: "rgba(239,68,68,0.1)",
-                          color: "#f87171",
-                          border: "1px solid rgba(239,68,68,0.2)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                      >
-                        <XCircle size={11} />
-                        {rejectedCount} татгалзсан
-                      </span>
-                    )}
+                    <Loader2
+                      size={28}
+                      style={{
+                        color: "#a5b4fc",
+                        animation: "spin 0.8s linear infinite",
+                      }}
+                    />
+                    <span
+                      style={{ fontSize: 13, color: "rgba(148,163,184,0.4)" }}
+                    >
+                      Ачаалж байна...
+                    </span>
                   </div>
-                )}
+                ) : bids.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                    <FileText
+                      size={48}
+                      style={{
+                        color: "rgba(148,163,184,0.15)",
+                        margin: "0 auto 16px",
+                        display: "block",
+                      }}
+                    />
+                    <p
+                      style={{
+                        fontSize: 14,
+                        color: "rgba(148,163,184,0.4)",
+                        margin: 0,
+                      }}
+                    >
+                      Санал ирээгүй байна
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* ============ ДҮГНЭЛТ САМБАР ============ */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        marginBottom: 20,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <StatTile
+                        label="Нийт"
+                        value={bids.length}
+                        color="#a5b4fc"
+                        sub={`${pendingCount} хүлээгдэж буй`}
+                      />
+                      {lowestPrice != null && (
+                        <StatTile
+                          label="Хамгийн хямд"
+                          value={`${lowestPrice.toLocaleString()} ${currency}`}
+                          color="#34d399"
+                        />
+                      )}
+                      {avgPrice != null && (
+                        <StatTile
+                          label="Дундаж үнэ"
+                          value={`${avgPrice.toLocaleString()} ${currency}`}
+                          color="#60a5fa"
+                        />
+                      )}
+                    </div>
 
-                {/* ============ КАРТУУД ============ */}
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 14 }}
-                >
-                  {bids.map((b) => {
-                    const bs = BID_STATUS[b.status] ?? BID_STATUS.submitted;
-                    const isPending =
-                      b.status === "submitted" || b.status === "pending";
-                    const isAccepted =
-                      b.status === "accepted" || b.status === "approved";
-                    const isRejected = b.status === "rejected";
-                    const hasAttachments =
-                      b.attachments && b.attachments.length > 0;
-                    const priceOffer = b.price_offer || b.budget_offer;
-                    const deliveryDate = b.delivery_date;
-                    const note =
-                      b.note || b.message || b.comment || b.description;
-                    const isLowest =
-                      lowestPrice != null &&
-                      priceOffer &&
-                      Number(priceOffer) === lowestPrice;
-                    const priceDiff =
-                      lowestPrice != null && priceOffer
-                        ? Number(priceOffer) - lowestPrice
-                        : 0;
-
-                    return (
+                    {/* Төлвийн товч тойм */}
+                    {(acceptedCount > 0 || rejectedCount > 0) && (
                       <div
-                        key={b.id}
-                        className="bid-card"
-                        onClick={() => openDetailModal(b)}
                         style={{
-                          background: isLowest
-                            ? "rgba(16,185,129,0.04)"
-                            : "rgba(255,255,255,0.03)",
-                          borderRadius: 20,
-                          padding: "18px 20px",
-                          border: `1px solid ${
-                            isLowest
-                              ? "rgba(16,185,129,0.35)"
-                              : isAccepted
-                                ? "rgba(16,185,129,0.25)"
-                                : isRejected
-                                  ? "rgba(239,68,68,0.2)"
-                                  : "rgba(255,255,255,0.08)"
-                          }`,
-                          cursor: "pointer",
-                          position: "relative",
+                          display: "flex",
+                          gap: 8,
+                          marginBottom: 20,
+                          flexWrap: "wrap",
                         }}
                       >
-                        {/* Хамгийн хямд тэмдэг */}
-                        {isLowest && (
-                          <div
+                        {acceptedCount > 0 && (
+                          <span
                             style={{
-                              position: "absolute",
-                              top: 14,
-                              right: 16,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
-                              fontSize: 10,
-                              fontWeight: 700,
-                              padding: "3px 10px",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "4px 12px",
                               borderRadius: 30,
-                              background: "rgba(16,185,129,0.15)",
+                              background: "rgba(16,185,129,0.1)",
                               color: "#34d399",
-                              border: "1px solid rgba(16,185,129,0.3)",
-                            }}
-                          >
-                            <Crown size={11} />
-                            Хамгийн хямд
-                          </div>
-                        )}
-
-                        {/* Supplier info */}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 14,
-                            marginBottom: 14,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: 14,
-                              flexShrink: 0,
-                              background:
-                                b.supplier_type === "company"
-                                  ? "rgba(139,92,246,0.15)"
-                                  : "rgba(99,102,241,0.15)",
+                              border: "1px solid rgba(16,185,129,0.2)",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 24,
-                              border: `1px solid ${
-                                b.supplier_type === "company"
-                                  ? "rgba(139,92,246,0.3)"
-                                  : "rgba(99,102,241,0.3)"
-                              }`,
+                              gap: 5,
                             }}
                           >
-                            {b.supplier_type === "company" ? "🏢" : "👤"}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <CheckCircle2 size={11} />
+                            {acceptedCount} зөвшөөрсөн
+                          </span>
+                        )}
+                        {rejectedCount > 0 && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "4px 12px",
+                              borderRadius: 30,
+                              background: "rgba(239,68,68,0.1)",
+                              color: "#f87171",
+                              border: "1px solid rgba(239,68,68,0.2)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 5,
+                            }}
+                          >
+                            <XCircle size={11} />
+                            {rejectedCount} татгалзсан
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ============ КАРТУУД ============ */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 14,
+                      }}
+                    >
+                      {bids.map((b) => {
+                        const bs = BID_STATUS[b.status] ?? BID_STATUS.submitted;
+                        const isPending =
+                          b.status === "submitted" || b.status === "pending";
+                        const isAccepted =
+                          b.status === "accepted" || b.status === "approved";
+                        const isRejected = b.status === "rejected";
+                        const hasAttachments =
+                          b.attachments && b.attachments.length > 0;
+                        const priceOffer = b.price_offer || b.budget_offer;
+                        const deliveryDate = b.delivery_date;
+                        const note =
+                          b.note || b.message || b.comment || b.description;
+                        const isLowest =
+                          lowestPrice != null &&
+                          priceOffer &&
+                          Number(priceOffer) === lowestPrice;
+                        const priceDiff =
+                          lowestPrice != null && priceOffer
+                            ? Number(priceOffer) - lowestPrice
+                            : 0;
+
+                        return (
+                          <div
+                            key={b.id}
+                            className="bid-card"
+                            onClick={() => openDetailModal(b)}
+                            style={{
+                              background: isLowest
+                                ? "rgba(16,185,129,0.04)"
+                                : "rgba(255,255,255,0.03)",
+                              borderRadius: 20,
+                              padding: "18px 20px",
+                              border: `1px solid ${
+                                isLowest
+                                  ? "rgba(16,185,129,0.35)"
+                                  : isAccepted
+                                    ? "rgba(16,185,129,0.25)"
+                                    : isRejected
+                                      ? "rgba(239,68,68,0.2)"
+                                      : "rgba(255,255,255,0.08)"
+                              }`,
+                              cursor: "pointer",
+                              position: "relative",
+                            }}
+                          >
+                            {/* Хамгийн хямд тэмдэг */}
+                            {isLowest && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: 14,
+                                  right: 16,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  padding: "3px 10px",
+                                  borderRadius: 30,
+                                  background: "rgba(16,185,129,0.15)",
+                                  color: "#34d399",
+                                  border: "1px solid rgba(16,185,129,0.3)",
+                                }}
+                              >
+                                <Crown size={11} />
+                                Хамгийн хямд
+                              </div>
+                            )}
+
+                            {/* Supplier info */}
                             <div
                               style={{
-                                fontSize: 15,
-                                fontWeight: 700,
-                                color: "rgba(255,255,255,0.88)",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                                paddingRight: isLowest ? 90 : 0,
-                              }}
-                            >
-                              {b.supplier_name ||
-                                supplierInfo?.company_name ||
-                                "—"}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 11,
-                                color: "rgba(148,163,184,0.5)",
-                                display: "flex",
-                                gap: 10,
-                                marginTop: 4,
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              {b.supplier_number && (
-                                <span>№ {b.supplier_number}</span>
-                              )}
-                              {b.supplier_email && (
-                                <span>📧 {b.supplier_email}</span>
-                              )}
-                              {b.supplier_phone && (
-                                <span>📞 {b.supplier_phone}</span>
-                              )}
-                            </div>
-                          </div>
-                          {!isLowest && (
-                            <span
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 600,
-                                padding: "5px 14px",
-                                borderRadius: 30,
-                                background: bs.bg,
-                                color: bs.color,
-                                border: `1px solid ${bs.color}20`,
-                                flexShrink: 0,
                                 display: "flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 14,
+                                marginBottom: 14,
                               }}
                             >
-                              {isAccepted && <CheckCircle2 size={10} />}
-                              {isRejected && <XCircle size={10} />}
-                              {isPending && <Clock size={10} />}
-                              {bs.label}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Quick info chips */}
-                        {(priceOffer || deliveryDate || hasAttachments) && (
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 10,
-                              marginBottom: note ? 12 : 14,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {priceOffer && (
                               <div
                                 style={{
-                                  background: "rgba(16,185,129,0.06)",
-                                  borderRadius: 10,
-                                  padding: "5px 12px",
-                                  border: "1px solid rgba(16,185,129,0.15)",
-                                  fontSize: 12,
-                                  color: "#34d399",
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: 14,
+                                  flexShrink: 0,
+                                  background:
+                                    b.supplier_type === "company"
+                                      ? "rgba(139,92,246,0.15)"
+                                      : "rgba(99,102,241,0.15)",
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: 4,
+                                  justifyContent: "center",
+                                  fontSize: 24,
+                                  border: `1px solid ${
+                                    b.supplier_type === "company"
+                                      ? "rgba(139,92,246,0.3)"
+                                      : "rgba(99,102,241,0.3)"
+                                  }`,
                                 }}
                               >
-                                <Wallet size={12} />
-                                {Number(priceOffer).toLocaleString()}{" "}
-                                {ann.currency}
+                                {b.supplier_type === "company" ? "🏢" : "👤"}
                               </div>
-                            )}
-                            {!isLowest && priceDiff > 0 && (
-                              <div
-                                style={{
-                                  background: "rgba(245,158,11,0.06)",
-                                  borderRadius: 10,
-                                  padding: "5px 12px",
-                                  border: "1px solid rgba(245,158,11,0.15)",
-                                  fontSize: 12,
-                                  color: "#fbbf24",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                }}
-                              >
-                                <TrendingUp size={12} />+
-                                {priceDiff.toLocaleString()}
-                              </div>
-                            )}
-                            {deliveryDate && (
-                              <div
-                                style={{
-                                  background: "rgba(59,130,246,0.06)",
-                                  borderRadius: 10,
-                                  padding: "5px 12px",
-                                  border: "1px solid rgba(59,130,246,0.15)",
-                                  fontSize: 12,
-                                  color: "#60a5fa",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                }}
-                              >
-                                <Calendar size={12} />
-                                {new Date(deliveryDate).toLocaleDateString(
-                                  "mn-MN",
-                                )}
-                                <span
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div
                                   style={{
-                                    color: deliveryLabel(deliveryDate).color,
+                                    fontSize: 15,
                                     fontWeight: 700,
+                                    color: "rgba(255,255,255,0.88)",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    paddingRight: isLowest ? 90 : 0,
                                   }}
                                 >
-                                  · {deliveryLabel(deliveryDate).text}
+                                  {b.supplier_name ||
+                                    supplierInfo?.company_name ||
+                                    "—"}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: "rgba(148,163,184,0.5)",
+                                    display: "flex",
+                                    gap: 10,
+                                    marginTop: 4,
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  {b.supplier_number && (
+                                    <span>№ {b.supplier_number}</span>
+                                  )}
+                                  {b.supplier_email && (
+                                    <span>📧 {b.supplier_email}</span>
+                                  )}
+                                  {b.supplier_phone && (
+                                    <span>📞 {b.supplier_phone}</span>
+                                  )}
+                                </div>
+                              </div>
+                              {!isLowest && (
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    padding: "5px 14px",
+                                    borderRadius: 30,
+                                    background: bs.bg,
+                                    color: bs.color,
+                                    border: `1px solid ${bs.color}20`,
+                                    flexShrink: 0,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                  }}
+                                >
+                                  {isAccepted && <CheckCircle2 size={10} />}
+                                  {isRejected && <XCircle size={10} />}
+                                  {isPending && <Clock size={10} />}
+                                  {bs.label}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Quick info chips */}
+                            {(priceOffer || deliveryDate || hasAttachments) && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: 10,
+                                  marginBottom: note ? 12 : 14,
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                {priceOffer && (
+                                  <div
+                                    style={{
+                                      background: "rgba(16,185,129,0.06)",
+                                      borderRadius: 10,
+                                      padding: "5px 12px",
+                                      border: "1px solid rgba(16,185,129,0.15)",
+                                      fontSize: 12,
+                                      color: "#34d399",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                    }}
+                                  >
+                                    <Wallet size={12} />
+                                    {Number(priceOffer).toLocaleString()}{" "}
+                                    {ann.currency}
+                                  </div>
+                                )}
+                                {!isLowest && priceDiff > 0 && (
+                                  <div
+                                    style={{
+                                      background: "rgba(245,158,11,0.06)",
+                                      borderRadius: 10,
+                                      padding: "5px 12px",
+                                      border: "1px solid rgba(245,158,11,0.15)",
+                                      fontSize: 12,
+                                      color: "#fbbf24",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                    }}
+                                  >
+                                    <TrendingUp size={12} />+
+                                    {priceDiff.toLocaleString()}
+                                  </div>
+                                )}
+                                {deliveryDate && (
+                                  <div
+                                    style={{
+                                      background: "rgba(59,130,246,0.06)",
+                                      borderRadius: 10,
+                                      padding: "5px 12px",
+                                      border: "1px solid rgba(59,130,246,0.15)",
+                                      fontSize: 12,
+                                      color: "#60a5fa",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                    }}
+                                  >
+                                    <Calendar size={12} />
+                                    {new Date(deliveryDate).toLocaleDateString(
+                                      "mn-MN",
+                                    )}
+                                    <span
+                                      style={{
+                                        color:
+                                          deliveryLabel(deliveryDate).color,
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      · {deliveryLabel(deliveryDate).text}
+                                    </span>
+                                  </div>
+                                )}
+                                {hasAttachments && (
+                                  <div
+                                    style={{
+                                      background: "rgba(99,102,241,0.06)",
+                                      borderRadius: 10,
+                                      padding: "5px 12px",
+                                      border: "1px solid rgba(99,102,241,0.15)",
+                                      fontSize: 12,
+                                      color: "#a5b4fc",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                    }}
+                                  >
+                                    <File size={12} />
+                                    {b.attachments.length} файл
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Нийлүүлэгчийн тайлбар (тойм) */}
+                            {note && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                  gap: 8,
+                                  marginBottom: 14,
+                                  padding: "10px 12px",
+                                  background: "rgba(255,255,255,0.02)",
+                                  borderRadius: 10,
+                                  border: "1px solid rgba(255,255,255,0.05)",
+                                }}
+                              >
+                                <MessageSquare
+                                  size={13}
+                                  color="rgba(148,163,184,0.5)"
+                                  style={{ flexShrink: 0, marginTop: 1 }}
+                                />
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    color: "rgba(255,255,255,0.65)",
+                                    lineHeight: 1.5,
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical",
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  {note}
                                 </span>
                               </div>
                             )}
-                            {hasAttachments && (
-                              <div
-                                style={{
-                                  background: "rgba(99,102,241,0.06)",
-                                  borderRadius: 10,
-                                  padding: "5px 12px",
-                                  border: "1px solid rgba(99,102,241,0.15)",
-                                  fontSize: 12,
-                                  color: "#a5b4fc",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                }}
-                              >
-                                <File size={12} />
-                                {b.attachments.length} файл
-                              </div>
-                            )}
-                          </div>
-                        )}
 
-                        {/* Нийлүүлэгчийн тайлбар (тойм) */}
-                        {note && (
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 8,
-                              marginBottom: 14,
-                              padding: "10px 12px",
-                              background: "rgba(255,255,255,0.02)",
-                              borderRadius: 10,
-                              border: "1px solid rgba(255,255,255,0.05)",
-                            }}
-                          >
-                            <MessageSquare
-                              size={13}
-                              color="rgba(148,163,184,0.5)"
-                              style={{ flexShrink: 0, marginTop: 1 }}
-                            />
-                            <span
+                            {/* Footer */}
+                            <div
                               style={{
-                                fontSize: 12,
-                                color: "rgba(255,255,255,0.65)",
-                                lineHeight: 1.5,
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginTop: 8,
+                                paddingTop: 12,
+                                borderTop: "1px solid rgba(255,255,255,0.05)",
+                                gap: 10,
+                                flexWrap: "wrap",
                               }}
                             >
-                              {note}
-                            </span>
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  color: "rgba(148,163,184,0.35)",
+                                }}
+                              >
+                                {new Date(b.submitted_at).toLocaleString(
+                                  "mn-MN",
+                                )}
+                              </span>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: 8,
+                                  alignItems: "center",
+                                }}
+                              >
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSupplierDetail({
+                                      id: b.supplier_id,
+                                      type: b.supplier_type,
+                                    });
+                                  }}
+                                  style={{
+                                    padding: "5px 12px",
+                                    borderRadius: 8,
+                                    background: "rgba(139,92,246,0.12)",
+                                    border: "1px solid rgba(139,92,246,0.3)",
+                                    color: "#c4b5fd",
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 5,
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background =
+                                      "rgba(139,92,246,0.22)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background =
+                                      "rgba(139,92,246,0.12)";
+                                  }}
+                                >
+                                  🔍 Дэлгэрэнгүй мэдээлэл
+                                </button>
+                                <div
+                                  style={{
+                                    fontSize: 12,
+                                    color: "#a5b4fc",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                  }}
+                                >
+                                  Санал <ChevronRight size={14} />
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        )}
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
 
-                        {/* Footer */}
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginTop: 8,
-                            paddingTop: 12,
-                            borderTop: "1px solid rgba(255,255,255,0.05)",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 10,
-                              color: "rgba(148,163,184,0.35)",
-                            }}
-                          >
-                            {new Date(b.submitted_at).toLocaleString("mn-MN")}
-                          </span>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: "#a5b4fc",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 6,
-                            }}
-                          >
-                            Дэлгэрэнгүй <ChevronRight size={14} />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* ════════════ TAB: PARTICIPANTS ════════════ */}
+            {tab === "participants" && (
+              <>
+                {loadingParticipants ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: 60,
+                      gap: 14,
+                    }}
+                  >
+                    <Loader2
+                      size={28}
+                      style={{
+                        color: "#34d399",
+                        animation: "spin 0.8s linear infinite",
+                      }}
+                    />
+                    <span
+                      style={{ fontSize: 13, color: "rgba(148,163,184,0.4)" }}
+                    >
+                      Ачаалж байна...
+                    </span>
+                  </div>
+                ) : participants.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                    <Users
+                      size={48}
+                      style={{
+                        color: "rgba(148,163,184,0.15)",
+                        margin: "0 auto 16px",
+                        display: "block",
+                      }}
+                    />
+                    <p
+                      style={{
+                        fontSize: 14,
+                        color: "rgba(148,163,184,0.4)",
+                        margin: 0,
+                      }}
+                    >
+                      Оролцох хүсэлт ирээгүй байна
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 12,
+                    }}
+                  >
+                    {participants.map((p) => (
+                      <ParticipantCard
+                        key={p.id}
+                        participant={p}
+                        onViewDetail={(id, type) =>
+                          setSupplierDetail({ id, type })
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+/* ============================================================
+   SupplierDetailModal — нийлүүлэгчийн бүрэн мэдээлэл
+   ============================================================ */
+function SupplierDetailModal({
+  supplierId,
+  supplierType,
+  onClose,
+}: {
+  supplierId: string;
+  supplierType: "company" | "individual";
+  onClose: () => void;
+}) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const endpoint =
+          supplierType === "company"
+            ? `${API}/api/organizations/${supplierId}`
+            : `${API}/api/persons/${supplierId}`;
+        const res = await fetch(endpoint, { headers: authH() });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.message || "Алдаа");
+        setData(d.organization || d.person || d.data || d);
+      } catch (e: any) {
+        setError(e.message || "Мэдээлэл татаж чадсангүй");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [supplierId, supplierType]);
+
+  const isCompany = supplierType === "company";
+
+  /* ── Туслах компонентууд ─────────────────────────────── */
+  const Row = ({ label, value }: { label: string; value: any }) => {
+    if (value == null || value === "" || (Array.isArray(value) && !value.length))
+      return null;
+    return (
+      <div
+        style={{
+          padding: "10px 14px",
+          background: "rgba(255,255,255,0.03)",
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "rgba(148,163,184,0.5)",
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+            marginBottom: 3,
+          }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            color: "rgba(255,255,255,0.85)",
+            wordBreak: "break-word",
+            lineHeight: 1.5,
+          }}
+        >
+          {typeof value === "boolean" ? (value ? "Тийм" : "Үгүй") : String(value)}
+        </div>
+      </div>
+    );
+  };
+
+  const Section = ({
+    title,
+    icon,
+    children,
+  }: {
+    title: string;
+    icon?: string;
+    children: React.ReactNode;
+  }) => {
+    // Хэрэв section дотор бүх Row null бол section-ыг харуулахгүй
+    const hasContent =
+      Array.isArray(children) && children.some((c) => c !== null && c !== false);
+    if (!hasContent && !Array.isArray(children)) return null;
+    return (
+      <div style={{ marginBottom: 18 }}>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#a5b4fc",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            marginBottom: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            paddingBottom: 6,
+            borderBottom: "1px solid rgba(99,102,241,0.15)",
+          }}
+        >
+          {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
+          {title}
+        </div>
+        <div style={{ display: "grid", gap: 8 }}>{children}</div>
+      </div>
+    );
+  };
+
+  const DocLink = ({ label, url }: { label: string; url: string | null }) => {
+    if (!url) return null;
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "10px 14px",
+          background: "rgba(99,102,241,0.06)",
+          borderRadius: 10,
+          border: "1px solid rgba(99,102,241,0.15)",
+          textDecoration: "none",
+          color: "#a5b4fc",
+          fontSize: 12,
+          fontWeight: 500,
+          transition: "all 0.15s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(99,102,241,0.12)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(99,102,241,0.06)";
+        }}
+      >
+        <FileText size={14} />
+        <span style={{ flex: 1 }}>{label}</span>
+        <Download size={13} />
+      </a>
+    );
+  };
+
+  const PersonCard = ({ p }: { p: any }) => {
+    if (!p) return null;
+    const name =
+      `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim() ||
+      p.position ||
+      p.email ||
+      "—";
+    return (
+      <div
+        style={{
+          padding: "12px 14px",
+          background: "rgba(255,255,255,0.03)",
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.88)",
+            marginBottom: 4,
+          }}
+        >
+          {name}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: "rgba(148,163,184,0.6)",
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          {p.position && <span>📌 {p.position}</span>}
+          {p.email && <span>📧 {p.email}</span>}
+          {p.phone && <span>📞 {p.phone}</span>}
+          {p.gender && (
+            <span>{p.gender === "female" ? "♀ Эмэгтэй" : "♂ Эрэгтэй"}</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Render ──────────────────────────────────────────── */
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 500,
+        background: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(12px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        animation: "fadeIn 0.2s ease",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 720,
+          background: "#0d1526",
+          borderRadius: 28,
+          border: "1px solid rgba(255,255,255,0.08)",
+          overflow: "hidden",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+          animation: "modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ============ HEADER ============ */}
+        <div
+          style={{
+            padding: "20px 28px",
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            background: isCompany
+              ? "linear-gradient(135deg, rgba(139,92,246,0.10), rgba(99,102,241,0.04))"
+              : "linear-gradient(135deg, rgba(99,102,241,0.10), rgba(99,102,241,0.04))",
+          }}
+        >
+          {data?.company_logo_url ? (
+            <img
+              src={data.company_logo_url}
+              alt=""
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 14,
+                objectFit: "cover",
+                border: "1px solid rgba(139,92,246,0.3)",
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 14,
+                background: isCompany
+                  ? "rgba(139,92,246,0.15)"
+                  : "rgba(99,102,241,0.15)",
+                border: `1px solid ${
+                  isCompany ? "rgba(139,92,246,0.3)" : "rgba(99,102,241,0.3)"
+                }`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 26,
+                flexShrink: 0,
+              }}
+            >
+              {isCompany ? "🏢" : "👤"}
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 17,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.92)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {loading
+                ? "Ачаалж байна..."
+                : data?.company_name ||
+                  `${data?.last_name ?? ""} ${data?.first_name ?? ""}`.trim() ||
+                  "Нийлүүлэгч"}
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "rgba(148,163,184,0.55)",
+                marginTop: 3,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              {data?.supplier_number && (
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    background: "rgba(99,102,241,0.15)",
+                    borderRadius: 30,
+                    color: "#a5b4fc",
+                    fontWeight: 600,
+                  }}
+                >
+                  № {data.supplier_number}
+                </span>
+              )}
+              {data?.status && (
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    background:
+                      data.status === "active"
+                        ? "rgba(16,185,129,0.15)"
+                        : "rgba(148,163,184,0.15)",
+                    borderRadius: 30,
+                    color:
+                      data.status === "active"
+                        ? "#34d399"
+                        : "rgba(148,163,184,0.7)",
+                    fontWeight: 600,
+                  }}
+                >
+                  {data.status === "active" ? "Идэвхтэй" : data.status}
+                </span>
+              )}
+              {data?.company_type && <span>• {data.company_type}</span>}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              cursor: "pointer",
+              color: "rgba(148,163,184,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* ============ BODY ============ */}
+        <div
+          style={{
+            padding: "24px 28px",
+            overflowY: "auto",
+            flex: 1,
+          }}
+        >
+          {loading ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 60,
+                gap: 14,
+              }}
+            >
+              <Loader2
+                size={28}
+                style={{
+                  color: "#a5b4fc",
+                  animation: "spin 0.8s linear infinite",
+                }}
+              />
+              <span style={{ fontSize: 13, color: "rgba(148,163,184,0.4)" }}>
+                Ачаалж байна...
+              </span>
+            </div>
+          ) : error ? (
+            <div
+              style={{
+                padding: 20,
+                background: "rgba(239,68,68,0.08)",
+                border: "1px solid rgba(239,68,68,0.2)",
+                borderRadius: 12,
+                color: "#f87171",
+                fontSize: 13,
+                textAlign: "center",
+              }}
+            >
+              ⚠️ {error}
+            </div>
+          ) : data && isCompany ? (
+            <>
+              {/* ━━━━━━━━━━ ҮНДСЭН МЭДЭЭЛЭЛ ━━━━━━━━━━ */}
+              <Section title="Үндсэн мэдээлэл" icon="📋">
+                <Row label="Байгууллагын нэр" value={data.company_name} />
+                <Row label="Англи нэр" value={data.company_name_en} />
+                <Row label="Регистрийн дугаар" value={data.register_number} />
+                <Row
+                  label="Улсын бүртгэлийн дугаар"
+                  value={data.state_registry_number}
+                />
+                <Row label="Байгууллагын төрөл" value={data.company_type} />
+                <Row label="Ажилтны тоо" value={data.employee_count} />
+                <Row
+                  label="Үүсгэн байгуулагдсан огноо"
+                  value={
+                    data.established_date
+                      ? new Date(data.established_date).toLocaleDateString(
+                          "mn-MN",
+                        )
+                      : null
+                  }
+                />
+              </Section>
+
+              {/* ━━━━━━━━━━ ХОЛБОО БАРИХ ━━━━━━━━━━ */}
+              <Section title="Холбоо барих" icon="📞">
+                <Row label="И-мэйл" value={data.email} />
+                <Row label="Утас" value={data.phone} />
+                <Row label="Хаяг" value={data.address} />
+                <Row label="Аймаг/Нийслэл" value={data.aimag_niislel} />
+                <Row label="Сум/Дүүрэг" value={data.sum_duureg} />
+                <Row label="Баг/Хороо" value={data.bag_horoo} />
+              </Section>
+
+              {/* ━━━━━━━━━━ ҮЙЛ АЖИЛЛАГАА ━━━━━━━━━━ */}
+              <Section title="Үйл ажиллагаа" icon="⚙️">
+                <Row
+                  label="Үйл ажиллагааны тайлбар"
+                  value={data.activity_description}
+                />
+                <Row
+                  label="Нийлүүлэлтийн чиглэл"
+                  value={
+                    data.supply_direction === "both"
+                      ? "Бараа ба үйлчилгээ"
+                      : data.supply_direction === "goods"
+                        ? "Бараа"
+                        : data.supply_direction === "service"
+                          ? "Үйлчилгээ"
+                          : null
+                  }
+                />
+                <Row
+                  label="Үйл ажиллагааны чиглэл (бүлгийн тоо)"
+                  value={
+                    Array.isArray(data.activity_directions)
+                      ? `${data.activity_directions.length} үндсэн / ${data.activity_directions.reduce(
+                          (acc: number, d: any) =>
+                            acc + (d?.sub_ids?.length ?? 0),
+                          0,
+                        )} дэд чиглэл`
+                      : null
+                  }
+                />
+              </Section>
+
+              {/* ━━━━━━━━━━ САНХҮҮ ━━━━━━━━━━ */}
+              <Section title="Санхүүгийн мэдээлэл" icon="💰">
+                <Row label="Банк" value={data.bank_name} />
+                <Row label="Дансны дугаар" value={data.bank_account_number} />
+                <Row label="Валют" value={data.currency} />
+                <Row label="IBAN" value={data.iban} />
+                <Row label="SWIFT код" value={data.swift_code} />
+                <Row label="НӨАТ-ын дугаар" value={data.vat_number} />
+                <Row label="НӨАТ төлөгч" value={data.is_vat_payer} />
+              </Section>
+
+              {/* ━━━━━━━━━━ ГЭРЧИЛГЭЭ ━━━━━━━━━━ */}
+              <Section title="Гэрчилгээ" icon="🏆">
+                <Row label="ISO баталгаажсан" value={data.is_iso_certified} />
+                <Row
+                  label="Тусгай зөвшөөрөлтэй"
+                  value={data.has_special_permission}
+                />
+                <Row
+                  label="Тусгай зөвшөөрлийн дугаар"
+                  value={data.special_permission_number}
+                />
+                <Row
+                  label="Тусгай зөвшөөрлийн хүчинтэй огноо"
+                  value={
+                    data.special_permission_expiry
+                      ? new Date(
+                          data.special_permission_expiry,
+                        ).toLocaleDateString("mn-MN")
+                      : null
+                  }
+                />
+              </Section>
+
+              {/* ━━━━━━━━━━ УДИРДЛАГА ━━━━━━━━━━ */}
+              {Array.isArray(data.executive_directors) &&
+                data.executive_directors.length > 0 && (
+                  <Section title="Гүйцэтгэх удирдлага" icon="👔">
+                    {data.executive_directors.map((d: any, i: number) => (
+                      <PersonCard key={i} p={d} />
+                    ))}
+                  </Section>
+                )}
+
+              {/* ━━━━━━━━━━ ЭЗЭМШИГЧИД ━━━━━━━━━━ */}
+              {Array.isArray(data.beneficial_owners) &&
+                data.beneficial_owners.length > 0 && (
+                  <Section title="Үр шимийг хүртэгч эзэмшигчид" icon="👥">
+                    {data.beneficial_owners.map((o: any, i: number) => (
+                      <PersonCard key={i} p={o} />
+                    ))}
+                  </Section>
+                )}
+
+              {Array.isArray(data.final_beneficial_owners) &&
+                data.final_beneficial_owners.length > 0 && (
+                  <Section title="Эцсийн өмчлөгч" icon="🎯">
+                    {data.final_beneficial_owners.map((o: any, i: number) => (
+                      <PersonCard key={i} p={o} />
+                    ))}
+                  </Section>
+                )}
+
+              {/* ━━━━━━━━━━ БАРИМТ БИЧИГ ━━━━━━━━━━ */}
+              {(data.doc_state_registry_url ||
+                data.doc_vat_certificate_url ||
+                data.doc_contract_url ||
+                data.doc_special_permission_url ||
+                data.doc_company_intro_url ||
+                (Array.isArray(data.extra_documents) &&
+                  data.extra_documents.length > 0)) && (
+                <Section title="Баримт бичиг" icon="📄">
+                  <DocLink
+                    label="Улсын бүртгэлийн гэрчилгээ"
+                    url={data.doc_state_registry_url}
+                  />
+                  <DocLink
+                    label="НӨАТ-ын гэрчилгээ"
+                    url={data.doc_vat_certificate_url}
+                  />
+                  <DocLink label="Гэрээ" url={data.doc_contract_url} />
+                  <DocLink
+                    label="Тусгай зөвшөөрөл"
+                    url={data.doc_special_permission_url}
+                  />
+                  <DocLink
+                    label="Байгууллагын танилцуулга"
+                    url={data.doc_company_intro_url}
+                  />
+                  {Array.isArray(data.extra_documents) &&
+                    data.extra_documents.map((doc: any, i: number) => (
+                      <DocLink
+                        key={i}
+                        label={doc.name || `Нэмэлт баримт ${i + 1}`}
+                        url={doc.url || doc}
+                      />
+                    ))}
+                </Section>
+              )}
+
+              {/* ━━━━━━━━━━ БУСАД ━━━━━━━━━━ */}
+              <Section title="Бусад" icon="ℹ️">
+                <Row
+                  label="Мэдэгдлийн тохиргоо"
+                  value={
+                    data.notification_preference === "all"
+                      ? "Бүх зарлал"
+                      : data.notification_preference === "selected_dirs"
+                        ? "Сонгосон чиглэлүүд"
+                        : data.notification_preference === "none"
+                          ? "Хаасан"
+                          : data.notification_preference
+                  }
+                />
+                <Row
+                  label="Бүртгүүлсэн огноо"
+                  value={
+                    data.created_at
+                      ? new Date(data.created_at).toLocaleString("mn-MN")
+                      : null
+                  }
+                />
+                <Row
+                  label="Сүүлд шинэчилсэн"
+                  value={
+                    data.updated_at
+                      ? new Date(data.updated_at).toLocaleString("mn-MN")
+                      : null
+                  }
+                />
+              </Section>
+            </>
+          ) : data ? (
+            // ━━━━━━━━━━ INDIVIDUAL (PERSON) ━━━━━━━━━━
+            <>
+              <Section title="Үндсэн мэдээлэл" icon="📋">
+                <Row label="Овог" value={data.last_name} />
+                <Row label="Нэр" value={data.first_name} />
+                <Row label="Эцгийн нэр" value={data.family_name} />
+                <Row label="Регистрийн дугаар" value={data.register_number} />
+                <Row
+                  label="Нийлүүлэгчийн дугаар"
+                  value={data.supplier_number}
+                />
+              </Section>
+
+              <Section title="Холбоо барих" icon="📞">
+                <Row label="И-мэйл" value={data.email} />
+                <Row label="Утас" value={data.phone} />
+                <Row label="Хаяг" value={data.address} />
+                <Row label="Аймаг/Нийслэл" value={data.aimag_niislel} />
+                <Row label="Сум/Дүүрэг" value={data.sum_duureg} />
+                <Row label="Баг/Хороо" value={data.bag_horoo} />
+              </Section>
+
+              <Section title="Үйл ажиллагаа" icon="⚙️">
+                <Row
+                  label="Үйл ажиллагааны танилцуулга"
+                  value={data.activity_intro}
+                />
+                <Row
+                  label="Чиглэлийн тоо"
+                  value={
+                    Array.isArray(data.activity_directions)
+                      ? data.activity_directions.length
+                      : null
+                  }
+                />
+              </Section>
+
+              {(data.profile_photo_url ||
+                data.id_card_front_url ||
+                data.id_card_back_url ||
+                data.activity_intro_url) && (
+                <Section title="Баримт бичиг" icon="📄">
+                  <DocLink
+                    label="Профайл зураг"
+                    url={data.profile_photo_url}
+                  />
+                  <DocLink
+                    label="Иргэний үнэмлэх (нүүр)"
+                    url={data.id_card_front_url}
+                  />
+                  <DocLink
+                    label="Иргэний үнэмлэх (ар)"
+                    url={data.id_card_back_url}
+                  />
+                  <DocLink
+                    label="Үйл ажиллагааны танилцуулга"
+                    url={data.activity_intro_url}
+                  />
+                </Section>
+              )}
+
+              <Section title="Бусад" icon="ℹ️">
+                <Row label="Төлөв" value={data.status} />
+                <Row
+                  label="Бүртгүүлсэн огноо"
+                  value={
+                    data.created_at
+                      ? new Date(data.created_at).toLocaleString("mn-MN")
+                      : null
+                  }
+                />
+              </Section>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }

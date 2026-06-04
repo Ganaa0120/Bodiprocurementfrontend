@@ -367,6 +367,7 @@ export default function CompanyAnnouncementsPage() {
   const [priceOffer, setPriceOffer] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [bidMessage, setBidMessage] = useState("");
+  const [participating, setParticipating] = useState(false);
 
   const load = async () => {
     const token = localStorage.getItem("token");
@@ -521,9 +522,8 @@ export default function CompanyAnnouncementsPage() {
     const token = localStorage.getItem("token");
     try {
       const attachments = Object.entries(uploadedFiles).flatMap(
-    ([docName, files]) => files.map((f) => ({ ...f, docName })),
-  );
-
+        ([docName, files]) => files.map((f) => ({ ...f, docName })),
+      );
 
       const res = await fetch(`${API}/api/announcements/${selected.id}/bids`, {
         method: "POST",
@@ -550,6 +550,32 @@ export default function CompanyAnnouncementsPage() {
       setBidError(e.message || "Хүсэлт илгээхэд алдаа гарлаа");
     } finally {
       setBidSaving(false);
+    }
+  };
+
+  const participate = async () => {
+    if (!selected?.id) return;
+    setParticipating(true);
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(
+        `${API}/api/announcements/${selected.id}/participate`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token || ""}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Алдаа гарлаа");
+      setSelected((s: any) => ({ ...s, is_participated: true }));
+    } catch (e: any) {
+      alert(e.message || "Оролцох хүсэлт илгээхэд алдаа гарлаа");
+    } finally {
+      setParticipating(false);
     }
   };
 
@@ -2143,6 +2169,7 @@ export default function CompanyAnnouncementsPage() {
                 padding: isMobile ? "14px 18px" : "18px 40px",
                 display: "flex",
                 gap: 10,
+                flexWrap: "wrap",
                 boxShadow: "0 -4px 14px rgba(0,0,0,0.04)",
                 paddingBottom: isMobile
                   ? "calc(14px + env(safe-area-inset-bottom))"
@@ -2152,7 +2179,6 @@ export default function CompanyAnnouncementsPage() {
               <button
                 onClick={() => setSelected(null)}
                 style={{
-                  flex: isMobile ? 1 : "0 0 auto",
                   padding: "13px 22px",
                   borderRadius: 12,
                   border: "1px solid #e2e8f0",
@@ -2162,45 +2188,99 @@ export default function CompanyAnnouncementsPage() {
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f8fafc")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "white")
-                }
               >
                 Хаах
               </button>
+
+              {/* ⭐ ШИНЭ: Оролцох товч */}
               <button
-                onClick={() => {
-                  if (isExpired) return;
-                  setBidModal(true);
-                  setBidError("");
-                }}
-                disabled={isExpired}
+                onClick={participate}
+                disabled={
+                  isExpired || selected.is_participated || participating
+                }
                 style={{
                   flex: 1,
-                  padding: "13px 26px",
+                  minWidth: 140,
+                  padding: "13px 20px",
                   borderRadius: 12,
-                  border: "none",
-                  background: isExpired
-                    ? "#e2e8f0"
-                    : "linear-gradient(135deg,#0072BC,#3b9be0)",
-                  color: isExpired ? "#94a3b8" : "white",
+                  border: selected.is_participated
+                    ? "1px solid #10b981"
+                    : "1.5px solid #10b981",
+                  background: selected.is_participated ? "#ecfdf5" : "white",
+                  color: "#059669",
                   fontSize: 14,
                   fontWeight: 700,
-                  cursor: isExpired ? "not-allowed" : "pointer",
+                  cursor:
+                    isExpired || selected.is_participated || participating
+                      ? "not-allowed"
+                      : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
-                  boxShadow: isExpired
-                    ? "none"
-                    : "0 8px 20px rgba(0,114,188,0.35)",
+                  opacity: isExpired ? 0.5 : 1,
+                }}
+              >
+                {participating ? (
+                  <>
+                    <Loader2
+                      size={15}
+                      style={{ animation: "spin .8s linear infinite" }}
+                    />{" "}
+                    Илгээж байна...
+                  </>
+                ) : selected.is_participated ? (
+                  <>
+                    <CheckCircle2 size={15} /> Оролцсон
+                  </>
+                ) : (
+                  <>👋 Оролцох</>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  if (isExpired || selected.is_bid_submitted) return;
+                  setBidModal(true);
+                  setBidError("");
+                }}
+                disabled={isExpired || selected.is_bid_submitted}
+                style={{
+                  flex: 1,
+                  minWidth: 160,
+                  padding: "13px 26px",
+                  borderRadius: 12,
+                  border: "none",
+                  background:
+                    isExpired || selected.is_bid_submitted
+                      ? "#e2e8f0"
+                      : "linear-gradient(135deg,#0072BC,#3b9be0)",
+                  color:
+                    isExpired || selected.is_bid_submitted
+                      ? "#94a3b8"
+                      : "white",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor:
+                    isExpired || selected.is_bid_submitted
+                      ? "not-allowed"
+                      : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  boxShadow:
+                    isExpired || selected.is_bid_submitted
+                      ? "none"
+                      : "0 8px 20px rgba(0,114,188,0.35)",
                 }}
               >
                 {isExpired ? (
                   "Хугацаа дууссан"
+                ) : selected.is_bid_submitted ? (
+                  <>
+                    <CheckCircle2 size={15} /> Хүсэлт илгээсэн
+                  </>
                 ) : (
                   <>
                     <Send size={15} /> Хүсэлт илгээх
@@ -2544,328 +2624,325 @@ export default function CompanyAnnouncementsPage() {
                   </div>
 
                   {/* Шаардлагатай баримт бичгүүд хавсаргах */}
-                    <div style={{ marginBottom: 24 }}>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#475569",
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          marginBottom: 12,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <FileText size={12} />
-                        {supplierRequiredDocsList.length > 0
-                          ? "Шаардлагатай баримт бичгүүд"
-                          : "Хавсралт файл"}
-                        {supplierRequiredDocsList.length > 0 &&
-                          totalFiles === 0 && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                color: "#ef4444",
-                                fontWeight: 400,
-                              }}
-                            >
-                              (заавал хавсаргах шаардлагатай)
-                            </span>
-                          )}
-                        {supplierRequiredDocsList.length === 0 && (
+                  <div style={{ marginBottom: 24 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#475569",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        marginBottom: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <FileText size={12} />
+                      {supplierRequiredDocsList.length > 0
+                        ? "Шаардлагатай баримт бичгүүд"
+                        : "Хавсралт файл"}
+                      {supplierRequiredDocsList.length > 0 &&
+                        totalFiles === 0 && (
                           <span
                             style={{
                               fontSize: 10,
-                              color: "#94a3b8",
+                              color: "#ef4444",
                               fontWeight: 400,
                             }}
                           >
-                            (заавал биш)
+                            (заавал хавсаргах шаардлагатай)
                           </span>
                         )}
-                      </div>
-
-                      <div
-                        style={{
-                          background: "#ecfdf5",
-                          borderRadius: 14,
-                          padding: "16px 18px",
-                          border: "1px solid #a7f3d0",
-                        }}
-                      >
-                        {supplierRequiredDocsList.length > 0
-                          ? /* ── Зарлал дээр тусгайлан шаардсан баримт бичгүүд ── */
-                            supplierRequiredDocsList.map((doc, idx) => {
-                              const files = uploadedFiles[doc] || [];
-                              const hasFiles = files.length > 0;
-                              return (
-                                <div
-                                  key={idx}
-                                  style={{
-                                    marginBottom:
-                                      idx < supplierRequiredDocsList.length - 1
-                                        ? 16
-                                        : 0,
-                                    border: hasFiles
-                                      ? "1px solid #d1fae5"
-                                      : "1px dashed #d1fae5",
-                                    borderRadius: 12,
-                                    overflow: "hidden",
-                                    background: hasFiles
-                                      ? "white"
-                                      : "transparent",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      padding: "12px 16px",
-                                      background: hasFiles
-                                        ? "#f0fdf4"
-                                        : "transparent",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      flexWrap: "wrap",
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 10,
-                                        flexWrap: "wrap",
-                                        flex: 1,
-                                        minWidth: 0,
-                                      }}
-                                    >
-                                      <FileText
-                                        size={16}
-                                        color={hasFiles ? "#059669" : "#94a3b8"}
-                                      />
-                                      <span
-                                        style={{
-                                          fontSize: 13,
-                                          color: "#0f172a",
-                                          fontWeight: 500,
-                                        }}
-                                      >
-                                        {doc}
-                                      </span>
-                                      {!hasFiles && (
-                                        <span
-                                          style={{
-                                            fontSize: 10,
-                                            padding: "2px 8px",
-                                            borderRadius: 30,
-                                            background: "#fef2f2",
-                                            color: "#dc2626",
-                                          }}
-                                        >
-                                          шаардлагатай
-                                        </span>
-                                      )}
-                                      {hasFiles && (
-                                        <span
-                                          style={{
-                                            fontSize: 10,
-                                            padding: "2px 10px",
-                                            borderRadius: 30,
-                                            background: "#d1fae5",
-                                            color: "#065f46",
-                                            fontWeight: 500,
-                                          }}
-                                        >
-                                          {files.length} файл
-                                        </span>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        setCurrentDoc(doc);
-                                        fileInputRef.current?.click();
-                                      }}
-                                      disabled={uploading || bidSaving}
-                                      style={{
-                                        padding: "6px 14px",
-                                        borderRadius: 8,
-                                        background: "#059669",
-                                        border: "none",
-                                        color: "white",
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        cursor:
-                                          uploading || bidSaving
-                                            ? "not-allowed"
-                                            : "pointer",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 6,
-                                        opacity:
-                                          uploading || bidSaving ? 0.6 : 1,
-                                      }}
-                                    >
-                                      <Plus size={14} /> Файл нэмэх
-                                    </button>
-                                  </div>
-
-                                  {hasFiles && (
-                                    <div
-                                      style={{
-                                        padding: "12px 16px",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: 10,
-                                        borderTop: "1px solid #d1fae5",
-                                      }}
-                                    >
-                                      {files.map((file, fileIdx) => (
-                                        <UploadFileItem
-                                          key={fileIdx}
-                                          file={file}
-                                          onRemove={() =>
-                                            handleRemoveFile(doc, fileIdx)
-                                          }
-                                          onView={() =>
-                                            handleViewFile(file.url, file.name)
-                                          }
-                                        />
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          : /* ── Ерөнхий хавсралт (зарлал дээр баримт бичиг шаардаагүй үед) ── */
-                            (() => {
-                              const genericFiles =
-                                uploadedFiles["general"] || [];
-                              const hasFiles = genericFiles.length > 0;
-                              return (
-                                <div
-                                  style={{
-                                    border: hasFiles
-                                      ? "1px solid #d1fae5"
-                                      : "1px dashed #d1fae5",
-                                    borderRadius: 12,
-                                    overflow: "hidden",
-                                    background: hasFiles
-                                      ? "white"
-                                      : "transparent",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      padding: "12px 16px",
-                                      background: hasFiles
-                                        ? "#f0fdf4"
-                                        : "transparent",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      flexWrap: "wrap",
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 10,
-                                        flexWrap: "wrap",
-                                        flex: 1,
-                                        minWidth: 0,
-                                      }}
-                                    >
-                                      <FileText
-                                        size={16}
-                                        color={hasFiles ? "#059669" : "#94a3b8"}
-                                      />
-                                      <span
-                                        style={{
-                                          fontSize: 13,
-                                          color: "#0f172a",
-                                          fontWeight: 500,
-                                        }}
-                                      >
-                                        Үнийн санал, бусад хавсралт файл
-                                      </span>
-                                      {hasFiles && (
-                                        <span
-                                          style={{
-                                            fontSize: 10,
-                                            padding: "2px 10px",
-                                            borderRadius: 30,
-                                            background: "#d1fae5",
-                                            color: "#065f46",
-                                            fontWeight: 500,
-                                          }}
-                                        >
-                                          {genericFiles.length} файл
-                                        </span>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        setCurrentDoc("general");
-                                        fileInputRef.current?.click();
-                                      }}
-                                      disabled={uploading || bidSaving}
-                                      style={{
-                                        padding: "6px 14px",
-                                        borderRadius: 8,
-                                        background: "#059669",
-                                        border: "none",
-                                        color: "white",
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        cursor:
-                                          uploading || bidSaving
-                                            ? "not-allowed"
-                                            : "pointer",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 6,
-                                        opacity:
-                                          uploading || bidSaving ? 0.6 : 1,
-                                      }}
-                                    >
-                                      <Plus size={14} /> Файл нэмэх
-                                    </button>
-                                  </div>
-
-                                  {hasFiles && (
-                                    <div
-                                      style={{
-                                        padding: "12px 16px",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: 10,
-                                        borderTop: "1px solid #d1fae5",
-                                      }}
-                                    >
-                                      {genericFiles.map((file, fileIdx) => (
-                                        <UploadFileItem
-                                          key={fileIdx}
-                                          file={file}
-                                          onRemove={() =>
-                                            handleRemoveFile("general", fileIdx)
-                                          }
-                                          onView={() =>
-                                            handleViewFile(file.url, file.name)
-                                          }
-                                        />
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                      </div>
+                      {supplierRequiredDocsList.length === 0 && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: "#94a3b8",
+                            fontWeight: 400,
+                          }}
+                        >
+                          (заавал биш)
+                        </span>
+                      )}
                     </div>
+
+                    <div
+                      style={{
+                        background: "#ecfdf5",
+                        borderRadius: 14,
+                        padding: "16px 18px",
+                        border: "1px solid #a7f3d0",
+                      }}
+                    >
+                      {supplierRequiredDocsList.length > 0
+                        ? /* ── Зарлал дээр тусгайлан шаардсан баримт бичгүүд ── */
+                          supplierRequiredDocsList.map((doc, idx) => {
+                            const files = uploadedFiles[doc] || [];
+                            const hasFiles = files.length > 0;
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  marginBottom:
+                                    idx < supplierRequiredDocsList.length - 1
+                                      ? 16
+                                      : 0,
+                                  border: hasFiles
+                                    ? "1px solid #d1fae5"
+                                    : "1px dashed #d1fae5",
+                                  borderRadius: 12,
+                                  overflow: "hidden",
+                                  background: hasFiles
+                                    ? "white"
+                                    : "transparent",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    padding: "12px 16px",
+                                    background: hasFiles
+                                      ? "#f0fdf4"
+                                      : "transparent",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    flexWrap: "wrap",
+                                    gap: 10,
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 10,
+                                      flexWrap: "wrap",
+                                      flex: 1,
+                                      minWidth: 0,
+                                    }}
+                                  >
+                                    <FileText
+                                      size={16}
+                                      color={hasFiles ? "#059669" : "#94a3b8"}
+                                    />
+                                    <span
+                                      style={{
+                                        fontSize: 13,
+                                        color: "#0f172a",
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      {doc}
+                                    </span>
+                                    {!hasFiles && (
+                                      <span
+                                        style={{
+                                          fontSize: 10,
+                                          padding: "2px 8px",
+                                          borderRadius: 30,
+                                          background: "#fef2f2",
+                                          color: "#dc2626",
+                                        }}
+                                      >
+                                        шаардлагатай
+                                      </span>
+                                    )}
+                                    {hasFiles && (
+                                      <span
+                                        style={{
+                                          fontSize: 10,
+                                          padding: "2px 10px",
+                                          borderRadius: 30,
+                                          background: "#d1fae5",
+                                          color: "#065f46",
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        {files.length} файл
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setCurrentDoc(doc);
+                                      fileInputRef.current?.click();
+                                    }}
+                                    disabled={uploading || bidSaving}
+                                    style={{
+                                      padding: "6px 14px",
+                                      borderRadius: 8,
+                                      background: "#059669",
+                                      border: "none",
+                                      color: "white",
+                                      fontSize: 12,
+                                      fontWeight: 500,
+                                      cursor:
+                                        uploading || bidSaving
+                                          ? "not-allowed"
+                                          : "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 6,
+                                      opacity: uploading || bidSaving ? 0.6 : 1,
+                                    }}
+                                  >
+                                    <Plus size={14} /> Файл нэмэх
+                                  </button>
+                                </div>
+
+                                {hasFiles && (
+                                  <div
+                                    style={{
+                                      padding: "12px 16px",
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 10,
+                                      borderTop: "1px solid #d1fae5",
+                                    }}
+                                  >
+                                    {files.map((file, fileIdx) => (
+                                      <UploadFileItem
+                                        key={fileIdx}
+                                        file={file}
+                                        onRemove={() =>
+                                          handleRemoveFile(doc, fileIdx)
+                                        }
+                                        onView={() =>
+                                          handleViewFile(file.url, file.name)
+                                        }
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        : /* ── Ерөнхий хавсралт (зарлал дээр баримт бичиг шаардаагүй үед) ── */
+                          (() => {
+                            const genericFiles = uploadedFiles["general"] || [];
+                            const hasFiles = genericFiles.length > 0;
+                            return (
+                              <div
+                                style={{
+                                  border: hasFiles
+                                    ? "1px solid #d1fae5"
+                                    : "1px dashed #d1fae5",
+                                  borderRadius: 12,
+                                  overflow: "hidden",
+                                  background: hasFiles
+                                    ? "white"
+                                    : "transparent",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    padding: "12px 16px",
+                                    background: hasFiles
+                                      ? "#f0fdf4"
+                                      : "transparent",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    flexWrap: "wrap",
+                                    gap: 10,
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 10,
+                                      flexWrap: "wrap",
+                                      flex: 1,
+                                      minWidth: 0,
+                                    }}
+                                  >
+                                    <FileText
+                                      size={16}
+                                      color={hasFiles ? "#059669" : "#94a3b8"}
+                                    />
+                                    <span
+                                      style={{
+                                        fontSize: 13,
+                                        color: "#0f172a",
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      Үнийн санал, бусад хавсралт файл
+                                    </span>
+                                    {hasFiles && (
+                                      <span
+                                        style={{
+                                          fontSize: 10,
+                                          padding: "2px 10px",
+                                          borderRadius: 30,
+                                          background: "#d1fae5",
+                                          color: "#065f46",
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        {genericFiles.length} файл
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setCurrentDoc("general");
+                                      fileInputRef.current?.click();
+                                    }}
+                                    disabled={uploading || bidSaving}
+                                    style={{
+                                      padding: "6px 14px",
+                                      borderRadius: 8,
+                                      background: "#059669",
+                                      border: "none",
+                                      color: "white",
+                                      fontSize: 12,
+                                      fontWeight: 500,
+                                      cursor:
+                                        uploading || bidSaving
+                                          ? "not-allowed"
+                                          : "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 6,
+                                      opacity: uploading || bidSaving ? 0.6 : 1,
+                                    }}
+                                  >
+                                    <Plus size={14} /> Файл нэмэх
+                                  </button>
+                                </div>
+
+                                {hasFiles && (
+                                  <div
+                                    style={{
+                                      padding: "12px 16px",
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 10,
+                                      borderTop: "1px solid #d1fae5",
+                                    }}
+                                  >
+                                    {genericFiles.map((file, fileIdx) => (
+                                      <UploadFileItem
+                                        key={fileIdx}
+                                        file={file}
+                                        onRemove={() =>
+                                          handleRemoveFile("general", fileIdx)
+                                        }
+                                        onView={() =>
+                                          handleViewFile(file.url, file.name)
+                                        }
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                    </div>
+                  </div>
 
                   {/* Уншигдсан hidden file input */}
                   <input
