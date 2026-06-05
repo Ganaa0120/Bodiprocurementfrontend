@@ -16,8 +16,9 @@ import {
   Crown,
   TrendingUp,
   MessageSquare,
-  Users, // ⭐ ШИНЭ
+  Users,
   Inbox,
+  Lock,
 } from "lucide-react";
 import { API, authH, BID_STATUS } from "./constants";
 import type { Ann } from "./types";
@@ -821,6 +822,7 @@ function ParticipantCard({
 }) {
   return (
     <div
+    onClick={() => onViewDetail?.(p.participant_id, p.participant_type)}
       style={{
         background: p.has_submitted_bid
           ? "rgba(16,185,129,0.04)"
@@ -1016,7 +1018,13 @@ export function BidsDrawer({
 }) {
   const [selectedBid, setSelectedBid] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [tab, setTab] = useState<"bids" | "participants">("bids"); // ⭐ ШИНЭ
+
+  // ⭐ Зарлалын хугацаа дууссан эсэхийг шалгана
+  const isExpired = ann?.deadline ? new Date(ann.deadline) < new Date() : false;
+
+  const [tab, setTab] = useState<"bids" | "participants">(
+    isExpired ? "bids" : "participants", // ⭐ дуусаагүй бол participants
+  );
   const [supplierDetail, setSupplierDetail] = useState<{
     id: string;
     type: "company" | "individual";
@@ -1198,49 +1206,6 @@ export function BidsDrawer({
             }}
           >
             <button
-              onClick={() => setTab("bids")}
-              style={{
-                flex: 1,
-                padding: "10px 14px",
-                borderRadius: 10,
-                border:
-                  tab === "bids"
-                    ? "1px solid rgba(99,102,241,0.4)"
-                    : "1px solid rgba(255,255,255,0.06)",
-                background:
-                  tab === "bids"
-                    ? "rgba(99,102,241,0.12)"
-                    : "rgba(255,255,255,0.02)",
-                color: tab === "bids" ? "#a5b4fc" : "rgba(148,163,184,0.6)",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                transition: "all 0.15s",
-              }}
-            >
-              <Inbox size={14} />
-              Санал ирүүлсэн
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "1px 8px",
-                  borderRadius: 99,
-                  background:
-                    tab === "bids"
-                      ? "rgba(99,102,241,0.25)"
-                      : "rgba(255,255,255,0.05)",
-                  color: tab === "bids" ? "#c7d2fe" : "rgba(148,163,184,0.5)",
-                }}
-              >
-                {bids.length}
-              </span>
-            </button>
-            <button
               onClick={() => setTab("participants")}
               style={{
                 flex: 1,
@@ -1287,10 +1252,107 @@ export function BidsDrawer({
                 {participants.length}
               </span>
             </button>
+            <button
+              onClick={() => isExpired && setTab("bids")}
+              disabled={!isExpired}
+              title={
+                !isExpired && ann?.deadline
+                  ? `🔒 Саналуудыг ${new Date(ann.deadline).toLocaleString("mn-MN")}-ний дараа харах боломжтой`
+                  : ""
+              }
+              style={{
+                flex: 1,
+                padding: "10px 14px",
+                borderRadius: 10,
+                border:
+                  tab === "bids" && isExpired
+                    ? "1px solid rgba(99,102,241,0.4)"
+                    : "1px solid rgba(255,255,255,0.06)",
+                background:
+                  tab === "bids" && isExpired
+                    ? "rgba(99,102,241,0.12)"
+                    : "rgba(255,255,255,0.02)",
+                color: !isExpired
+                  ? "rgba(148,163,184,0.35)"
+                  : tab === "bids"
+                    ? "#a5b4fc"
+                    : "rgba(148,163,184,0.6)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: isExpired ? "pointer" : "not-allowed",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "all 0.15s",
+                opacity: isExpired ? 1 : 0.6,
+              }}
+            >
+              {!isExpired ? <Lock size={11} /> : <Inbox size={14} />}
+              Санал ирүүлсэн
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "1px 8px",
+                  borderRadius: 99,
+                  background:
+                    tab === "bids" && isExpired
+                      ? "rgba(99,102,241,0.25)"
+                      : "rgba(255,255,255,0.05)",
+                  color: !isExpired
+                    ? "rgba(148,163,184,0.4)"
+                    : tab === "bids"
+                      ? "#c7d2fe"
+                      : "rgba(148,163,184,0.5)",
+                }}
+              >
+                {bids.length}
+              </span>
+            </button>
           </div>
 
           {/* Content */}
           <div style={{ padding: "24px 28px" }}>
+            {!isExpired && bids.length > 0 && (
+              <div
+                style={{
+                  marginBottom: 20,
+                  padding: "14px 16px",
+                  background: "rgba(245,158,11,0.08)",
+                  border: "1px solid rgba(245,158,11,0.25)",
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <Lock size={18} color="#fbbf24" style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#fbbf24",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Саналууд түгжээтэй
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "rgba(251,191,36,0.7)",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Зарлалын хугацаа{" "}
+                    <b>{new Date(ann.deadline!).toLocaleString("mn-MN")}</b>
+                    -ний дараа {bids.length} санал нээгдэнэ
+                  </div>
+                </div>
+              </div>
+            )}
             {/* ════════════ TAB: BIDS ════════════ */}
             {tab === "bids" && (
               <>
@@ -1456,7 +1518,10 @@ export function BidsDrawer({
                           <div
                             key={b.id}
                             className="bid-card"
-                            onClick={() => openDetailModal(b)}
+                            onClick={() => {
+                              console.log("🟢 CARD CLICKED!", b.id); // ⭐ Эхлээд энэ ажиллаж байна уу?
+                              openDetailModal(b);
+                            }}
                             style={{
                               background: isLowest
                                 ? "rgba(16,185,129,0.04)"
@@ -1926,7 +1991,11 @@ function SupplierDetailModal({
 
   /* ── Туслах компонентууд ─────────────────────────────── */
   const Row = ({ label, value }: { label: string; value: any }) => {
-    if (value == null || value === "" || (Array.isArray(value) && !value.length))
+    if (
+      value == null ||
+      value === "" ||
+      (Array.isArray(value) && !value.length)
+    )
       return null;
     return (
       <div
@@ -1957,7 +2026,11 @@ function SupplierDetailModal({
             lineHeight: 1.5,
           }}
         >
-          {typeof value === "boolean" ? (value ? "Тийм" : "Үгүй") : String(value)}
+          {typeof value === "boolean"
+            ? value
+              ? "Тийм"
+              : "Үгүй"
+            : String(value)}
         </div>
       </div>
     );
@@ -1974,7 +2047,8 @@ function SupplierDetailModal({
   }) => {
     // Хэрэв section дотор бүх Row null бол section-ыг харуулахгүй
     const hasContent =
-      Array.isArray(children) && children.some((c) => c !== null && c !== false);
+      Array.isArray(children) &&
+      children.some((c) => c !== null && c !== false);
     if (!hasContent && !Array.isArray(children)) return null;
     return (
       <div style={{ marginBottom: 18 }}>
@@ -2531,10 +2605,7 @@ function SupplierDetailModal({
                 data.id_card_back_url ||
                 data.activity_intro_url) && (
                 <Section title="Баримт бичиг" icon="📄">
-                  <DocLink
-                    label="Профайл зураг"
-                    url={data.profile_photo_url}
-                  />
+                  <DocLink label="Профайл зураг" url={data.profile_photo_url} />
                   <DocLink
                     label="Иргэний үнэмлэх (нүүр)"
                     url={data.id_card_front_url}

@@ -47,6 +47,7 @@ export type Ann = {
   buyer_attachments?: AttachedFile[];
   supplier_doc_info?: string;
   supplier_required_docs?: AttachedFile[];
+  invitation_permission_types?: string[]; // ⭐ ШИНЭ
 };
 
 export type AttachedFile = {

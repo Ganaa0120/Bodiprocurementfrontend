@@ -259,31 +259,43 @@ export function AnnouncementsTab({
   }, [load]);
 
   const loadBids = async (ann: Ann) => {
-    setBidsAnn(ann);
-    setBids([]);
-    setParticipants([]);
+    setBidsAnn(ann); // BidsDrawer нээх (loading state-тэйгээр)
     setBidsLoad(true);
     setPartLoad(true);
 
-    Promise.all([
-      fetch(`${API}/api/announcements/${ann.id}/bids`, { headers: authH() })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.success) setBids(d.bids ?? []);
-        })
-        .catch(() => {})
-        .finally(() => setBidsLoad(false)),
+    // Зарлалын хугацаа дуусаагүй бол bids татахгүй
+    const isExpired = ann?.deadline
+      ? new Date(ann.deadline) < new Date()
+      : true;
 
-      fetch(`${API}/api/announcements/${ann.id}/participants`, {
-        headers: authH(),
-      })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.success) setParticipants(d.participants ?? []);
-        })
-        .catch(() => {})
-        .finally(() => setPartLoad(false)),
-    ]);
+    try {
+      // 1. Participants үргэлж татна
+      const partRes = await fetch(
+        `${API}/api/announcements/${ann.id}/participants`,
+        { headers: authH() },
+      );
+      const partData = await partRes.json();
+
+      // 2. Хугацаа дууссан бол bids татна
+      let fetchedBids = [];
+      if (isExpired) {
+        const bidsRes = await fetch(`${API}/api/announcements/${ann.id}/bids`, {
+          headers: authH(),
+        });
+        const bidsData = await bidsRes.json();
+        fetchedBids = bidsData.bids || [];
+      }
+
+      // 3. Стэйтүүд шинэчлэх
+      setParticipants(partData.participants || []);
+      setBids(fetchedBids);
+    } catch (e) {
+      console.error("Дата татахад алдаа гарлаа:", e);
+      showToast("Дата уншихад алдаа гарлаа", false);
+    } finally {
+      setBidsLoad(false);
+      setPartLoad(false);
+    }
   };
 
   const updateBidStatus = async (bidId: string, status: string) => {

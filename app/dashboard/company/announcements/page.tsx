@@ -368,6 +368,7 @@ export default function CompanyAnnouncementsPage() {
   const [deliveryDate, setDeliveryDate] = useState("");
   const [bidMessage, setBidMessage] = useState("");
   const [participating, setParticipating] = useState(false);
+  const [dirs, setDirs] = useState<any[]>([]);
 
   const load = async () => {
     const token = localStorage.getItem("token");
@@ -395,6 +396,20 @@ export default function CompanyAnnouncementsPage() {
       } catch {}
     }
     load();
+  }, []);
+
+  /* ── ⭐ Activity directions татах (нэг удаа) ── */
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    fetch(`${API}/api/activity-directions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        setDirs((d.directions ?? []).filter((x: any) => x.is_active));
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -608,6 +623,22 @@ export default function CompanyAnnouncementsPage() {
 
   // Today YYYY-MM-DD format (date input min)
   const today = new Date().toISOString().split("T")[0];
+
+  /* ── ⭐ Activity direction-ийг label руу хөрвүүлэх helper ── */
+  const getDirLabel = (d: any): string => {
+    if (typeof d === "string") return d;
+    if (typeof d === "number") {
+      const main = dirs.find((x: any) => Number(x.id) === Number(d));
+      return main?.label || `#${d}`;
+    }
+    if (typeof d === "object" && d?.main_id !== undefined) {
+      const main = dirs.find((x: any) => Number(x.id) === Number(d.main_id));
+      const baseLabel = main?.label || `Чиглэл #${d.main_id}`;
+      const subCount = d.sub_ids?.length ?? 0;
+      return subCount > 0 ? `${baseLabel} (${subCount})` : baseLabel;
+    }
+    return "";
+  };
 
   return (
     <div
@@ -1931,23 +1962,132 @@ export default function CompanyAnnouncementsPage() {
                   accent="#7c3aed"
                   Icon={TrendingUp}
                 >
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {selected.activity_directions.map((d: string) => (
-                      <span
-                        key={d}
-                        style={{
-                          fontSize: 12,
-                          padding: "7px 14px",
-                          borderRadius: 99,
-                          background: "#f5f3ff",
-                          color: "#6d28d9",
-                          border: "1px solid #ddd6fe",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {d}
-                      </span>
-                    ))}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                    }}
+                  >
+                    {selected.activity_directions.map((d: any, idx: number) => {
+                      // Хуучин string format — өөрчлөлтгүй харуулна
+                      if (typeof d === "string") {
+                        return (
+                          <span
+                            key={idx}
+                            style={{
+                              fontSize: 12,
+                              padding: "7px 14px",
+                              borderRadius: 99,
+                              background: "#f5f3ff",
+                              color: "#6d28d9",
+                              border: "1px solid #ddd6fe",
+                              fontWeight: 600,
+                              width: "fit-content",
+                            }}
+                          >
+                            {d}
+                          </span>
+                        );
+                      }
+
+                      // Шинэ object format
+                      if (typeof d === "object" && d?.main_id !== undefined) {
+                        const main = dirs.find(
+                          (x: any) => Number(x.id) === Number(d.main_id),
+                        );
+                        const mainLabel = main?.label || `Чиглэл #${d.main_id}`;
+                        const subIds: number[] = d.sub_ids || [];
+                        const subs = subIds.map((subId) => {
+                          const sub = main?.children?.find(
+                            (c: any) => Number(c.id) === Number(subId),
+                          );
+                          return {
+                            id: subId,
+                            label: sub?.label || `#${subId}`,
+                          };
+                        });
+
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              background: "#f5f3ff",
+                              border: "1px solid #ddd6fe",
+                              borderLeft: "3px solid #7c3aed",
+                              borderRadius: 12,
+                              padding: "12px 16px",
+                            }}
+                          >
+                            {/* Үндсэн чиглэл */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                marginBottom: subs.length > 0 ? 10 : 0,
+                              }}
+                            >
+                              <TrendingUp size={13} color="#7c3aed" />
+                              <span
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  color: "#5b21b6",
+                                }}
+                              >
+                                {mainLabel}
+                              </span>
+                              {subs.length > 0 && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    padding: "2px 8px",
+                                    borderRadius: 99,
+                                    background: "#ddd6fe",
+                                    color: "#5b21b6",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {subs.length} дэд чиглэл
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Дэд чиглэлүүд */}
+                            {subs.length > 0 && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 6,
+                                  paddingLeft: 21,
+                                }}
+                              >
+                                {subs.map((sub) => (
+                                  <span
+                                    key={sub.id}
+                                    style={{
+                                      fontSize: 11,
+                                      padding: "4px 10px",
+                                      borderRadius: 99,
+                                      background: "white",
+                                      color: "#6d28d9",
+                                      border: "1px solid #c4b5fd",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {sub.label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })}
                   </div>
                 </Section>
               )}

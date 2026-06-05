@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, ChangeEvent } from "react";
+import { useState, useEffect, useCallback, useMemo, ChangeEvent } from "react";
 import {
   X,
   AlertCircle,
@@ -26,6 +26,7 @@ import {
   ClipboardList,
   Truck,
   CalendarRange,
+  ShieldCheck,
 } from "lucide-react";
 import { API, TYPE, jsonH, authH, inp, lbl } from "./constants";
 import dynamic from "next/dynamic";
@@ -142,6 +143,7 @@ const defaultForm = (ann?: Ann | null) => ({
   buyer_attachments: ann?.buyer_attachments ?? ([] as AttachedFile[]),
   supplier_doc_info: ann?.supplier_doc_info ?? "",
   supplier_required_docs: ann?.supplier_required_docs ?? ([] as AttachedFile[]),
+  invitation_permission_types: ann?.invitation_permission_types ?? ([] as string[]),
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -448,6 +450,13 @@ export function AnnModal({
   const [saving, setSaving] = useState(false);
   const [expandedMains, setExpandedMains] = useState<Set<number>>(new Set());
   const [error, setError] = useState("");
+  // ⭐ ШИНЭ — Тусгай зөвшөөрлийн master жагсаалт + хайлт (нээлттэй type-д)
+  const [permTypes, setPermTypes] = useState<any[]>([]);
+  const [permSearch, setPermSearch] = useState("");
+
+  const [invCompanies, setInvCompanies] = useState<any[]>([]);
+  const [invPersons, setInvPersons] = useState<any[]>([]);
+  const [invLoading, setInvLoading] = useState(false);
 
   const annType = (mode === "edit" ? ann?.ann_type : step) ?? "open";
   const curType = TYPE[annType];
@@ -518,25 +527,55 @@ export function AnnModal({
       .catch(() => {});
   }, []);
 
+  // ⭐ Тусгай зөвшөөрлийн master types татах (1 удаа)
+  useEffect(() => {
+    fetch(`${API}/api/special-permission-types`, { headers: authH() })
+      .then((r) => r.json())
+      .then((d) => {
+        setPermTypes((d.types || []).filter((t: any) => t.is_active));
+      })
+      .catch(() => {});
+  }, []);
+
+  // ⭐ Нээлттэй type-д invitation match хийхэд companies+persons татах
+  useEffect(() => {
+    if (annType !== "open") return;
+    setInvLoading(true);
+    Promise.all([
+      fetch(`${API}/api/organizations?limit=500`, { headers: authH() }).then(
+        (r) => r.json(),
+      ),
+      fetch(`${API}/api/persons?limit=500`, { headers: authH() }).then((r) =>
+        r.json(),
+      ),
+    ])
+      .then(([orgsData, persData]) => {
+        setInvCompanies(orgsData.organizations || orgsData.data || []);
+        setInvPersons(persData.persons || persData.data || []);
+      })
+      .catch(() => {})
+      .finally(() => setInvLoading(false));
+  }, [annType]);
+
   // ⭐ Auto-fill contact_phone — /api/auth/me-ээс утсыг авна
-useEffect(() => {
-  if (mode !== "create" || form.contact_phone) return;
-  (async () => {
-    try {
-      const res = await fetch(`${API}/api/auth/me`, { headers: authH() });
-      if (!res.ok) return;
-      const d = await res.json();
-      const user = d.admin ?? d.user ?? d.data ?? d;
-      const phone = user?.phone ?? user?.contact_phone;
-      if (phone) {
-        setForm((p) => ({ ...p, contact_phone: phone }));
+  useEffect(() => {
+    if (mode !== "create" || form.contact_phone) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/auth/me`, { headers: authH() });
+        if (!res.ok) return;
+        const d = await res.json();
+        const user = d.admin ?? d.user ?? d.data ?? d;
+        const phone = user?.phone ?? user?.contact_phone;
+        if (phone) {
+          setForm((p) => ({ ...p, contact_phone: phone }));
+        }
+      } catch {
+        /* silent */
       }
-    } catch {
-      /* silent */
-    }
-  })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [mode]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const toggleExpand = (mainId: number) => {
     setExpandedMains((prev) => {
@@ -598,7 +637,80 @@ useEffect(() => {
     (form.activity_directions as any[]).find(
       (d: any) => d.main_id === mainId,
     ) as { main_id: number; sub_ids: number[] } | undefined;
+  // ⭐ Тусгай зөвшөөрлийн filter helpers (нээлттэй type-д)
+  const filteredPermTypes = permSearch.trim()
+    ? permTypes.filter((t: any) =>
+        t.label?.toLowerCase().includes(permSearch.toLowerCase()),
+      )
+    : permTypes;
 
+  const togglePerm = (label: string) => {
+    setForm((p: any) => ({
+      ...p,
+      invitation_permission_types: p.invitation_permission_types.includes(label)
+        ? p.invitation_permission_types.filter((x: string) => x !== label)
+        : [...p.invitation_permission_types, label],
+    }));
+  };
+
+  // ⭐ Урилгад таарах хэрэглэгчдийг бодит цагт тооцоолно
+  const matchedInvCompanies = useMemo(() => {
+    if (annType !== "open") return [];
+    const invPerms = form.invitation_permission_types;
+    const annDirIds = (form.activity_directions as any[]).map((d: any) =>
+      Number(d.main_id),
+    );
+    if (invPerms.length === 0 && annDirIds.length === 0) return [];
+
+    return invCompanies.filter((c: any) => {
+      // Direction шалгалт
+      let dirOK = true;
+      if (annDirIds.length > 0) {
+        const userDirs = Array.isArray(c.activity_directions)
+          ? c.activity_directions.map((d: any) => Number(d?.main_id ?? d))
+          : [];
+        dirOK = annDirIds.some((ad) => userDirs.includes(ad));
+      }
+      // Permission шалгалт
+      let permOK = true;
+      if (invPerms.length > 0) {
+        permOK =
+          Array.isArray(c.special_permissions) &&
+          c.special_permissions.some(
+            (sp: any) =>
+              sp?.type_label?.trim() && invPerms.includes(sp.type_label.trim()),
+          );
+      }
+      return dirOK && permOK;
+    });
+  }, [
+    annType,
+    invCompanies,
+    form.activity_directions,
+    form.invitation_permission_types,
+  ]);
+
+  const matchedInvPersons = useMemo(() => {
+    if (annType !== "open") return [];
+    // Permission filter байвал хувь хүмүүс хасагдана
+    if (form.invitation_permission_types.length > 0) return [];
+    const annDirIds = (form.activity_directions as any[]).map((d: any) =>
+      Number(d.main_id),
+    );
+    if (annDirIds.length === 0) return [];
+
+    return invPersons.filter((p: any) => {
+      const userDirs = Array.isArray(p.activity_directions)
+        ? p.activity_directions.map((d: any) => Number(d?.main_id ?? d))
+        : [];
+      return annDirIds.some((ad) => userDirs.includes(ad));
+    });
+  }, [
+    annType,
+    invPersons,
+    form.activity_directions,
+    form.invitation_permission_types,
+  ]);
   // ════════════════════════════════════════════════════════════════
   //  SAVE
   // ════════════════════════════════════════════════════════════════
@@ -1678,6 +1790,408 @@ useEffect(() => {
                   accentColor={curType.color}
                   optional={annType === "rfq"}
                 />
+              </Field>
+            )}
+
+            {/* ⭐ Имэйл урилга — Тусгай зөвшөөрөл (зөвхөн нээлттэй type-д) */}
+            {annType === "open" && (
+              <Field
+                label="Имэйл урилга — Тусгай зөвшөөрөл"
+                icon={ShieldCheck}
+                hint="заавал биш — нэмж имэйл урилга илгээх"
+              >
+                {/* Тайлбар */}
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#cbd5e1",
+                    lineHeight: 1.55,
+                    padding: "8px 12px",
+                    background: "rgba(99,102,241,0.08)",
+                    borderRadius: 8,
+                    border: "1px solid rgba(99,102,241,0.2)",
+                    marginBottom: 10,
+                  }}
+                >
+                  💡 Доорх filter-т таарсан компани + хувь хүмүүст{" "}
+                  <b>"Тендерийн урилга"</b> имэйл илгээгдэнэ. Filter хоосон
+                  үлдээвэл стандарт нийтэлсэн зарлал л явна.
+                </div>
+
+                {/* Сонгогдсон chips */}
+                {form.invitation_permission_types.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 4,
+                      marginBottom: 8,
+                      padding: "8px 10px",
+                      background: `${curType.color}10`,
+                      borderRadius: 8,
+                      border: `1px solid ${curType.color}30`,
+                    }}
+                  >
+                    {form.invitation_permission_types.map((label: string) => (
+                      <span
+                        key={label}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "3px 4px 3px 10px",
+                          borderRadius: 30,
+                          background: curType.color,
+                          color: "white",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          maxWidth: 240,
+                        }}
+                      >
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {label}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => togglePerm(label)}
+                          style={{
+                            background: "rgba(255,255,255,0.25)",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: 14,
+                            height: 14,
+                            cursor: "pointer",
+                            color: "white",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <X size={8} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Хайлт */}
+                <input
+                  value={permSearch}
+                  onChange={(e) => setPermSearch(e.target.value)}
+                  placeholder={
+                    permTypes.length > 0
+                      ? `🔍 ${permTypes.length} зөвшөөрлөөс хайх...`
+                      : "🔍 Хайх..."
+                  }
+                  style={innerInputStyle}
+                />
+
+                {/* Жагсаалт */}
+                <div
+                  style={{
+                    marginTop: 8,
+                    maxHeight: 200,
+                    overflowY: "auto",
+                    background: "rgba(255,255,255,0.02)",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  {permTypes.length === 0 ? (
+                    <div
+                      style={{
+                        padding: 20,
+                        textAlign: "center",
+                        fontSize: 11,
+                        color: "#64748b",
+                      }}
+                    >
+                      Тусгай зөвшөөрлийн төрөл ачаалагдаагүй
+                    </div>
+                  ) : filteredPermTypes.length === 0 ? (
+                    <div
+                      style={{
+                        padding: 20,
+                        textAlign: "center",
+                        fontSize: 11,
+                        color: "#64748b",
+                      }}
+                    >
+                      "{permSearch}" хайлтад тохирох олдсонгүй
+                    </div>
+                  ) : (
+                    filteredPermTypes.map((t: any) => {
+                      const selected =
+                        form.invitation_permission_types.includes(t.label);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => togglePerm(t.label)}
+                          style={{
+                            width: "100%",
+                            padding: "9px 12px",
+                            background: selected
+                              ? `${curType.color}15`
+                              : "transparent",
+                            border: "none",
+                            borderBottom: "1px solid rgba(255,255,255,0.04)",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            color: selected ? curType.color : "#cbd5e1",
+                            textAlign: "left",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            fontWeight: selected ? 600 : 400,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: 4,
+                              flexShrink: 0,
+                              background: selected
+                                ? curType.color
+                                : "rgba(255,255,255,0.05)",
+                              border: selected
+                                ? `1px solid ${curType.color}`
+                                : "1px solid rgba(255,255,255,0.15)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            {selected && (
+                              <CheckCircle2 size={11} color="white" />
+                            )}
+                          </div>
+                          <span
+                            style={{
+                              flex: 1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={t.label}
+                          >
+                            {t.label}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* ⭐ LIVE PREVIEW — таарсан хэрэглэгчид */}
+                {(form.invitation_permission_types.length > 0 ||
+                  form.activity_directions.length > 0) && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      background: `${curType.color}08`,
+                      border: `1px solid ${curType.color}30`,
+                      borderRadius: 10,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* Header — count summary */}
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderBottom: `1px solid ${curType.color}20`,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        background: `${curType.color}12`,
+                      }}
+                    >
+                      <Send
+                        size={14}
+                        style={{ color: curType.color, flexShrink: 0 }}
+                      />
+                      <div
+                        style={{
+                          flex: 1,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: curType.color,
+                        }}
+                      >
+                        {invLoading ? (
+                          <>
+                            <Loader2
+                              size={12}
+                              style={{
+                                animation: "spin 0.8s linear infinite",
+                                display: "inline",
+                                verticalAlign: "middle",
+                                marginRight: 6,
+                              }}
+                            />
+                            Тооцоолж байна...
+                          </>
+                        ) : (
+                          <>
+                            📨 Урилга илгээгдэх:{" "}
+                            <span style={{ fontSize: 14 }}>
+                              {matchedInvCompanies.length}
+                            </span>{" "}
+                            компани +{" "}
+                            <span style={{ fontSize: 14 }}>
+                              {matchedInvPersons.length}
+                            </span>{" "}
+                            хувь хүн
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Жагсаалт */}
+                    {!invLoading &&
+                      (matchedInvCompanies.length > 0 ||
+                        matchedInvPersons.length > 0) && (
+                        <div
+                          style={{
+                            maxHeight: 240,
+                            overflowY: "auto",
+                            padding: "8px 12px",
+                          }}
+                        >
+                          {/* Компани */}
+                          {matchedInvCompanies.map((c: any) => (
+                            <div
+                              key={`c-${c.id}`}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                padding: "7px 8px",
+                                borderRadius: 8,
+                                fontSize: 11,
+                                color: "#cbd5e1",
+                              }}
+                            >
+                              <span style={{ fontSize: 14 }}>🏢</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontWeight: 600,
+                                    color: "white",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {c.company_name || "—"}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 10,
+                                    color: "#94a3b8",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  📧 {c.email || "имэйлгүй"}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Хувь хүн */}
+                          {matchedInvPersons.map((p: any) => {
+                            const name =
+                              `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim() ||
+                              p.email ||
+                              "—";
+                            return (
+                              <div
+                                key={`p-${p.id}`}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 10,
+                                  padding: "7px 8px",
+                                  borderRadius: 8,
+                                  fontSize: 11,
+                                  color: "#cbd5e1",
+                                }}
+                              >
+                                <span style={{ fontSize: 14 }}>👤</span>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div
+                                    style={{
+                                      fontWeight: 600,
+                                      color: "white",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {name}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: 10,
+                                      color: "#94a3b8",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    📧 {p.email || "имэйлгүй"}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                    {/* Хоосон үед */}
+                    {!invLoading &&
+                      matchedInvCompanies.length === 0 &&
+                      matchedInvPersons.length === 0 && (
+                        <div
+                          style={{
+                            padding: 16,
+                            textAlign: "center",
+                            fontSize: 11,
+                            color: "#94a3b8",
+                          }}
+                        >
+                          Тохирох хэрэглэгч олдсонгүй
+                        </div>
+                      )}
+
+                    {/* Permission filter тайлбар */}
+                    {form.invitation_permission_types.length > 0 && (
+                      <div
+                        style={{
+                          padding: "6px 14px",
+                          fontSize: 10,
+                          color: "#94a3b8",
+                          borderTop: `1px solid ${curType.color}20`,
+                          background: "rgba(0,0,0,0.15)",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        ⚠️ Тусгай зөвшөөрлийн filter сонгосон тул хувь хүмүүс
+                        автоматаар хасагдсан
+                      </div>
+                    )}
+                  </div>
+                )}
               </Field>
             )}
 
