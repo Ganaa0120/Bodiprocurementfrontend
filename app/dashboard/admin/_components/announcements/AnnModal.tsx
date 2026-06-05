@@ -143,7 +143,8 @@ const defaultForm = (ann?: Ann | null) => ({
   buyer_attachments: ann?.buyer_attachments ?? ([] as AttachedFile[]),
   supplier_doc_info: ann?.supplier_doc_info ?? "",
   supplier_required_docs: ann?.supplier_required_docs ?? ([] as AttachedFile[]),
-  invitation_permission_types: ann?.invitation_permission_types ?? ([] as string[]),
+  invitation_permission_types:
+    ann?.invitation_permission_types ?? ([] as string[]),
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -557,23 +558,36 @@ export function AnnModal({
       .finally(() => setInvLoading(false));
   }, [annType]);
 
-  // ⭐ Auto-fill contact_phone — /api/auth/me-ээс утсыг авна
+  // ⭐ Auto-fill — localStorage-аас админы мэдээллийг шууд авна (API call хэрэггүй)
   useEffect(() => {
-    if (mode !== "create" || form.contact_phone) return;
-    (async () => {
-      try {
-        const res = await fetch(`${API}/api/auth/me`, { headers: authH() });
-        if (!res.ok) return;
-        const d = await res.json();
-        const user = d.admin ?? d.user ?? d.data ?? d;
-        const phone = user?.phone ?? user?.contact_phone;
-        if (phone) {
-          setForm((p) => ({ ...p, contact_phone: phone }));
-        }
-      } catch {
-        /* silent */
-      }
-    })();
+    if (mode !== "create") return;
+    try {
+      const raw =
+        localStorage.getItem("super_admin_user") ||
+        localStorage.getItem("user");
+      if (!raw) return;
+
+      const user = JSON.parse(raw);
+
+      const phone = user?.phone ?? user?.contact_phone ?? "";
+      const company = user?.company_name ?? user?.company ?? "";
+      const fullName =
+        `${user?.last_name ?? ""} ${user?.first_name ?? ""}`.trim() ||
+        user?.name ||
+        "";
+      const position =
+        user?.position ?? user?.job_title ?? user?.role_title ?? "";
+
+      setForm((p) => ({
+        ...p,
+        contact_phone: p.contact_phone || phone,
+        client_company: p.client_company || company,
+        responsible_person_name: p.responsible_person_name || fullName,
+        responsible_position: p.responsible_position || position,
+      }));
+    } catch (e) {
+      console.error("🔴 AUTOFILL ERROR:", e);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
@@ -1165,12 +1179,7 @@ export function AnnModal({
                 </Field>
               </div>
 
-              <Field
-                label="Холбоо барих утас"
-                required
-                icon={Phone}
-                hint="auto-fill хийгдэнэ"
-              >
+              <Field label="Холбоо барих утас" required icon={Phone}>
                 <input
                   value={form.contact_phone}
                   onChange={(e) =>
