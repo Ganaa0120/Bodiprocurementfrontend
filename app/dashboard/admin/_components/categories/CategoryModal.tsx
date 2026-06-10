@@ -8,7 +8,7 @@ const PREFIXES = [
   { value: "", label: "— Угтвар байхгүй —" },
   { value: "ITEM", label: "ITEM — Бараа" },
   { value: "FA", label: "FA — Хөрөнгө" },
-  // { value:"SVC",  label:"SVC — Үйлчилгээ"     },
+  { value:"SVC",  label:"SERVICE — Үйлчилгээ"     },
   // { value:"MAT",  label:"MAT — Материал"       },
   // { value:"EQP",  label:"EQP — Тоног төхөөрөмж" },
 ];

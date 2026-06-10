@@ -41,9 +41,7 @@ interface RichTextEditorProps {
   accentColor?: string;
 }
 
-async function uploadToServer(
-  file: File,
-): Promise<{
+async function uploadToServer(file: File): Promise<{
   url: string;
   name: string;
   size: number;
@@ -111,12 +109,12 @@ export function RichTextEditor({
       }
     };
 
-    document.addEventListener('focusin', handleFocus);
-    document.addEventListener('focusout', handleBlur);
+    document.addEventListener("focusin", handleFocus);
+    document.addEventListener("focusout", handleBlur);
 
     return () => {
-      document.removeEventListener('focusin', handleFocus);
-      document.removeEventListener('focusout', handleBlur);
+      document.removeEventListener("focusin", handleFocus);
+      document.removeEventListener("focusout", handleBlur);
     };
   }, []);
 
@@ -233,7 +231,9 @@ export function RichTextEditor({
       disabled={disabled}
       style={{
         background: isActive ? `${accentColor}20` : "rgba(255,255,255,0.05)",
-        border: isActive ? `1px solid ${accentColor}50` : "1px solid rgba(255,255,255,0.12)",
+        border: isActive
+          ? `1px solid ${accentColor}50`
+          : "1px solid rgba(255,255,255,0.12)",
         borderRadius: 8,
         padding: "6px 10px",
         cursor: disabled ? "not-allowed" : "pointer",
@@ -274,7 +274,10 @@ export function RichTextEditor({
           background: "#1e293b",
         }}
       >
-        <Loader2 size={24} style={{ animation: "spin 0.8s linear infinite", color: "#94a3b8" }} />
+        <Loader2
+          size={24}
+          style={{ animation: "spin 0.8s linear infinite", color: "#94a3b8" }}
+        />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );

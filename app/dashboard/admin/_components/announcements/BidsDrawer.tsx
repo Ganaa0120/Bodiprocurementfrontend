@@ -822,7 +822,7 @@ function ParticipantCard({
 }) {
   return (
     <div
-    onClick={() => onViewDetail?.(p.participant_id, p.participant_type)}
+      onClick={() => onViewDetail?.(p.participant_id, p.participant_type)}
       style={{
         background: p.has_submitted_bid
           ? "rgba(16,185,129,0.04)"

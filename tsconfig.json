@@ -34,7 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "app/dashboard/admin/_components/announcements/annModal.sections.tsx"  ],
   "exclude": [
     "node_modules"
   ]

@@ -1,436 +1,38 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo, ChangeEvent } from "react";
+// ════════════════════════════════════════════════════════════════
+//  AnnModal — orchestrator (4 алхамт WIZARD)
+//  State эзэмшиж, өгөгдөл татаж, section-уудыг алхам алхмаар угсарна
+// ════════════════════════════════════════════════════════════════
+import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   X,
   AlertCircle,
   Loader2,
-  ChevronDown,
   Send,
   CheckCircle2,
-  Users,
-  TrendingUp,
-  Calendar,
-  DollarSign,
-  Layers,
-  Zap,
-  Building2,
-  User,
-  Briefcase,
-  Phone,
-  MapPin,
-  Package,
-  Wrench,
-  FileText,
-  Upload,
-  Paperclip,
+  Check,
+  ChevronDown,
   ClipboardList,
-  Truck,
-  CalendarRange,
-  ShieldCheck,
+  Layers,
+  Users,
+  FileText,
 } from "lucide-react";
-import { API, TYPE, jsonH, authH, inp, lbl } from "./constants";
-import dynamic from "next/dynamic";
-import { RecipientPicker } from "./RecipientPicker";
-import type { Ann, AnnType, AttachedFile } from "./types";
+import { API, TYPE, jsonH, authH } from "./constants";
+import type { Ann, AnnType } from "./types";
+import { defaultForm, inputStyle } from "./annModal.config";
+import { Field } from "./annModal.ui";
+import { InvitationSection } from "./InvitationSection";
+import {
+  TypeSelector,
+  BasicInfoSection,
+  ScheduleSection,
+  CategorySection,
+  RfqSection,
+  RecipientsField,
+  SupplySection,
+  DocumentsSection,
+} from "./annModal.sections";
 
-// ════════════════════════════════════════════════════════════════
-//  Mongolia: Aimag, Ulaanbaatar dүүрэг
-// ════════════════════════════════════════════════════════════════
-const MN_LOCATIONS = [
-  "Улаанбаатар",
-  "Архангай",
-  "Баян-Өлгий",
-  "Баянхонгор",
-  "Булган",
-  "Говь-Алтай",
-  "Говьсүмбэр",
-  "Дархан-Уул",
-  "Дорноговь",
-  "Дорнод",
-  "Дундговь",
-  "Завхан",
-  "Орхон",
-  "Өвөрхангай",
-  "Өмнөговь",
-  "Сэлэнгэ",
-  "Сүхбаатар",
-  "Төв",
-  "Увс",
-  "Ховд",
-  "Хөвсгөл",
-  "Хэнтий",
-];
-
-const UB_DISTRICTS = [
-  "Багануур дүүрэг",
-  "Багахангай дүүрэг",
-  "Баянгол дүүрэг",
-  "Баянзүрх дүүрэг",
-  "Налайх дүүрэг",
-  "Сонгинохайрхан дүүрэг",
-  "Сүхбаатар дүүрэг",
-  "Хан-Уул дүүрэг",
-  "Чингэлтэй дүүрэг",
-];
-
-// Dynamic import - SSR алдааг засах
-const RichTextEditor = dynamic(
-  () => import("./RichEditor").then((mod) => mod.RichTextEditor),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        style={{
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 12,
-          padding: "40px 20px",
-          textAlign: "center",
-          background: "rgba(255,255,255,0.03)",
-        }}
-      >
-        <Loader2
-          size={20}
-          style={{ animation: "spin 0.8s linear infinite", color: "#94a3b8" }}
-        />
-      </div>
-    ),
-  },
-);
-
-// ════════════════════════════════════════════════════════════════
-//  Default form values
-// ════════════════════════════════════════════════════════════════
-const defaultForm = (ann?: Ann | null) => ({
-  title: ann?.title ?? "",
-  description: ann?.description ?? "",
-  requirements: ann?.requirements ?? "",
-  category_id: ann?.category_id ?? "",
-  budget_from: ann?.budget_from?.toString() ?? "",
-  budget_to: ann?.budget_to?.toString() ?? "",
-  currency: ann?.currency ?? "MNT",
-  deadline: ann?.deadline?.slice(0, 10) ?? "",
-  status: ann?.status ?? "draft",
-  is_urgent: ann?.is_urgent ?? false,
-  activity_directions:
-    ann?.activity_directions ??
-    ([] as Array<{
-      main_id: number;
-      sub_ids: number[];
-    }>),
-  rfq_quantity: ann?.rfq_quantity?.toString() ?? "",
-  rfq_unit: ann?.rfq_unit ?? "",
-  rfq_delivery_place: ann?.rfq_delivery_place ?? "",
-  rfq_delivery_date: ann?.rfq_delivery_date?.slice(0, 10) ?? "",
-  rfq_specs: ann?.rfq_specs ?? "",
-  recipient_type: "individual" as "individual" | "company",
-  attachments: ann?.attachments ?? ([] as AttachedFile[]),
-  recipient_ids: [] as string[],
-
-  // ⭐ Шинэ талбарууд
-  client_company: ann?.client_company ?? "",
-  responsible_person_name: ann?.responsible_person_name ?? "",
-  responsible_position: ann?.responsible_position ?? "",
-  contact_phone: ann?.contact_phone ?? "",
-  start_date: ann?.start_date?.slice(0, 10) ?? "",
-  end_date: ann?.end_date?.slice(0, 10) ?? "",
-  procurement_kind: (ann?.procurement_kind ?? "goods") as "goods" | "service",
-  supply_start_date: ann?.supply_start_date?.slice(0, 10) ?? "",
-  supply_end_date: ann?.supply_end_date?.slice(0, 10) ?? "",
-  central_location: ann?.central_location ?? "",
-  branch_location: ann?.branch_location ?? "",
-  address_details: ann?.address_details ?? "",
-  buyer_doc_info: ann?.buyer_doc_info ?? "",
-  buyer_attachments: ann?.buyer_attachments ?? ([] as AttachedFile[]),
-  supplier_doc_info: ann?.supplier_doc_info ?? "",
-  supplier_required_docs: ann?.supplier_required_docs ?? ([] as AttachedFile[]),
-  invitation_permission_types:
-    ann?.invitation_permission_types ?? ([] as string[]),
-});
-
-// ════════════════════════════════════════════════════════════════
-//  Reusable: дэд хэсгийн картын wrapper
-// ════════════════════════════════════════════════════════════════
-function Section({
-  title,
-  icon: Icon,
-  accentColor,
-  children,
-}: {
-  title: string;
-  icon: any;
-  accentColor: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        background: "#334155",
-        borderRadius: 14,
-        padding: "14px 16px",
-        border: "1px solid rgba(255,255,255,0.08)",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          color: accentColor,
-          marginBottom: 12,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          letterSpacing: "0.05em",
-        }}
-      >
-        <Icon size={12} /> {title}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════
-//  Reusable: input field-ын labelтай wrapper
-// ════════════════════════════════════════════════════════════════
-function Field({
-  label: labelText,
-  required,
-  icon: Icon,
-  children,
-  hint,
-}: {
-  label: string;
-  required?: boolean;
-  icon?: any;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label
-        style={{
-          ...lbl,
-          color: "#cbd5e1",
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        {Icon && <Icon size={11} style={{ color: "#94a3b8" }} />}
-        {labelText} {required && <span style={{ color: "#ef4444" }}>*</span>}
-        {hint && (
-          <span
-            style={{
-              fontSize: 9,
-              color: "#64748b",
-              fontWeight: 400,
-              textTransform: "none",
-              letterSpacing: 0,
-              marginLeft: 4,
-            }}
-          >
-            ({hint})
-          </span>
-        )}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════
-//  Reusable: олон файл хуулах picker
-// ════════════════════════════════════════════════════════════════
-function FilePicker({
-  files,
-  onChange,
-  accentColor,
-  label = "Файл сонгох",
-}: {
-  files: AttachedFile[];
-  onChange: (files: AttachedFile[]) => void;
-  accentColor: string;
-  label?: string;
-}) {
-  const [uploading, setUploading] = useState(false);
-
-  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-    if (!fileList || fileList.length === 0) return;
-    setUploading(true);
-    const newFiles: AttachedFile[] = [];
-    for (const file of Array.from(fileList)) {
-      const fd = new FormData();
-      fd.append("file", file);
-      try {
-        const res = await fetch(`${API}/api/announcements/upload-attachment`, {
-          method: "POST",
-          headers: authH(),
-          body: fd,
-        });
-        const data = await res.json();
-        if (data.success || data.url) {
-          newFiles.push({
-            name: data.name ?? file.name,
-            size: data.size ?? file.size,
-            type: data.type ?? file.type,
-            url: data.url,
-            isImage: (data.type ?? file.type ?? "").startsWith("image/"),
-          });
-        }
-      } catch (err) {
-        console.error("upload error", err);
-      }
-    }
-    onChange([...files, ...newFiles]);
-    setUploading(false);
-    e.target.value = "";
-  };
-
-  return (
-    <div>
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          padding: "14px",
-          borderRadius: 10,
-          background: "rgba(255,255,255,0.04)",
-          border: "1.5px dashed rgba(255,255,255,0.15)",
-          cursor: uploading ? "not-allowed" : "pointer",
-          color: uploading ? "#64748b" : "#94a3b8",
-          fontSize: 12,
-          fontWeight: 500,
-          transition: "all 0.15s",
-        }}
-        onMouseEnter={(e) => {
-          if (!uploading) {
-            e.currentTarget.style.borderColor = accentColor;
-            e.currentTarget.style.color = accentColor;
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-          e.currentTarget.style.color = uploading ? "#64748b" : "#94a3b8";
-        }}
-      >
-        {uploading ? (
-          <Loader2
-            size={14}
-            style={{ animation: "spin 0.8s linear infinite" }}
-          />
-        ) : (
-          <Upload size={14} />
-        )}
-        {uploading ? "Хуулж байна..." : `${label} (олон сонголт)`}
-        <input
-          type="file"
-          multiple
-          onChange={handleUpload}
-          disabled={uploading}
-          style={{ display: "none" }}
-        />
-      </label>
-
-      {files.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            marginTop: 10,
-          }}
-        >
-          {files.map((f, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "8px 12px",
-                background: "rgba(255,255,255,0.04)",
-                borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              <Paperclip
-                size={12}
-                style={{ color: accentColor, flexShrink: 0 }}
-              />
-              <a
-                href={f.url}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  fontSize: 12,
-                  color: "white",
-                  textDecoration: "none",
-                  flex: 1,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {f.name}
-              </a>
-              <span style={{ fontSize: 10, color: "#64748b", flexShrink: 0 }}>
-                {(f.size / 1024).toFixed(1)} KB
-              </span>
-              <button
-                type="button"
-                onClick={() => onChange(files.filter((_, idx) => idx !== i))}
-                style={{
-                  background: "rgba(239,68,68,0.1)",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: 4,
-                  cursor: "pointer",
-                  color: "#f87171",
-                  display: "flex",
-                  flexShrink: 0,
-                }}
-              >
-                <X size={12} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════
-//  Дотор-talbar styling shortcuts
-// ════════════════════════════════════════════════════════════════
-const inputStyle: React.CSSProperties = {
-  ...inp,
-  height: 44,
-  background: "#334155",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 10,
-  color: "white",
-};
-
-const innerInputStyle: React.CSSProperties = {
-  ...inp,
-  height: 40,
-  background: "#1e293b",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 8,
-  color: "white",
-};
-
-// ════════════════════════════════════════════════════════════════
-//  MAIN COMPONENT
-// ════════════════════════════════════════════════════════════════
 export function AnnModal({
   mode,
   ann,
@@ -445,16 +47,14 @@ export function AnnModal({
   showToast: (m: string, ok?: boolean) => void;
 }) {
   const [step, setStep] = useState<AnnType | null>(ann?.ann_type ?? null);
+  const [wstep, setWstep] = useState(0); // wizard алхам 0..3
   const [form, setForm] = useState(defaultForm(ann));
   const [cats, setCats] = useState<any[]>([]);
   const [dirs, setDirs] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
-  const [expandedMains, setExpandedMains] = useState<Set<number>>(new Set());
   const [error, setError] = useState("");
-  // ⭐ ШИНЭ — Тусгай зөвшөөрлийн master жагсаалт + хайлт (нээлттэй type-д)
-  const [permTypes, setPermTypes] = useState<any[]>([]);
-  const [permSearch, setPermSearch] = useState("");
 
+  const [permTypes, setPermTypes] = useState<any[]>([]);
   const [invCompanies, setInvCompanies] = useState<any[]>([]);
   const [invPersons, setInvPersons] = useState<any[]>([]);
   const [invLoading, setInvLoading] = useState(false);
@@ -462,6 +62,20 @@ export function AnnModal({
   const annType = (mode === "edit" ? ann?.ann_type : step) ?? "open";
   const curType = TYPE[annType];
   const TIcon = curType.icon;
+  const accentColor = curType.color;
+
+  // ── Wizard алхмууд (төрлөөс хамаарч 3-р алхмын нэр өөрчлөгдөнө) ──
+  const STEPS = [
+    { key: "basic", label: "Үндсэн", icon: ClipboardList },
+    { key: "details", label: "Дэлгэрэнгүй", icon: Layers },
+    {
+      key: "recipients",
+      label: annType === "open" ? "Урилга" : "Хүлээн авагч",
+      icon: annType === "open" ? Send : Users,
+    },
+    { key: "docs", label: "Баримт", icon: FileText },
+  ];
+  const LAST = STEPS.length - 1;
 
   const isDirty =
     form.title.trim() !== "" ||
@@ -528,7 +142,7 @@ export function AnnModal({
       .catch(() => {});
   }, []);
 
-  // ⭐ Тусгай зөвшөөрлийн master types татах (1 удаа)
+  // Тусгай зөвшөөрлийн master types (1 удаа)
   useEffect(() => {
     fetch(`${API}/api/special-permission-types`, { headers: authH() })
       .then((r) => r.json())
@@ -538,7 +152,7 @@ export function AnnModal({
       .catch(() => {});
   }, []);
 
-  // ⭐ Нээлттэй type-д invitation match хийхэд companies+persons татах
+  // Нээлттэй type-д урилгын pool (companies + persons)
   useEffect(() => {
     if (annType !== "open") return;
     setInvLoading(true);
@@ -558,7 +172,7 @@ export function AnnModal({
       .finally(() => setInvLoading(false));
   }, [annType]);
 
-  // ⭐ Auto-fill — localStorage-аас админы мэдээллийг шууд авна (API call хэрэггүй)
+  // Auto-fill — localStorage-аас админы мэдээлэл
   useEffect(() => {
     if (mode !== "create") return;
     try {
@@ -568,7 +182,6 @@ export function AnnModal({
       if (!raw) return;
 
       const user = JSON.parse(raw);
-
       const phone = user?.phone ?? user?.contact_phone ?? "";
       const company = user?.company_name ?? user?.company ?? "";
       const fullName =
@@ -586,155 +199,59 @@ export function AnnModal({
         responsible_position: p.responsible_position || position,
       }));
     } catch (e) {
-      console.error("🔴 AUTOFILL ERROR:", e);
+      console.error("AUTOFILL ERROR:", e);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  const toggleExpand = (mainId: number) => {
-    setExpandedMains((prev) => {
-      const next = new Set(prev);
-      if (next.has(mainId)) next.delete(mainId);
-      else next.add(mainId);
-      return next;
-    });
+  // ── Алхам бүрийн шалгалт ──
+  const validateStep = (i: number): string => {
+    if (i === 0 && !form.title.trim()) return "Зарын нэр шаардлагатай";
+    if (i === 2 && annType === "targeted" && form.recipient_ids.length === 0)
+      return "Нийлүүлэгч сонгоно уу";
+    return "";
   };
 
-  const toggleSub = (mainId: number, subId: number) => {
-    setForm((p) => {
-      const dirs: Array<{ main_id: number; sub_ids: number[] }> = [
-        ...(p.activity_directions as any),
-      ];
-      const idx = dirs.findIndex((d) => d.main_id === mainId);
-      if (idx === -1) {
-        dirs.push({ main_id: mainId, sub_ids: [subId] });
-      } else {
-        const cur = dirs[idx];
-        const subIds = cur.sub_ids ?? [];
-        if (subIds.includes(subId)) {
-          const next = subIds.filter((s) => s !== subId);
-          if (next.length === 0) dirs.splice(idx, 1);
-          else dirs[idx] = { ...cur, sub_ids: next };
-        } else {
-          dirs[idx] = { ...cur, sub_ids: [...subIds, subId] };
-        }
-      }
-      return { ...p, activity_directions: dirs as any };
-    });
+  const goNext = () => {
+    const e = validateStep(wstep);
+    if (e) {
+      setError(e);
+      return;
+    }
+    setError("");
+    setWstep((s) => Math.min(s + 1, LAST));
   };
 
-  const toggleAllSubs = (main: any) => {
-    setForm((p) => {
-      const dirs: Array<{ main_id: number; sub_ids: number[] }> = [
-        ...(p.activity_directions as any),
-      ];
-      const idx = dirs.findIndex((d) => d.main_id === main.id);
-      const allChildIds = (main.children ?? []).map((c: any) => c.id);
-      const cur = idx === -1 ? null : dirs[idx];
-      const allSelected =
-        cur && allChildIds.every((id: number) => cur.sub_ids?.includes(id));
-
-      if (allSelected) {
-        if (idx !== -1) dirs.splice(idx, 1);
-      } else {
-        if (idx === -1) {
-          dirs.push({ main_id: main.id, sub_ids: allChildIds });
-        } else {
-          dirs[idx] = { ...cur!, sub_ids: allChildIds };
-        }
-      }
-      return { ...p, activity_directions: dirs as any };
-    });
+  const goBack = () => {
+    setError("");
+    setWstep((s) => Math.max(s - 1, 0));
   };
 
-  const getMainSelection = (mainId: number) =>
-    (form.activity_directions as any[]).find(
-      (d: any) => d.main_id === mainId,
-    ) as { main_id: number; sub_ids: number[] } | undefined;
-  // ⭐ Тусгай зөвшөөрлийн filter helpers (нээлттэй type-д)
-  const filteredPermTypes = permSearch.trim()
-    ? permTypes.filter((t: any) =>
-        t.label?.toLowerCase().includes(permSearch.toLowerCase()),
-      )
-    : permTypes;
-
-  const togglePerm = (label: string) => {
-    setForm((p: any) => ({
-      ...p,
-      invitation_permission_types: p.invitation_permission_types.includes(label)
-        ? p.invitation_permission_types.filter((x: string) => x !== label)
-        : [...p.invitation_permission_types, label],
-    }));
+  // Stepper дээр дарж алхам сонгох (урагшаа үсрэхэд одоогийн алхмыг шалгана)
+  const goTo = (i: number) => {
+    if (i > wstep) {
+      const e = validateStep(wstep);
+      if (e) {
+        setError(e);
+        return;
+      }
+    }
+    setError("");
+    setWstep(i);
   };
 
-  // ⭐ Урилгад таарах хэрэглэгчдийг бодит цагт тооцоолно
-  const matchedInvCompanies = useMemo(() => {
-    if (annType !== "open") return [];
-    const invPerms = form.invitation_permission_types;
-    const annDirIds = (form.activity_directions as any[]).map((d: any) =>
-      Number(d.main_id),
-    );
-    if (invPerms.length === 0 && annDirIds.length === 0) return [];
-
-    return invCompanies.filter((c: any) => {
-      // Direction шалгалт
-      let dirOK = true;
-      if (annDirIds.length > 0) {
-        const userDirs = Array.isArray(c.activity_directions)
-          ? c.activity_directions.map((d: any) => Number(d?.main_id ?? d))
-          : [];
-        dirOK = annDirIds.some((ad) => userDirs.includes(ad));
-      }
-      // Permission шалгалт
-      let permOK = true;
-      if (invPerms.length > 0) {
-        permOK =
-          Array.isArray(c.special_permissions) &&
-          c.special_permissions.some(
-            (sp: any) =>
-              sp?.type_label?.trim() && invPerms.includes(sp.type_label.trim()),
-          );
-      }
-      return dirOK && permOK;
-    });
-  }, [
-    annType,
-    invCompanies,
-    form.activity_directions,
-    form.invitation_permission_types,
-  ]);
-
-  const matchedInvPersons = useMemo(() => {
-    if (annType !== "open") return [];
-    // Permission filter байвал хувь хүмүүс хасагдана
-    if (form.invitation_permission_types.length > 0) return [];
-    const annDirIds = (form.activity_directions as any[]).map((d: any) =>
-      Number(d.main_id),
-    );
-    if (annDirIds.length === 0) return [];
-
-    return invPersons.filter((p: any) => {
-      const userDirs = Array.isArray(p.activity_directions)
-        ? p.activity_directions.map((d: any) => Number(d?.main_id ?? d))
-        : [];
-      return annDirIds.some((ad) => userDirs.includes(ad));
-    });
-  }, [
-    annType,
-    invPersons,
-    form.activity_directions,
-    form.invitation_permission_types,
-  ]);
   // ════════════════════════════════════════════════════════════════
   //  SAVE
   // ════════════════════════════════════════════════════════════════
   const save = async () => {
     if (!form.title.trim()) {
       setError("Зарын нэр шаардлагатай");
+      setWstep(0);
       return;
     }
     if (annType === "targeted" && form.recipient_ids.length === 0) {
       setError("Нийлүүлэгч сонгоно уу");
+      setWstep(2);
       return;
     }
     setSaving(true);
@@ -754,6 +271,7 @@ export function AnnModal({
         supply_start_date: form.supply_start_date || null,
         supply_end_date: form.supply_end_date || null,
       };
+
       if (annType !== "targeted" && annType !== "rfq") {
         delete body.recipient_ids;
         delete body.recipient_type;
@@ -761,6 +279,12 @@ export function AnnModal({
       if (annType === "rfq" && body.recipient_ids?.length === 0) {
         delete body.recipient_ids;
         delete body.recipient_type;
+      }
+      // Урилгын талбарууд зөвхөн нээлттэй type-д л явна
+      if (annType !== "open") {
+        delete body.invitation_permission_types;
+        delete body.invitation_company_ids;
+        delete body.invitation_person_ids;
       }
 
       const res = await fetch(
@@ -784,172 +308,21 @@ export function AnnModal({
     }
   };
 
-  // ════════════════════════════════════════════════════════════════
-  //  TYPE SELECTOR (Create flow эхэнд)
-  // ════════════════════════════════════════════════════════════════
+  // ── TYPE SELECTOR (create эхэнд) ──
   if (mode === "create" && !step) {
     return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 1000,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(4px)",
-          padding: "20px",
+      <TypeSelector
+        onSelect={(t) => {
+          setStep(t);
+          setWstep(0);
         }}
-        onClick={safeClose}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 560,
-            background: "#1e293b",
-            borderRadius: 24,
-            padding: "28px 24px",
-            boxShadow: "0 20px 40px -12px rgba(0,0,0,0.4)",
-            animation: "fadeIn 0.2s ease",
-            border: "1px solid rgba(255,255,255,0.08)",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <style>{`
-            @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-            @keyframes spin { to { transform: rotate(360deg); } }
-          `}</style>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: 24,
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "white",
-                  margin: 0,
-                }}
-              >
-                Урилагын төрөл сонгох
-              </h2>
-              <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
-                Зорилгоос хамааран сонгоно уу
-              </p>
-            </div>
-            <button
-              onClick={safeClose}
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 10,
-                padding: 8,
-                cursor: "pointer",
-                color: "#94a3b8",
-                display: "flex",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.15)";
-                e.currentTarget.style.color = "white";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                e.currentTarget.style.color = "#94a3b8";
-              }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {(Object.entries(TYPE) as [AnnType, (typeof TYPE)[AnnType]][]).map(
-              ([t, c]) => {
-                const I = c.icon;
-                return (
-                  <button
-                    key={t}
-                    onClick={() => setStep(t)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 16,
-                      padding: "16px 20px",
-                      borderRadius: 16,
-                      cursor: "pointer",
-                      textAlign: "left",
-                      background: "#334155",
-                      border: `1px solid ${c.color}30`,
-                      transition: "all 0.15s",
-                      width: "100%",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = c.color;
-                      e.currentTarget.style.background = `${c.color}15`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = `${c.color}30`;
-                      e.currentTarget.style.background = "#334155";
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 14,
-                        flexShrink: 0,
-                        background: `${c.color}20`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <I size={22} style={{ color: c.color }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          color: "white",
-                          marginBottom: 4,
-                        }}
-                      >
-                        {t === "open"
-                          ? "Тендер нээлттэй"
-                          : t === "targeted"
-                            ? "Тендер хаалттай"
-                            : "Үнийн санал"}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#94a3b8",
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {c.desc}
-                      </div>
-                    </div>
-                    <ChevronDown size={16} style={{ color: "#64748b" }} />
-                  </button>
-                );
-              },
-            )}
-          </div>
-        </div>
-      </div>
+        onClose={safeClose}
+      />
     );
   }
 
   // ════════════════════════════════════════════════════════════════
-  //  MAIN MODAL
+  //  MAIN MODAL (WIZARD)
   // ════════════════════════════════════════════════════════════════
   return (
     <div
@@ -958,38 +331,47 @@ export function AnnModal({
         inset: 0,
         zIndex: 1000,
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "center",
         background: "rgba(0,0,0,0.6)",
         backdropFilter: "blur(4px)",
         padding: "20px",
-        overflowY: "auto",
       }}
     >
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes stepIn { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
+      `}</style>
+
       <div
         style={{
           width: "100%",
-          maxWidth: 820,
+          maxWidth: 760,
+          maxHeight: "92vh",
+          display: "flex",
+          flexDirection: "column",
           background: "#1e293b",
           borderRadius: 24,
           boxShadow: "0 20px 40px -12px rgba(0,0,0,0.4)",
           animation: "fadeIn 0.2s ease",
-          margin: "auto",
           border: "1px solid rgba(255,255,255,0.08)",
+          overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER */}
+        {/* ── HEADER ── */}
         <div
           style={{
-            padding: "20px 24px",
+            padding: "18px 24px",
             borderBottom: "1px solid rgba(255,255,255,0.08)",
             display: "flex",
             alignItems: "center",
             gap: 14,
+            flexShrink: 0,
           }}
         >
-          {mode === "create" && (
+          {mode === "create" && wstep === 0 && (
             <button
               onClick={() => {
                 if (isDirty) {
@@ -999,6 +381,7 @@ export function AnnModal({
                   if (!ok) return;
                 }
                 setStep(null);
+                setWstep(0);
               }}
               style={{
                 background: "rgba(255,255,255,0.08)",
@@ -1009,18 +392,10 @@ export function AnnModal({
                 color: "#94a3b8",
                 fontSize: 12,
                 fontWeight: 500,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.15)";
-                e.currentTarget.style.color = "white";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                e.currentTarget.style.color = "#94a3b8";
+                whiteSpace: "nowrap",
               }}
             >
-              ← Буцах
+              ← Төрөл
             </button>
           )}
           <div
@@ -1029,27 +404,30 @@ export function AnnModal({
               height: 40,
               borderRadius: 12,
               flexShrink: 0,
-              background: `${curType.color}20`,
+              background: `${accentColor}20`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <TIcon size={18} style={{ color: curType.color }} />
+            <TIcon size={18} style={{ color: accentColor }} />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h3
               style={{
                 fontSize: 16,
                 fontWeight: 700,
                 color: "white",
                 margin: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
               {mode === "create" ? "Шинэ" : "Засах"} — {curType.label}
             </h3>
             <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
-              {curType.desc}
+              Алхам {wstep + 1} / {STEPS.length} · {STEPS[wstep].label}
             </p>
           </div>
           <button
@@ -1062,27 +440,105 @@ export function AnnModal({
               cursor: "pointer",
               color: "#94a3b8",
               display: "flex",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.15)";
-              e.currentTarget.style.color = "white";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-              e.currentTarget.style.color = "#94a3b8";
+              flexShrink: 0,
             }}
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* BODY */}
+        {/* ── STEPPER ── */}
         <div
           style={{
-            padding: "20px 24px",
-            maxHeight: "calc(100vh - 160px)",
+            padding: "16px 24px 4px",
+            display: "flex",
+            alignItems: "flex-start",
+            flexShrink: 0,
+          }}
+        >
+          {STEPS.map((s, i) => {
+            const done = i < wstep;
+            const current = i === wstep;
+            const SIcon = s.icon;
+            return (
+              <Fragment key={s.key}>
+                <button
+                  type="button"
+                  onClick={() => goTo(i)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    width: 70,
+                    flexShrink: 0,
+                    padding: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      transition: "all 0.15s",
+                      background:
+                        current || done ? accentColor : "rgba(255,255,255,0.06)",
+                      color: current || done ? "white" : "#64748b",
+                      border: current
+                        ? `2px solid ${accentColor}`
+                        : "2px solid transparent",
+                      boxShadow: current ? `0 0 0 4px ${accentColor}25` : "none",
+                    }}
+                  >
+                    {done ? <Check size={16} /> : <SIcon size={15} />}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: current ? 700 : 500,
+                      color: current
+                        ? accentColor
+                        : done
+                          ? "#cbd5e1"
+                          : "#64748b",
+                      textAlign: "center",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {s.label}
+                  </span>
+                </button>
+                {i < LAST && (
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 2,
+                      marginTop: 16,
+                      borderRadius: 2,
+                      background: i < wstep ? accentColor : "rgba(255,255,255,0.1)",
+                      transition: "all 0.2s",
+                    }}
+                  />
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
+
+        {/* ── BODY (одоогийн алхам) ── */}
+        <div
+          style={{
+            padding: "16px 24px",
             overflowY: "auto",
+            flex: 1,
           }}
         >
           {error && (
@@ -1095,1507 +551,244 @@ export function AnnModal({
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                marginBottom: 20,
+                marginBottom: 16,
               }}
             >
-              <AlertCircle
-                size={14}
-                style={{ color: "#f87171", flexShrink: 0 }}
-              />
+              <AlertCircle size={14} style={{ color: "#f87171", flexShrink: 0 }} />
               <span style={{ fontSize: 12, color: "#fca5a5" }}>{error}</span>
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* ─── 1. Зарын нэр ─── */}
-            <Field label="Зарын нэр" required>
-              <input
-                value={form.title}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, title: e.target.value }))
-                }
-                style={inputStyle}
-                placeholder="Зарлалын гарчиг"
-                onFocus={(e) => {
-                  e.target.style.borderColor = curType.color;
-                  e.target.style.boxShadow = `0 0 0 2px ${curType.color}20`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(255,255,255,0.12)";
-                  e.target.style.boxShadow = "none";
-                }}
-              />
-            </Field>
-
-            {/* ─── 2. ҮНДСЭН МЭДЭЭЛЭЛ ─── */}
-            <Section
-              title="Үндсэн мэдээлэл"
-              icon={Building2}
-              accentColor={curType.color}
-            >
-              <Field label="Захиалагч компани" required icon={Building2}>
-                <input
-                  value={form.client_company}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, client_company: e.target.value }))
-                  }
-                  style={innerInputStyle}
-                  placeholder="Захиалагч компанийн нэр"
+          <div
+            key={wstep}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 18,
+              animation: "stepIn 0.2s ease",
+            }}
+          >
+            {/* STEP 0 — Үндсэн */}
+            {wstep === 0 && (
+              <>
+                <Field label="Зарын нэр" required>
+                  <input
+                    value={form.title}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, title: e.target.value }))
+                    }
+                    style={inputStyle}
+                    placeholder="Зарлалын гарчиг"
+                    onFocus={(e) => {
+                      e.target.style.borderColor = accentColor;
+                      e.target.style.boxShadow = `0 0 0 2px ${accentColor}20`;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "rgba(255,255,255,0.12)";
+                      e.target.style.boxShadow = "none";
+                    }}
+                  />
+                </Field>
+                <BasicInfoSection
+                  form={form}
+                  setForm={setForm}
+                  accentColor={accentColor}
                 />
-              </Field>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
-                }}
-              >
-                <Field label="Хариуцах ажилтны нэр" required icon={User}>
-                  <input
-                    value={form.responsible_person_name}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        responsible_person_name: e.target.value,
-                      }))
-                    }
-                    style={innerInputStyle}
-                    placeholder="Овог нэр"
-                  />
-                </Field>
-                <Field label="Албан тушаал" required icon={Briefcase}>
-                  <input
-                    value={form.responsible_position}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        responsible_position: e.target.value,
-                      }))
-                    }
-                    style={innerInputStyle}
-                    placeholder="Албан тушаал"
-                  />
-                </Field>
-              </div>
-
-              <Field label="Холбоо барих утас" required icon={Phone}>
-                <input
-                  value={form.contact_phone}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, contact_phone: e.target.value }))
-                  }
-                  style={innerInputStyle}
-                  placeholder="99000000"
-                  type="tel"
+                <ScheduleSection
+                  form={form}
+                  setForm={setForm}
+                  accentColor={accentColor}
                 />
-              </Field>
-            </Section>
+              </>
+            )}
 
-            {/* ─── 3. ОГНОО ─── */}
-            <Section
-              title="Зарлалын хугацаа"
-              icon={CalendarRange}
-              accentColor={curType.color}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
-                }}
-              >
-                <Field label="Эхлэх огноо" required icon={Calendar}>
-                  <input
-                    type="date"
-                    value={form.start_date}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, start_date: e.target.value }))
-                    }
-                    style={innerInputStyle}
-                  />
-                </Field>
-                <Field label="Дуусах огноо" required icon={Calendar}>
-                  <input
-                    type="date"
-                    value={form.end_date}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, end_date: e.target.value }))
-                    }
-                    style={innerInputStyle}
-                  />
-                </Field>
-              </div>
-              <Field label="Үнийн санал өгөх огноо" required icon={Calendar}>
-                <input
-                  type="date"
-                  value={form.deadline}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, deadline: e.target.value }))
-                  }
-                  style={innerInputStyle}
+            {/* STEP 1 — Зарын дэлгэрэнгүй */}
+            {wstep === 1 && (
+              <>
+                <CategorySection
+                  form={form}
+                  setForm={setForm}
+                  accentColor={accentColor}
+                  cats={cats}
+                  dirs={dirs}
                 />
-              </Field>
-            </Section>
+                {annType === "rfq" && (
+                  <RfqSection
+                    form={form}
+                    setForm={setForm}
+                    accentColor={accentColor}
+                  />
+                )}
+              </>
+            )}
 
-            {/* ─── 4. ЗАРЫН ДЭЛГЭРЭНГҮЙ — Категори, Худалдан авалтын төрөл ─── */}
-            <div
+            {/* STEP 2 — Хүлээн авагч / Урилга */}
+            {wstep === 2 &&
+              (annType === "open" ? (
+                <InvitationSection
+                  form={form}
+                  setForm={setForm}
+                  accentColor={accentColor}
+                  permTypes={permTypes}
+                  invCompanies={invCompanies}
+                  invPersons={invPersons}
+                  invLoading={invLoading}
+                />
+              ) : (
+                <RecipientsField
+                  form={form}
+                  setForm={setForm}
+                  accentColor={accentColor}
+                  dirs={dirs}
+                  annType={annType}
+                />
+              ))}
+
+            {/* STEP 3 — Баримт ба нийтлэх */}
+            {wstep === 3 && (
+              <>
+                <SupplySection
+                  form={form}
+                  setForm={setForm}
+                  accentColor={accentColor}
+                />
+                <DocumentsSection
+                  form={form}
+                  setForm={setForm}
+                  accentColor={accentColor}
+                />
+                <Field label="Статус">
+                  <div style={{ position: "relative" }}>
+                    <select
+                      value={form.status}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, status: e.target.value }))
+                      }
+                      style={{
+                        ...inputStyle,
+                        cursor: "pointer",
+                        appearance: "none",
+                        paddingRight: 28,
+                      }}
+                    >
+                      <option value="draft" style={{ background: "#1e293b" }}>
+                        📄 Ноорог
+                      </option>
+                      <option value="published" style={{ background: "#1e293b" }}>
+                        🌍 Нийтлэх
+                      </option>
+                      <option value="closed" style={{ background: "#1e293b" }}>
+                        🔒 Хаах
+                      </option>
+                    </select>
+                    <ChevronDown
+                      size={14}
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#94a3b8",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  </div>
+                </Field>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── FOOTER (навигаци) ── */}
+        <div
+          style={{
+            padding: "16px 24px",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            display: "flex",
+            gap: 10,
+            flexShrink: 0,
+            background: "rgba(0,0,0,0.15)",
+          }}
+        >
+          <button
+            onClick={wstep === 0 ? safeClose : goBack}
+            style={{
+              flex: 1,
+              height: 46,
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "#94a3b8",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            {wstep === 0 ? "Болих" : "← Өмнөх"}
+          </button>
+
+          {wstep < LAST ? (
+            <button
+              onClick={goNext}
               style={{
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                color: "#cbd5e1",
-                marginTop: 8,
-                marginBottom: -4,
-                letterSpacing: "0.05em",
+                flex: 2,
+                height: 46,
+                borderRadius: 10,
+                border: "none",
+                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
+                color: "white",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 6,
               }}
             >
-              <ClipboardList size={12} /> Зарын дэлгэрэнгүй мэдээлэл
-            </div>
-
-            <Field label="Ангилал" required icon={Layers}>
-              <div style={{ position: "relative" }}>
-                <select
-                  value={form.category_id}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, category_id: e.target.value }))
-                  }
-                  style={{
-                    ...inputStyle,
-                    cursor: "pointer",
-                    appearance: "none",
-                    paddingRight: 32,
-                  }}
-                >
-                  <option
-                    value=""
-                    style={{ background: "#1e293b", color: "#94a3b8" }}
-                  >
-                    — Сонгох —
-                  </option>
-                  {cats.map((c) => (
-                    <option
-                      key={c.id}
-                      value={c.id}
-                      style={{ background: "#1e293b", color: "white" }}
-                    >
-                      {c.category_number}. {c.category_name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={14}
-                  style={{
-                    position: "absolute",
-                    right: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#94a3b8",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
-            </Field>
-
-            {/* Худалдан авалтын төрөл (Бараа/Үйлчилгээ) + Яаралтай */}
-            <div
+              Дараах →
+            </button>
+          ) : (
+            <button
+              onClick={save}
+              disabled={saving}
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr auto",
-                gap: 12,
-                alignItems: "end",
+                flex: 2,
+                height: 46,
+                borderRadius: 10,
+                border: "none",
+                background:
+                  form.status === "published"
+                    ? "linear-gradient(135deg, #059669, #10b981)"
+                    : "linear-gradient(135deg, #4f46e5, #6366f1)",
+                color: "white",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: saving ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                opacity: saving ? 0.7 : 1,
               }}
             >
-              <Field label="Худалдан авалтын төрөл" required>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {[
-                    { v: "goods", label: "Бараа материал", icon: Package },
-                    { v: "service", label: "Ажил үйлчилгээ", icon: Wrench },
-                  ].map(({ v, label, icon: I }) => {
-                    const sel = form.procurement_kind === v;
-                    return (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() =>
-                          setForm((p) => ({ ...p, procurement_kind: v as any }))
-                        }
-                        style={{
-                          flex: 1,
-                          height: 44,
-                          padding: "0 14px",
-                          borderRadius: 10,
-                          cursor: "pointer",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          border: sel
-                            ? `1px solid ${curType.color}`
-                            : "1px solid rgba(255,255,255,0.12)",
-                          background: sel ? `${curType.color}20` : "#334155",
-                          color: sel ? curType.color : "#cbd5e1",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        <I size={14} />
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((p) => ({ ...p, is_urgent: !p.is_urgent }))
-                }
-                style={{
-                  height: 44,
-                  padding: "0 16px",
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  border: form.is_urgent
-                    ? "1px solid #ef4444"
-                    : "1px solid rgba(255,255,255,0.15)",
-                  background: form.is_urgent
-                    ? "rgba(239,68,68,0.15)"
-                    : "rgba(255,255,255,0.05)",
-                  color: form.is_urgent ? "#f87171" : "#94a3b8",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  whiteSpace: "nowrap",
-                  transition: "all 0.15s",
-                }}
-              >
-                <Zap size={14} />
-                {form.is_urgent ? "Яаралтай" : "Яаралтай биш"}
-              </button>
-            </div>
-
-            {/* Activity directions — accordion (үндсэн → дэд) */}
-            {dirs.length > 0 && (
-              <Field
-                label="Үйл ажиллагааны чиглэл"
-                icon={Layers}
-                hint="үндсэн дээр дарж дэд чиглэл сонгоно"
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                    background: "rgba(255,255,255,0.02)",
-                    borderRadius: 12,
-                    padding: 10,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  {dirs.map((main: any) => {
-                    const expanded = expandedMains.has(main.id);
-                    const selection = getMainSelection(main.id);
-                    const selectedCount = selection?.sub_ids?.length ?? 0;
-                    const childCount = main.children?.length ?? 0;
-                    const allSelected =
-                      childCount > 0 && selectedCount === childCount;
-                    const someSelected = selectedCount > 0;
-
-                    return (
-                      <div
-                        key={main.id}
-                        style={{
-                          borderRadius: 10,
-                          background: someSelected
-                            ? `${curType.color}10`
-                            : "rgba(255,255,255,0.03)",
-                          border: someSelected
-                            ? `1px solid ${curType.color}40`
-                            : "1px solid rgba(255,255,255,0.06)",
-                          overflow: "hidden",
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        {/* ── Үндсэн чиглэл (clickable header) ── */}
-                        <button
-                          type="button"
-                          onClick={() => toggleExpand(main.id)}
-                          style={{
-                            width: "100%",
-                            padding: "10px 14px",
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            color: someSelected ? curType.color : "#cbd5e1",
-                            fontSize: 13,
-                            fontWeight: 600,
-                            textAlign: "left",
-                          }}
-                        >
-                          <ChevronDown
-                            size={14}
-                            style={{
-                              transform: expanded
-                                ? "rotate(0deg)"
-                                : "rotate(-90deg)",
-                              transition: "transform 0.15s",
-                              color: "#94a3b8",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span style={{ flex: 1 }}>{main.label}</span>
-                          {someSelected && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                padding: "2px 10px",
-                                borderRadius: 30,
-                                background: `${curType.color}25`,
-                                color: curType.color,
-                              }}
-                            >
-                              {selectedCount} / {childCount}
-                            </span>
-                          )}
-                          {childCount === 0 && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                color: "#64748b",
-                              }}
-                            >
-                              Дэд чиглэлгүй
-                            </span>
-                          )}
-                        </button>
-
-                        {/* ── Дэд чиглэлүүд (expanded) ── */}
-                        {expanded && childCount > 0 && (
-                          <div
-                            style={{
-                              padding: "0 14px 12px",
-                              borderTop: "1px solid rgba(255,255,255,0.05)",
-                              paddingTop: 10,
-                            }}
-                          >
-                            {/* "Бүгдийг сонгох" товч */}
-                            <button
-                              type="button"
-                              onClick={() => toggleAllSubs(main)}
-                              style={{
-                                fontSize: 10,
-                                padding: "4px 12px",
-                                borderRadius: 30,
-                                background: allSelected
-                                  ? `${curType.color}25`
-                                  : "rgba(255,255,255,0.05)",
-                                border: allSelected
-                                  ? `1px solid ${curType.color}50`
-                                  : "1px solid rgba(255,255,255,0.1)",
-                                color: allSelected ? curType.color : "#94a3b8",
-                                cursor: "pointer",
-                                fontWeight: 600,
-                                marginBottom: 8,
-                              }}
-                            >
-                              {allSelected
-                                ? "✓ Бүгдийг арилгах"
-                                : "Бүгдийг сонгох"}
-                            </button>
-
-                            {/* Дэд чиглэл chip-үүд */}
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 6,
-                              }}
-                            >
-                              {main.children.map((child: any) => {
-                                const sel =
-                                  selection?.sub_ids?.includes(child.id) ??
-                                  false;
-                                return (
-                                  <button
-                                    key={child.id}
-                                    type="button"
-                                    onClick={() => toggleSub(main.id, child.id)}
-                                    style={{
-                                      padding: "5px 12px",
-                                      borderRadius: 20,
-                                      fontSize: 11,
-                                      fontWeight: 500,
-                                      cursor: "pointer",
-                                      border: sel
-                                        ? `1px solid ${curType.color}`
-                                        : "1px solid rgba(255,255,255,0.12)",
-                                      background: sel
-                                        ? `${curType.color}25`
-                                        : "rgba(255,255,255,0.05)",
-                                      color: sel ? curType.color : "#cbd5e1",
-                                      transition: "all 0.15s",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 4,
-                                    }}
-                                  >
-                                    {sel && <CheckCircle2 size={11} />}
-                                    {child.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Сонгосон чиглэлийн дүгнэлт */}
-                {form.activity_directions.length > 0 && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      padding: "8px 12px",
-                      background: `${curType.color}10`,
-                      border: `1px solid ${curType.color}30`,
-                      borderRadius: 8,
-                      fontSize: 11,
-                      color: curType.color,
-                      fontWeight: 600,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
-                  >
-                    <CheckCircle2 size={12} />
-                    Нийт {form.activity_directions.length} үндсэн чиглэл /{" "}
-                    {(form.activity_directions as any[]).reduce(
-                      (acc: number, d: any) => acc + (d.sub_ids?.length ?? 0),
-                      0,
-                    )}{" "}
-                    дэд чиглэл сонгогдсон
-                  </div>
-                )}
-              </Field>
-            )}
-
-            {/* Description editor */}
-            <Field label="Тайлбар">
-              <RichTextEditor
-                value={form.description}
-                onChange={(v) => setForm((p) => ({ ...p, description: v }))}
-                placeholder="Дэлгэрэнгүй тайлбар..."
-                files={form.attachments}
-                onFilesChange={(files) =>
-                  setForm((p) => ({ ...p, attachments: files }))
-                }
-                accentColor={curType.color}
-              />
-            </Field>
-
-            {/* Budget */}
-            <Field label="Төсөв" icon={DollarSign}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 110px",
-                  gap: 8,
-                }}
-              >
-                <input
-                  type="number"
-                  value={form.budget_from}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, budget_from: e.target.value }))
-                  }
-                  style={inputStyle}
-                  placeholder="Доод дүн"
-                />
-                <input
-                  type="number"
-                  value={form.budget_to}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, budget_to: e.target.value }))
-                  }
-                  style={inputStyle}
-                  placeholder="Дээд дүн"
-                />
-                <div style={{ position: "relative" }}>
-                  <select
-                    value={form.currency}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, currency: e.target.value }))
-                    }
-                    style={{
-                      ...inputStyle,
-                      cursor: "pointer",
-                      appearance: "none",
-                      paddingRight: 28,
-                    }}
-                  >
-                    <option value="MNT" style={{ background: "#1e293b" }}>
-                      ₮ MNT
-                    </option>
-                    <option value="USD" style={{ background: "#1e293b" }}>
-                      $ USD
-                    </option>
-                    <option value="EUR" style={{ background: "#1e293b" }}>
-                      € EUR
-                    </option>
-                  </select>
-                  <ChevronDown
-                    size={14}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: "#94a3b8",
-                      pointerEvents: "none",
-                    }}
-                  />
-                </div>
-              </div>
-            </Field>
-
-            {/* RFQ Details */}
-            {annType === "rfq" && (
-              <Section
-                title="Үнийн санал"
-                icon={TrendingUp}
-                accentColor={curType.color}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 10,
-                  }}
-                >
-                  <input
-                    type="number"
-                    value={form.rfq_quantity}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, rfq_quantity: e.target.value }))
-                    }
-                    style={innerInputStyle}
-                    placeholder="Тоо хэмжээ"
-                  />
-                  <div style={{ position: "relative" }}>
-                    <select
-                      value={form.rfq_unit}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, rfq_unit: e.target.value }))
-                      }
-                      style={{
-                        ...innerInputStyle,
-                        cursor: "pointer",
-                        appearance: "none",
-                        paddingRight: 28,
-                      }}
-                    >
-                      <option
-                        value=""
-                        style={{ background: "#1e293b", color: "#94a3b8" }}
-                      >
-                        Нэгж сонгох
-                      </option>
-                      {[
-                        "Ширхэг",
-                        "Багц",
-                        "Хоног",
-                        "Боодол",
-                        "Хайрцаг",
-                        "Хос",
-                        "м3",
-                        "тонн",
-                      ].map((u) => (
-                        <option
-                          key={u}
-                          value={u}
-                          style={{ background: "#1e293b", color: "white" }}
-                        >
-                          {u}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={12}
-                      style={{
-                        position: "absolute",
-                        right: 10,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#94a3b8",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  </div>
-                </div>
-                <input
-                  value={form.rfq_delivery_place}
-                  onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      rfq_delivery_place: e.target.value,
-                    }))
-                  }
-                  style={innerInputStyle}
-                  placeholder="Хүргэлтийн газар"
-                />
-                <input
-                  type="date"
-                  value={form.rfq_delivery_date}
-                  onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      rfq_delivery_date: e.target.value,
-                    }))
-                  }
-                  style={innerInputStyle}
-                />
-                <textarea
-                  value={form.rfq_specs}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, rfq_specs: e.target.value }))
-                  }
-                  rows={2}
-                  style={{
-                    ...innerInputStyle,
-                    height: "auto",
-                    resize: "vertical",
-                    padding: "10px 14px",
-                  }}
-                  placeholder="Техникийн тодорхойлолт"
-                />
-              </Section>
-            )}
-
-            {/* Recipients */}
-            {(annType === "targeted" || annType === "rfq") && (
-              <Field
-                label="Хэнд илгээх"
-                icon={Users}
-                hint={annType === "rfq" ? "сонгоогүй бол бүгдэд" : undefined}
-              >
-                <RecipientPicker
-                  form={form}
-                  setForm={setForm}
-                  directions={dirs}
-                  accentColor={curType.color}
-                  optional={annType === "rfq"}
-                />
-              </Field>
-            )}
-
-            {/* ⭐ Имэйл урилга — Тусгай зөвшөөрөл (зөвхөн нээлттэй type-д) */}
-            {annType === "open" && (
-              <Field
-                label="Имэйл урилга — Тусгай зөвшөөрөл"
-                icon={ShieldCheck}
-                hint="заавал биш — нэмж имэйл урилга илгээх"
-              >
-                {/* Тайлбар */}
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#cbd5e1",
-                    lineHeight: 1.55,
-                    padding: "8px 12px",
-                    background: "rgba(99,102,241,0.08)",
-                    borderRadius: 8,
-                    border: "1px solid rgba(99,102,241,0.2)",
-                    marginBottom: 10,
-                  }}
-                >
-                  💡 Доорх filter-т таарсан компани + хувь хүмүүст{" "}
-                  <b>"Тендерийн урилга"</b> имэйл илгээгдэнэ. Filter хоосон
-                  үлдээвэл стандарт нийтэлсэн зарлал л явна.
-                </div>
-
-                {/* Сонгогдсон chips */}
-                {form.invitation_permission_types.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 4,
-                      marginBottom: 8,
-                      padding: "8px 10px",
-                      background: `${curType.color}10`,
-                      borderRadius: 8,
-                      border: `1px solid ${curType.color}30`,
-                    }}
-                  >
-                    {form.invitation_permission_types.map((label: string) => (
-                      <span
-                        key={label}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "3px 4px 3px 10px",
-                          borderRadius: 30,
-                          background: curType.color,
-                          color: "white",
-                          fontSize: 10,
-                          fontWeight: 600,
-                          maxWidth: 240,
-                        }}
-                      >
-                        <span
-                          style={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {label}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => togglePerm(label)}
-                          style={{
-                            background: "rgba(255,255,255,0.25)",
-                            border: "none",
-                            borderRadius: "50%",
-                            width: 14,
-                            height: 14,
-                            cursor: "pointer",
-                            color: "white",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <X size={8} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Хайлт */}
-                <input
-                  value={permSearch}
-                  onChange={(e) => setPermSearch(e.target.value)}
-                  placeholder={
-                    permTypes.length > 0
-                      ? `🔍 ${permTypes.length} зөвшөөрлөөс хайх...`
-                      : "🔍 Хайх..."
-                  }
-                  style={innerInputStyle}
-                />
-
-                {/* Жагсаалт */}
-                <div
-                  style={{
-                    marginTop: 8,
-                    maxHeight: 200,
-                    overflowY: "auto",
-                    background: "rgba(255,255,255,0.02)",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  {permTypes.length === 0 ? (
-                    <div
-                      style={{
-                        padding: 20,
-                        textAlign: "center",
-                        fontSize: 11,
-                        color: "#64748b",
-                      }}
-                    >
-                      Тусгай зөвшөөрлийн төрөл ачаалагдаагүй
-                    </div>
-                  ) : filteredPermTypes.length === 0 ? (
-                    <div
-                      style={{
-                        padding: 20,
-                        textAlign: "center",
-                        fontSize: 11,
-                        color: "#64748b",
-                      }}
-                    >
-                      "{permSearch}" хайлтад тохирох олдсонгүй
-                    </div>
-                  ) : (
-                    filteredPermTypes.map((t: any) => {
-                      const selected =
-                        form.invitation_permission_types.includes(t.label);
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => togglePerm(t.label)}
-                          style={{
-                            width: "100%",
-                            padding: "9px 12px",
-                            background: selected
-                              ? `${curType.color}15`
-                              : "transparent",
-                            border: "none",
-                            borderBottom: "1px solid rgba(255,255,255,0.04)",
-                            cursor: "pointer",
-                            fontSize: 12,
-                            color: selected ? curType.color : "#cbd5e1",
-                            textAlign: "left",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            fontWeight: selected ? 600 : 400,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: 4,
-                              flexShrink: 0,
-                              background: selected
-                                ? curType.color
-                                : "rgba(255,255,255,0.05)",
-                              border: selected
-                                ? `1px solid ${curType.color}`
-                                : "1px solid rgba(255,255,255,0.15)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            {selected && (
-                              <CheckCircle2 size={11} color="white" />
-                            )}
-                          </div>
-                          <span
-                            style={{
-                              flex: 1,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                            title={t.label}
-                          >
-                            {t.label}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* ⭐ LIVE PREVIEW — таарсан хэрэглэгчид */}
-                {(form.invitation_permission_types.length > 0 ||
-                  form.activity_directions.length > 0) && (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      background: `${curType.color}08`,
-                      border: `1px solid ${curType.color}30`,
-                      borderRadius: 10,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {/* Header — count summary */}
-                    <div
-                      style={{
-                        padding: "10px 14px",
-                        borderBottom: `1px solid ${curType.color}20`,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        background: `${curType.color}12`,
-                      }}
-                    >
-                      <Send
-                        size={14}
-                        style={{ color: curType.color, flexShrink: 0 }}
-                      />
-                      <div
-                        style={{
-                          flex: 1,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: curType.color,
-                        }}
-                      >
-                        {invLoading ? (
-                          <>
-                            <Loader2
-                              size={12}
-                              style={{
-                                animation: "spin 0.8s linear infinite",
-                                display: "inline",
-                                verticalAlign: "middle",
-                                marginRight: 6,
-                              }}
-                            />
-                            Тооцоолж байна...
-                          </>
-                        ) : (
-                          <>
-                            📨 Урилга илгээгдэх:{" "}
-                            <span style={{ fontSize: 14 }}>
-                              {matchedInvCompanies.length}
-                            </span>{" "}
-                            компани +{" "}
-                            <span style={{ fontSize: 14 }}>
-                              {matchedInvPersons.length}
-                            </span>{" "}
-                            хувь хүн
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Жагсаалт */}
-                    {!invLoading &&
-                      (matchedInvCompanies.length > 0 ||
-                        matchedInvPersons.length > 0) && (
-                        <div
-                          style={{
-                            maxHeight: 240,
-                            overflowY: "auto",
-                            padding: "8px 12px",
-                          }}
-                        >
-                          {/* Компани */}
-                          {matchedInvCompanies.map((c: any) => (
-                            <div
-                              key={`c-${c.id}`}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 10,
-                                padding: "7px 8px",
-                                borderRadius: 8,
-                                fontSize: 11,
-                                color: "#cbd5e1",
-                              }}
-                            >
-                              <span style={{ fontSize: 14 }}>🏢</span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div
-                                  style={{
-                                    fontWeight: 600,
-                                    color: "white",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {c.company_name || "—"}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: 10,
-                                    color: "#94a3b8",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  📧 {c.email || "имэйлгүй"}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* Хувь хүн */}
-                          {matchedInvPersons.map((p: any) => {
-                            const name =
-                              `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim() ||
-                              p.email ||
-                              "—";
-                            return (
-                              <div
-                                key={`p-${p.id}`}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 10,
-                                  padding: "7px 8px",
-                                  borderRadius: 8,
-                                  fontSize: 11,
-                                  color: "#cbd5e1",
-                                }}
-                              >
-                                <span style={{ fontSize: 14 }}>👤</span>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div
-                                    style={{
-                                      fontWeight: 600,
-                                      color: "white",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    {name}
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontSize: 10,
-                                      color: "#94a3b8",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    📧 {p.email || "имэйлгүй"}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                    {/* Хоосон үед */}
-                    {!invLoading &&
-                      matchedInvCompanies.length === 0 &&
-                      matchedInvPersons.length === 0 && (
-                        <div
-                          style={{
-                            padding: 16,
-                            textAlign: "center",
-                            fontSize: 11,
-                            color: "#94a3b8",
-                          }}
-                        >
-                          Тохирох хэрэглэгч олдсонгүй
-                        </div>
-                      )}
-
-                    {/* Permission filter тайлбар */}
-                    {form.invitation_permission_types.length > 0 && (
-                      <div
-                        style={{
-                          padding: "6px 14px",
-                          fontSize: 10,
-                          color: "#94a3b8",
-                          borderTop: `1px solid ${curType.color}20`,
-                          background: "rgba(0,0,0,0.15)",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        ⚠️ Тусгай зөвшөөрлийн filter сонгосон тул хувь хүмүүс
-                        автоматаар хасагдсан
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Field>
-            )}
-
-            {/* ─── 5. БАРАА МАТЕРИАЛ НИЙЛҮҮЛЭХ ХУГАЦАА ─── */}
-            <Section
-              title="Бараа материал / ажил үйлчилгээ нийлүүлэх хугацаа"
-              icon={Truck}
-              accentColor={curType.color}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
-                }}
-              >
-                <Field label="Эхлэх огноо" required icon={Calendar}>
-                  <input
-                    type="date"
-                    value={form.supply_start_date}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        supply_start_date: e.target.value,
-                      }))
-                    }
-                    style={innerInputStyle}
-                  />
-                </Field>
-                <Field label="Дуусах огноо" required icon={Calendar}>
-                  <input
-                    type="date"
-                    value={form.supply_end_date}
-                    onChange={(e) =>
-                      setForm((p) => ({
-                        ...p,
-                        supply_end_date: e.target.value,
-                      }))
-                    }
-                    style={innerInputStyle}
-                  />
-                </Field>
-              </div>
-            </Section>
-
-            {/* ─── 6. БАРАА МАТЕРИАЛ НИЙЛҮҮЛЭХ БАЙРШИЛ ─── */}
-            <Section
-              title="Бараа материал нийлүүлэх байршил"
-              icon={MapPin}
-              accentColor={curType.color}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
-                }}
-              >
-                {/* Худалдан авалтын төв байршил — Аймаг/Хот dropdown */}
-                <Field
-                  label="Худалдан авалтын төв байршил"
-                  required
-                  icon={MapPin}
-                >
-                  <div style={{ position: "relative" }}>
-                    <select
-                      value={form.central_location}
-                      onChange={(e) =>
-                        setForm((p) => ({
-                          ...p,
-                          central_location: e.target.value,
-                          // Хот өөрчлөгдвөл салбар сонголтыг арилгана
-                          branch_location: "",
-                        }))
-                      }
-                      style={{
-                        ...innerInputStyle,
-                        cursor: "pointer",
-                        appearance: "none",
-                        paddingRight: 28,
-                      }}
-                    >
-                      <option
-                        value=""
-                        style={{ background: "#1e293b", color: "#94a3b8" }}
-                      >
-                        — Аймаг/Хот сонгох —
-                      </option>
-                      {MN_LOCATIONS.map((loc) => (
-                        <option
-                          key={loc}
-                          value={loc}
-                          style={{ background: "#1e293b", color: "white" }}
-                        >
-                          {loc === "Улаанбаатар" ? "🏙 " : "📍 "}
-                          {loc}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={12}
-                      style={{
-                        position: "absolute",
-                        right: 10,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#94a3b8",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  </div>
-                </Field>
-
-                {/* Салбар байршил — UB-д dropdown, бусдад текст input */}
-                <Field
-                  label={
-                    form.central_location === "Улаанбаатар"
-                      ? "Дүүрэг"
-                      : "Салбар байршил"
-                  }
-                  required
-                  icon={MapPin}
-                  hint={
-                    form.central_location === "Улаанбаатар"
-                      ? undefined
-                      : "Сум/багийн нэр"
-                  }
-                >
-                  {form.central_location === "Улаанбаатар" ? (
-                    <div style={{ position: "relative" }}>
-                      <select
-                        value={form.branch_location}
-                        onChange={(e) =>
-                          setForm((p) => ({
-                            ...p,
-                            branch_location: e.target.value,
-                          }))
-                        }
-                        style={{
-                          ...innerInputStyle,
-                          cursor: "pointer",
-                          appearance: "none",
-                          paddingRight: 28,
-                        }}
-                      >
-                        <option
-                          value=""
-                          style={{ background: "#1e293b", color: "#94a3b8" }}
-                        >
-                          — Дүүрэг сонгох —
-                        </option>
-                        {UB_DISTRICTS.map((d) => (
-                          <option
-                            key={d}
-                            value={d}
-                            style={{ background: "#1e293b", color: "white" }}
-                          >
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={12}
-                        style={{
-                          position: "absolute",
-                          right: 10,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          color: "#94a3b8",
-                          pointerEvents: "none",
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <input
-                      value={form.branch_location}
-                      onChange={(e) =>
-                        setForm((p) => ({
-                          ...p,
-                          branch_location: e.target.value,
-                        }))
-                      }
-                      style={innerInputStyle}
-                      placeholder={
-                        form.central_location
-                          ? `${form.central_location} аймгийн сум`
-                          : "Эхлээд аймаг сонгоно уу"
-                      }
-                      disabled={!form.central_location}
-                    />
-                  )}
-                </Field>
-              </div>
-
-              <Field label="Хаягийн дэлгэрэнгүй мэдээлэл">
-                <textarea
-                  value={form.address_details}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, address_details: e.target.value }))
-                  }
-                  rows={2}
-                  style={{
-                    ...innerInputStyle,
-                    height: "auto",
-                    resize: "vertical",
-                    padding: "10px 14px",
-                  }}
-                  placeholder="Дэлгэрэнгүй хаяг (байр, гудамж, хороо г.м.)"
-                />
-              </Field>
-            </Section>
-
-            {/* ─── 7. НИЙЛҮҮЛЭГЧИД ТАВИГДАХ ШААРДЛАГА ─── */}
-            <Field label="Нийлүүлэгчид тавигдах шаардлага">
-              <RichTextEditor
-                value={form.requirements}
-                onChange={(v) => setForm((p) => ({ ...p, requirements: v }))}
-                placeholder="Тусгай зөвшөөрөл, туршлага, мэргэжлийн шаардлага..."
-                files={[]}
-                onFilesChange={() => {}}
-                accentColor={curType.color}
-              />
-            </Field>
-
-            {/* ─── 8. ЗАХИАЛАГЧИЙН БАРИМТ БИЧИГ ─── */}
-            <Section
-              title="Захиалагчийн баримт бичиг"
-              icon={FileText}
-              accentColor={curType.color}
-            >
-              <Field label="Захиалагчийн баримт бичигтэй холбоотой мэдээлэл">
-                <RichTextEditor
-                  value={form.buyer_doc_info}
-                  onChange={(v) =>
-                    setForm((p) => ({ ...p, buyer_doc_info: v }))
-                  }
-                  placeholder="Захиалагчийн талаас өгөх баримт бичгийн тайлбар..."
-                  files={[]}
-                  onFilesChange={() => {}}
-                  accentColor={curType.color}
-                />
-              </Field>
-              <Field label="Захиалагчийн баримт бичиг" hint="олон файл">
-                <FilePicker
-                  files={form.buyer_attachments}
-                  onChange={(files) =>
-                    setForm((p) => ({ ...p, buyer_attachments: files }))
-                  }
-                  accentColor={curType.color}
-                  label="Файл хуулах"
-                />
-              </Field>
-            </Section>
-
-            {/* ─── 9. НИЙЛҮҮЛЭГЧЭЭС ШААРДАХ БАРИМТ ─── */}
-            <Section
-              title="Нийлүүлэгчээс авах баримт бичиг"
-              icon={ClipboardList}
-              accentColor={curType.color}
-            >
-              <Field label="Нийлүүлэгчийн баримт бичигтэй холбоотой мэдээлэл">
-                <RichTextEditor
-                  value={form.supplier_doc_info}
-                  onChange={(v) =>
-                    setForm((p) => ({ ...p, supplier_doc_info: v }))
-                  }
-                  placeholder="Нийлүүлэгчээс шаардах баримтын тайлбар..."
-                  files={[]}
-                  onFilesChange={() => {}}
-                  accentColor={curType.color}
-                />
-              </Field>
-              <Field
-                label="Нийлүүлэгчээс авах загвар бичиг баримт"
-                hint="олон файл"
-              >
-                <FilePicker
-                  files={form.supplier_required_docs}
-                  onChange={(files) =>
-                    setForm((p) => ({ ...p, supplier_required_docs: files }))
-                  }
-                  accentColor={curType.color}
-                  label="Файл хуулах"
-                />
-              </Field>
-            </Section>
-
-            {/* ─── СТАТУС ─── */}
-            <Field label="Статус">
-              <div style={{ position: "relative" }}>
-                <select
-                  value={form.status}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, status: e.target.value }))
-                  }
-                  style={{
-                    ...inputStyle,
-                    cursor: "pointer",
-                    appearance: "none",
-                    paddingRight: 28,
-                  }}
-                >
-                  <option value="draft" style={{ background: "#1e293b" }}>
-                    📄 Ноорог
-                  </option>
-                  <option value="published" style={{ background: "#1e293b" }}>
-                    🌍 Нийтлэх
-                  </option>
-                  <option value="closed" style={{ background: "#1e293b" }}>
-                    🔒 Хаах
-                  </option>
-                </select>
-                <ChevronDown
+              {saving ? (
+                <Loader2
                   size={14}
-                  style={{
-                    position: "absolute",
-                    right: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#94a3b8",
-                    pointerEvents: "none",
-                  }}
+                  style={{ animation: "spin 0.8s linear infinite" }}
                 />
-              </div>
-            </Field>
-
-            {/* ─── ACTIONS ─── */}
-            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-              <button
-                onClick={safeClose}
-                style={{
-                  flex: 1,
-                  height: 46,
-                  borderRadius: 10,
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  color: "#94a3b8",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                  e.currentTarget.style.color = "white";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.color = "#94a3b8";
-                }}
-              >
-                Болих
-              </button>
-              <button
-                onClick={save}
-                disabled={saving}
-                style={{
-                  flex: 2,
-                  height: 46,
-                  borderRadius: 10,
-                  border: "none",
-                  background:
-                    form.status === "published"
-                      ? "linear-gradient(135deg, #059669, #10b981)"
-                      : "linear-gradient(135deg, #4f46e5, #6366f1)",
-                  color: "white",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: saving ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  opacity: saving ? 0.7 : 1,
-                  transition: "all 0.15s",
-                }}
-              >
-                {saving ? (
-                  <Loader2
-                    size={14}
-                    style={{ animation: "spin 0.8s linear infinite" }}
-                  />
-                ) : form.status === "published" ? (
-                  <Send size={14} />
-                ) : (
-                  <CheckCircle2 size={14} />
-                )}
-                {saving
-                  ? "Хадгалж байна..."
-                  : form.status === "published"
-                    ? "Нийтлэх"
-                    : "Хадгалах"}
-              </button>
-            </div>
-          </div>
+              ) : form.status === "published" ? (
+                <Send size={14} />
+              ) : (
+                <CheckCircle2 size={14} />
+              )}
+              {saving
+                ? "Хадгалж байна..."
+                : form.status === "published"
+                  ? "Нийтлэх"
+                  : "Хадгалах"}
+            </button>
+          )}
         </div>
       </div>
     </div>
