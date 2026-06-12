@@ -104,28 +104,31 @@ export function TypeSelector({
             </p>
           </div>
           <button
-            onClick={onClose}
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 10,
-              padding: 8,
-              cursor: "pointer",
-              color: "#94a3b8",
-              display: "flex",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.15)";
-              e.currentTarget.style.color = "white";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-              e.currentTarget.style.color = "#94a3b8";
-            }}
-          >
-            <X size={18} />
-          </button>
+  onClick={onClose}
+  style={{
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 10,
+    width: 36,
+    height: 36,
+    cursor: "pointer",
+    color: "#94a3b8",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.15s",
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+    e.currentTarget.style.color = "white";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+    e.currentTarget.style.color = "#94a3b8";
+  }}
+>
+  <X size={18} />
+</button>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

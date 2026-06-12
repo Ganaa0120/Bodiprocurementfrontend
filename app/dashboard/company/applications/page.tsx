@@ -177,12 +177,25 @@ export default function CompanyApplicationsPage() {
   }, []);
 
   const filtered =
-    filter === "all" ? apps : apps.filter((a) => a.status === filter);
+    filter === "all"
+      ? apps
+      : apps.filter((a) => {
+          if (filter === "pending")
+            return a.status === "pending" || a.status === "submitted";
+          if (filter === "approved")
+            return a.status === "approved" || a.status === "accepted";
+          if (filter === "rejected") return a.status === "rejected";
+          return true;
+        });
 
   const counts = {
     all: apps.length,
-    pending: apps.filter((a) => a.status === "pending" || a.status === "submitted").length,
-    approved: apps.filter((a) => a.status === "approved" || a.status === "accepted").length,
+    pending: apps.filter(
+      (a) => a.status === "pending" || a.status === "submitted",
+    ).length,
+    approved: apps.filter(
+      (a) => a.status === "approved" || a.status === "accepted",
+    ).length,
     rejected: apps.filter((a) => a.status === "rejected").length,
   };
 
@@ -194,8 +207,10 @@ export default function CompanyApplicationsPage() {
   };
 
   const getStatusConfig = (status: string) => {
-    if (status === "pending" || status === "submitted") return STATUS_CFG.pending;
-    if (status === "approved" || status === "accepted") return STATUS_CFG.approved;
+    if (status === "pending" || status === "submitted")
+      return STATUS_CFG.pending;
+    if (status === "approved" || status === "accepted")
+      return STATUS_CFG.approved;
     if (status === "rejected") return STATUS_CFG.rejected;
     return STATUS_CFG.pending;
   };
@@ -297,12 +312,23 @@ export default function CompanyApplicationsPage() {
               </button>
             </div>
             {selectedAttachments.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
-                <FileText size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  color: "#94a3b8",
+                }}
+              >
+                <FileText
+                  size={32}
+                  style={{ margin: "0 auto 12px", opacity: 0.3 }}
+                />
                 <p>Хавсаргасан файл байхгүй</p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
                 {selectedAttachments.map((file, idx) => (
                   <FileItem key={idx} file={file} />
                 ))}
@@ -410,7 +436,16 @@ export default function CompanyApplicationsPage() {
           },
         ].map(({ key, label, count }) => {
           const active = filter === key;
-          const sc = key === "all" ? null : STATUS_CFG[key === "pending" ? "pending" : key === "approved" ? "approved" : "rejected"];
+          const sc =
+            key === "all"
+              ? null
+              : STATUS_CFG[
+                  key === "pending"
+                    ? "pending"
+                    : key === "approved"
+                      ? "approved"
+                      : "rejected"
+                ];
 
           return (
             <button
@@ -566,10 +601,13 @@ export default function CompanyApplicationsPage() {
           {filtered.map((app) => {
             const sc = getStatusConfig(app.status);
             const tl = TYPE_LABEL[app.ann_type] ?? TYPE_LABEL.open;
-            const isApproved = app.status === "approved" || app.status === "accepted";
+            const isApproved =
+              app.status === "approved" || app.status === "accepted";
             const isRejected = app.status === "rejected";
-            const isPending = app.status === "pending" || app.status === "submitted";
-            const hasAttachments = app.attachments && app.attachments.length > 0;
+            const isPending =
+              app.status === "pending" || app.status === "submitted";
+            const hasAttachments =
+              app.attachments && app.attachments.length > 0;
 
             return (
               <div

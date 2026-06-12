@@ -219,8 +219,16 @@ function ConfirmDel({
 
 export function AnnouncementsTab({
   showToast,
+  canCreate = true,
+  canEdit = true,
+  canPublish = true,
+  canDelete = true,
 }: {
   showToast: (m: string, ok?: boolean) => void;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canPublish?: boolean;
+  canDelete?: boolean;
 }) {
   const [anns, setAnns] = useState<Ann[]>([]);
   const [loading, setLoading] = useState(false);
@@ -558,39 +566,41 @@ export function AnnouncementsTab({
               />
               Дахин ачаалах
             </button>
-            <button
-              onClick={() => {
-                setTarget(null);
-                setModal("create");
-              }}
-              style={{
-                padding: "9px 20px",
-                borderRadius: 10,
-                background: "linear-gradient(135deg, #4f46e5, #6366f1)",
-                border: "none",
-                color: "white",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow =
-                  "0 8px 20px rgba(79,70,229,0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 14px rgba(79,70,229,0.3)";
-              }}
-            >
-              <Plus size={14} /> Шинэ зарлал
-            </button>
+            {canCreate && (
+              <button
+                onClick={() => {
+                  setTarget(null);
+                  setModal("create");
+                }}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+                  border: "none",
+                  color: "white",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 8px 20px rgba(79,70,229,0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 14px rgba(79,70,229,0.3)";
+                }}
+              >
+                <Plus size={14} /> Шинэ зарлал
+              </button>
+            )}
           </div>
         </div>
 
@@ -640,21 +650,23 @@ export function AnnouncementsTab({
             <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>
               Зарлал байхгүй байна
             </p>
-            <button
-              onClick={() => setModal("create")}
-              style={{
-                marginTop: 20,
-                padding: "8px 20px",
-                borderRadius: 10,
-                background: "rgba(79,70,229,0.1)",
-                border: "1px solid rgba(79,70,229,0.3)",
-                color: "#a5b4fc",
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              + Эхний зарлал үүсгэх
-            </button>
+            {canCreate && (
+              <button
+                onClick={() => setModal("create")}
+                style={{
+                  marginTop: 20,
+                  padding: "8px 20px",
+                  borderRadius: 10,
+                  background: "rgba(79,70,229,0.1)",
+                  border: "1px solid rgba(79,70,229,0.3)",
+                  color: "#a5b4fc",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                + Эхний зарлал үүсгэх
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -988,50 +1000,56 @@ export function AnnouncementsTab({
                             <Users size={12} /> Санал хуудас
                           </button>
 
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button
-                              onClick={() => {
-                                setTarget(ann);
-                                setModal("edit");
-                              }}
-                              style={{
-                                flex: 1,
-                                padding: "7px",
-                                borderRadius: 8,
-                                background: "#1e293b",
-                                border: "1px solid #334155",
-                                color: "#94a3b8",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              title="Засах"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              onClick={() => setDelAnn(ann)}
-                              style={{
-                                flex: 1,
-                                padding: "7px",
-                                borderRadius: 8,
-                                background: "rgba(239,68,68,0.08)",
-                                border: "1px solid rgba(239,68,68,0.2)",
-                                color: "#f87171",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              title="Устгах"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
+                          {(canEdit || canDelete) && (
+                            <div style={{ display: "flex", gap: 6 }}>
+                              {canEdit && (
+                                <button
+                                  onClick={() => {
+                                    setTarget(ann);
+                                    setModal("edit");
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: "7px",
+                                    borderRadius: 8,
+                                    background: "#1e293b",
+                                    border: "1px solid #334155",
+                                    color: "#94a3b8",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                  title="Засах"
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={() => setDelAnn(ann)}
+                                  style={{
+                                    flex: 1,
+                                    padding: "7px",
+                                    borderRadius: 8,
+                                    background: "rgba(239,68,68,0.08)",
+                                    border: "1px solid rgba(239,68,68,0.2)",
+                                    color: "#f87171",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                  title="Устгах"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
+                          )}
 
                           {/* Төлөв өөрчлөх товчлуур */}
-                          {ann.status === "draft" && (
+                          {canPublish && ann.status === "draft" && (
                             <button
                               onClick={() => setAnnStatus(ann, "published")}
                               style={{
@@ -1052,7 +1070,7 @@ export function AnnouncementsTab({
                               <Send size={11} /> Нийтлэх
                             </button>
                           )}
-                          {ann.status === "published" && (
+                          {canPublish && ann.status === "published" && (
                             <button
                               onClick={() => setAnnStatus(ann, "closed")}
                               style={{

@@ -377,6 +377,9 @@ function AreaChart({
 }: {
   data: { month: string; companies: number; persons: number }[];
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<number | null>(null);
+
   if (!data || data.length === 0)
     return (
       <div
@@ -419,147 +422,364 @@ function AreaChart({
     y: PT + cH - (d.persons / mx) * cH,
   }));
 
-  const pathLine = (pts: { x: number; y: number }[]) =>
-    pts
-      .map((p, i) =>
-        i === 0
-          ? `M${p.x.toFixed(1)},${p.y.toFixed(1)}`
-          : `L${p.x.toFixed(1)},${p.y.toFixed(1)}`,
-      )
-      .join(" ");
+  const pathLine = (pts: { x: number; y: number }[]) => {
+  if (pts.length < 2) return "";
+
+  return pts.reduce((acc, p, i, arr) => {
+    if (i === 0) return `M ${p.x},${p.y}`;
+
+    const prev = arr[i - 1];
+    const cx = (prev.x + p.x) / 2;
+
+    return (
+      acc +
+      ` C ${cx},${prev.y}
+          ${cx},${p.y}
+          ${p.x},${p.y}`
+    );
+  }, "");
+};
   const pathArea = (pts: { x: number; y: number }[]) =>
     `${pathLine(pts)} L${pts[pts.length - 1].x.toFixed(1)},${(PT + cH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PT + cH).toFixed(1)} Z`;
 
   const gridVals = [0, Math.round(mx / 2), mx];
 
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const xPct = (e.clientX - rect.left) / rect.width;
+    const xSvg = xPct * W;
+    let nearest = 0,
+      minDist = Infinity;
+    compPoints.forEach((p, i) => {
+      const d = Math.abs(p.x - xSvg);
+      if (d < minDist) {
+        minDist = d;
+        nearest = i;
+      }
+    });
+    setHover(nearest);
+  };
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }}>
-      <defs>
-        <linearGradient id="gc2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="gp2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
+    <div
+      ref={containerRef}
+      style={{ position: "relative", width: "100%", height: "100%" }}
+      onMouseMove={handleMove}
+      onMouseLeave={() => setHover(null)}
+    >
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }}>
+        <defs>
+          <linearGradient id="gc2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="gp2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
 
-      {/* Grid lines */}
-      {gridVals.map((v, i) => {
-        const y = PT + cH - (v / mx) * cH;
-        return (
-          <g key={i}>
-            <line
-              x1={PL}
-              x2={W - PR}
-              y1={y}
-              y2={y}
-              stroke="rgba(255,255,255,0.05)"
-              strokeWidth="1"
-              strokeDasharray="4 4"
+        {/* Grid */}
+        {gridVals.map((v, i) => {
+          const y = PT + cH - (v / mx) * cH;
+          return (
+            <g key={i}>
+              <line
+                x1={PL}
+                x2={W - PR}
+                y1={y}
+                y2={y}
+                stroke="rgba(255,255,255,0.05)"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+              />
+              <text
+                x={PL - 6}
+                y={y + 4}
+                textAnchor="end"
+                fontSize="9"
+                fill="rgba(255,255,255,0.3)"
+              >
+                {v}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Areas */}
+        <path d={pathArea(compPoints)} fill="url(#gc2)" />
+        <path d={pathArea(persPoints)} fill="url(#gp2)" />
+
+        {/* Lines */}
+        <path
+          d={pathLine(compPoints)}
+          fill="none"
+          stroke="#6366f1"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#glow)"
+        />
+        <path
+          d={pathLine(persPoints)}
+          fill="none"
+          stroke="#22d3ee"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#glow)"
+        />
+
+        {/* Static dots — hover дээр бусад нь dimmed */}
+        {compPoints.map((p, i) => (
+          <g
+            key={`c${i}`}
+            style={{
+              opacity: hover !== null && hover !== i ? 0.35 : 1,
+              transition: "opacity 0.2s",
+            }}
+          >
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r="4"
+              fill="#6366f1"
+              stroke="#0a0e1a"
+              strokeWidth="2"
             />
-            <text
-              x={PL - 6}
-              y={y + 4}
-              textAnchor="end"
-              fontSize="9"
-              fill="rgba(255,255,255,0.3)"
-            >
-              {v}
-            </text>
+            <circle cx={p.x} cy={p.y} r="6" fill="#6366f1" opacity="0.3" />
           </g>
-        );
-      })}
+        ))}
+        {persPoints.map((p, i) => (
+          <g
+            key={`p${i}`}
+            style={{
+              opacity: hover !== null && hover !== i ? 0.35 : 1,
+              transition: "opacity 0.2s",
+            }}
+          >
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r="4"
+              fill="#22d3ee"
+              stroke="#0a0e1a"
+              strokeWidth="2"
+            />
+            <circle cx={p.x} cy={p.y} r="6" fill="#22d3ee" opacity="0.3" />
+          </g>
+        ))}
 
-      {/* Areas */}
-      <path d={pathArea(compPoints)} fill="url(#gc2)" />
-      <path d={pathArea(persPoints)} fill="url(#gp2)" />
+        {/* Hover indicators — vertical line + pulsing dots */}
+        {hover !== null && (
+          <g>
+            <line
+              x1={compPoints[hover].x}
+              x2={compPoints[hover].x}
+              y1={PT}
+              y2={PT + cH}
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+            />
+            <circle
+              cx={compPoints[hover].x}
+              cy={compPoints[hover].y}
+              r="7"
+              fill="#6366f1"
+              stroke="white"
+              strokeWidth="2.5"
+            />
+            <circle
+              cx={persPoints[hover].x}
+              cy={persPoints[hover].y}
+              r="7"
+              fill="#22d3ee"
+              stroke="white"
+              strokeWidth="2.5"
+            />
+            <circle
+              cx={compPoints[hover].x}
+              cy={compPoints[hover].y}
+              r="7"
+              fill="#6366f1"
+              opacity="0.5"
+            >
+              <animate
+                attributeName="r"
+                from="7"
+                to="16"
+                dur="1.2s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                from="0.5"
+                to="0"
+                dur="1.2s"
+                repeatCount="indefinite"
+              />
+            </circle>
+          </g>
+        )}
 
-      {/* Lines */}
-      <path
-        d={pathLine(compPoints)}
-        fill="none"
-        stroke="#6366f1"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        filter="url(#glow)"
-      />
-      <path
-        d={pathLine(persPoints)}
-        fill="none"
-        stroke="#22d3ee"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        filter="url(#glow)"
-      />
+        {/* X-axis labels */}
+        {data.map((d, i) => (
+          <text
+            key={i}
+            x={PL + i * xStep}
+            y={H - 6}
+            textAnchor="middle"
+            fontSize="9"
+            fill={
+              hover === i ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.35)"
+            }
+            style={{
+              fontWeight: hover === i ? 700 : 400,
+              transition: "all 0.2s",
+            }}
+          >
+            {d.month}
+          </text>
+        ))}
+      </svg>
 
-      {/* Dots with glow */}
-      {compPoints.map((p, i) => (
-        <g key={`c${i}`}>
-          <circle
-            cx={p.x}
-            cy={p.y}
-            r="4"
-            fill="#6366f1"
-            stroke="#0a0e1a"
-            strokeWidth="2"
-          />
-          <circle cx={p.x} cy={p.y} r="6" fill="#6366f1" opacity="0.3" />
-        </g>
-      ))}
-      {persPoints.map((p, i) => (
-        <g key={`p${i}`}>
-          <circle
-            cx={p.x}
-            cy={p.y}
-            r="4"
-            fill="#22d3ee"
-            stroke="#0a0e1a"
-            strokeWidth="2"
-          />
-          <circle cx={p.x} cy={p.y} r="6" fill="#22d3ee" opacity="0.3" />
-        </g>
-      ))}
-
-      {/* X-axis labels */}
-      {data.map((d, i) => (
-        <text
-          key={i}
-          x={PL + i * xStep}
-          y={H - 6}
-          textAnchor="middle"
-          fontSize="9"
-          fill="rgba(255,255,255,0.35)"
+      {/* TOOLTIP CARD */}
+      {hover !== null && (
+        <div
+          style={{
+            position: "absolute",
+            left: `${(compPoints[hover].x / W) * 100}%`,
+            top: 8,
+            transform: `translateX(${hover < n / 2 ? "12px" : "calc(-100% - 12px)"})`,
+            background: "rgba(10,14,26,0.97)",
+            border: "1px solid rgba(99,102,241,0.4)",
+            borderRadius: 14,
+            padding: "12px 16px",
+            minWidth: 160,
+            boxShadow:
+              "0 12px 32px rgba(0,0,0,0.5), 0 0 24px rgba(99,102,241,0.15)",
+            pointerEvents: "none",
+            zIndex: 10,
+            backdropFilter: "blur(12px)",
+            animation: "fadeIn 0.15s ease",
+          }}
         >
-          {d.month}
-        </text>
-      ))}
-    </svg>
+          <div
+            style={{
+              fontSize: 10,
+              color: "rgba(255,255,255,0.4)",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 10,
+            }}
+          >
+            {data[hover].month}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 14,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 2,
+                    background: "#6366f1",
+                    boxShadow: "0 0 6px #6366f1",
+                  }}
+                />
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
+                  Компани
+                </span>
+              </div>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#a5b4fc" }}>
+                {data[hover].companies}
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 14,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 2,
+                    background: "#22d3ee",
+                    boxShadow: "0 0 6px #22d3ee",
+                  }}
+                />
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
+                  Хувь хүн
+                </span>
+              </div>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#67e8f9" }}>
+                {data[hover].persons}
+              </span>
+            </div>
+            <div
+              style={{
+                height: 1,
+                background: "rgba(255,255,255,0.08)",
+                margin: "2px 0",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 14,
+              }}
+            >
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>
+                Нийт
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>
+                {data[hover].companies + data[hover].persons}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-// Ring Chart Component
 function RingChart({
   data,
 }: {
   data: { label: string; value: number; color: string }[];
 }) {
+  const [hover, setHover] = useState<number | null>(null);
   const tot = data.reduce((s, d) => s + d.value, 0) || 1;
   const R = 38,
     r = 24,
     cx = 50,
     cy = 50;
   let angle = -90;
+
   const arcs = data.map((d) => {
     const deg = (d.value / tot) * 360;
     const r1 = (angle * Math.PI) / 180,
@@ -571,8 +791,14 @@ function RingChart({
     const large = deg > 180 ? 1 : 0;
     const path = `M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}Z`;
     angle += deg;
-    return { ...d, path };
+    return { ...d, path, pct: Math.round((d.value / tot) * 100) };
   });
+
+  const showVal = hover !== null ? arcs[hover].value : tot;
+  const showLabel = hover !== null ? `${arcs[hover].pct}%` : "нийт";
+  const showColor =
+    hover !== null ? arcs[hover].color : "rgba(255,255,255,0.85)";
+
   return (
     <svg
       viewBox="0 0 100 100"
@@ -585,27 +811,38 @@ function RingChart({
           fill={a.color}
           stroke="#0b1022"
           strokeWidth="1.5"
+          style={{
+            opacity: hover !== null && hover !== i ? 0.3 : 1,
+            transformOrigin: "50px 50px",
+            transform: hover === i ? "scale(1.06)" : "scale(1)",
+            transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+            cursor: "pointer",
+            filter: hover === i ? `drop-shadow(0 0 8px ${a.color})` : "none",
+          }}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(null)}
         />
       ))}
       <circle cx={cx} cy={cy} r={r} fill="#0b1022" />
       <text
         x={cx}
-        y={cy - 3}
+        y={cy - 2}
         textAnchor="middle"
         fontSize="11"
         fontWeight="800"
-        fill="rgba(255,255,255,0.85)"
+        fill={showColor}
+        style={{ transition: "fill 0.2s" }}
       >
-        {tot}
+        {showVal}
       </text>
       <text
         x={cx}
-        y={cy + 8}
+        y={cy + 9}
         textAnchor="middle"
         fontSize="6"
-        fill="rgba(255,255,255,0.3)"
+        fill="rgba(255,255,255,0.4)"
       >
-        нийт
+        {showLabel}
       </text>
     </svg>
   );
@@ -630,6 +867,236 @@ function Counter({ target }: { target: number }) {
   return <span>{val.toLocaleString()}</span>;
 }
 
+// Sparkline — Stat card -д ашиглах мини trend chart
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  if (data.length < 2) return null;
+  const W = 80,
+    H = 24;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const step = W / (data.length - 1);
+
+  const points = data.map((v, i) => ({
+    x: i * step,
+    y: H - ((v - min) / range) * H,
+  }));
+
+  const path = points
+    .map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`))
+    .join(" ");
+  const area = `${path} L${W},${H} L0,${H} Z`;
+  const lastPt = points[points.length - 1];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: 80, height: 24 }}>
+      <defs>
+        <linearGradient id={`sp-${color}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#sp-${color})`} />
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle
+        cx={lastPt.x}
+        cy={lastPt.y}
+        r="2"
+        fill={color}
+        stroke="#0a0e1a"
+        strokeWidth="1"
+      />
+    </svg>
+  );
+}
+
+// PerformanceCard — Approval rate + Pending queue + Returned rate
+function PerformanceCard({ stats }: { stats: DashStats }) {
+  const totalReg =
+    stats.active_companies +
+    stats.active_persons +
+    stats.pending_companies +
+    stats.pending_persons +
+    stats.returned_companies +
+    stats.returned_persons;
+
+  const active = stats.active_companies + stats.active_persons;
+  const pending = stats.pending_companies + stats.pending_persons;
+  const returned = stats.returned_companies + stats.returned_persons;
+
+  const approvalRate =
+    totalReg === 0 ? 0 : Math.round((active / totalReg) * 100);
+  const pendingRate =
+    totalReg === 0 ? 0 : Math.round((pending / totalReg) * 100);
+  const returnedRate =
+    totalReg === 0 ? 0 : Math.round((returned / totalReg) * 100);
+
+  const metrics = [
+    {
+      label: "Зөвшөөрөгдсөн",
+      value: approvalRate,
+      color: "#10b981",
+      count: active,
+      icon: "✓",
+    },
+    {
+      label: "Хүлээгдэж буй",
+      value: pendingRate,
+      color: "#f59e0b",
+      count: pending,
+      icon: "⏳",
+    },
+    {
+      label: "Буцаагдсан",
+      value: returnedRate,
+      color: "#f43f5e",
+      count: returned,
+      icon: "↩",
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(18,22,45,0.95), rgba(12,16,35,0.98))",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 24,
+        padding: "20px 24px",
+        transition: "all 0.3s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "rgba(16,185,129,0.3)";
+        e.currentTarget.style.boxShadow = "0 8px 32px rgba(16,185,129,0.08)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.boxShadow = "none";
+      }}
+    >
+      <div style={{ marginBottom: 18 }}>
+        <h3
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: "white",
+            margin: 0,
+            letterSpacing: "-0.3px",
+          }}
+        >
+          Гүйцэтгэлийн үзүүлэлт
+        </h3>
+        <p
+          style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}
+        >
+          Нийт {totalReg.toLocaleString()} бүртгэлийн харьцаа
+        </p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {metrics.map((m, idx) => (
+          <div
+            key={m.label}
+            style={{
+              animation: `fadeInUp ${0.3 + idx * 0.1}s ease forwards`,
+              opacity: 0,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    background: `${m.color}15`,
+                    border: `1px solid ${m.color}30`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    color: m.color,
+                  }}
+                >
+                  {m.icon}
+                </div>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "rgba(255,255,255,0.75)",
+                  }}
+                >
+                  {m.label}
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: "white",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {m.value}%
+                </span>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                  ({m.count})
+                </span>
+              </div>
+            </div>
+            <div
+              style={{
+                height: 8,
+                borderRadius: 4,
+                background: "rgba(255,255,255,0.06)",
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  borderRadius: 4,
+                  width: `${m.value}%`,
+                  background: `linear-gradient(90deg, ${m.color}, ${m.color}cc)`,
+                  boxShadow: `0 0 8px ${m.color}80`,
+                  transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)",
+                    animation: "shimmer 2s infinite",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Stat Card Component
 function StatCard({
   title,
@@ -639,6 +1106,7 @@ function StatCard({
   trend,
   onClick,
   loading,
+  sparklineData,
 }: any) {
   return (
     <div
@@ -705,25 +1173,36 @@ function StatCard({
       </div>
       <div
         style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: "white",
-          letterSpacing: "-0.02em",
-          lineHeight: 1.2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        {loading ? (
-          <div
-            style={{
-              width: 60,
-              height: 28,
-              borderRadius: 8,
-              background: "rgba(255,255,255,0.05)",
-            }}
-            className="shimmer"
-          />
-        ) : (
-          <Counter target={value} />
+        <div
+          style={{
+            fontSize: 28,
+            fontWeight: 800,
+            color: "white",
+            letterSpacing: "-0.02em",
+            lineHeight: 1.2,
+          }}
+        >
+          {loading ? (
+            <div
+              style={{
+                width: 60,
+                height: 28,
+                borderRadius: 8,
+                background: "rgba(255,255,255,0.05)",
+              }}
+              className="shimmer"
+            />
+          ) : (
+            <Counter target={value} />
+          )}
+        </div>
+        {sparklineData && sparklineData.length > 1 && (
+          <Sparkline data={sparklineData} color={color} />
         )}
       </div>
       <div
@@ -2735,6 +3214,9 @@ export default function AdminDashboard() {
                     icon={Users}
                     color="#8b5cf6"
                     loading={statsLoading}
+                    sparklineData={stats.monthly.map(
+                      (m) => m.companies + m.persons,
+                    )}
                   />
                   <StatCard
                     title="Хүлээгдэж буй"
@@ -2757,6 +3239,9 @@ export default function AdminDashboard() {
                     color="#22d3ee"
                     trend={stats.trend_this_month}
                     loading={statsLoading}
+                    sparklineData={stats.monthly.map(
+                      (m) => m.companies + m.persons,
+                    )}
                   />
                 </div>
 
@@ -3290,6 +3775,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+                <PerformanceCard stats={stats} />
 
                 {/* ── Recent Persons ── */}
                 <div className="glass-card">

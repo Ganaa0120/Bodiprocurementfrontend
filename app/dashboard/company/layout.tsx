@@ -556,7 +556,7 @@ export default function CompanyLayout({
         className="company-main"
         style={{
           flex: 1,
-          marginLeft: 240,
+          marginLeft: 268,
           display: "flex",
           flexDirection: "column",
           minHeight: "100vh",
