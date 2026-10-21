@@ -1,0 +1,425 @@
+]633;E;{   echo "===== FILE TREE ====="\x3b   find . -type f     -not -path "*/node_modules/*"     -not -path "*/.next/*"     -not -path "*/.git/*"     -not -path "*/public/*"     -not -name "*.lock"     -not -name "package-lock.json"     -not -name ".env*"     | sort\x3b   echo\x3b   echo "===== package.json ====="\x3b   cat package.json\x3b   echo\x3b   echo "===== tsconfig.json ====="\x3b   cat tsconfig.json\x3b   echo\x3b   echo "===== TOKEN ХАДГАЛАЛТ ====="\x3b   grep -rn "localStorage\\|cookies()\\|document.cookie\\|Authorization" --include=*.ts --include=*.tsx     --exclude-dir=node_modules --exclude-dir=.next . | head -40\x3b   echo\x3b   echo "===== API URL ====="\x3b   grep -rn "NEXT_PUBLIC_\\|baseURL\\|API_URL" --include=*.ts --include=*.tsx     --exclude-dir=node_modules --exclude-dir=.next . | head -30\x3b } > frontend-structure.txt;ec14a853-5c6f-4de3-9e14-8eb11dea5106]633;C===== FILE TREE =====
+./.gitignore
+./app/dashboard/admin/_components/AdminModal.tsx
+./app/dashboard/admin/_components/AdminsTab.tsx
+./app/dashboard/admin/_components/announcements/ActivityDirections.tsx
+./app/dashboard/admin/_components/announcements/annModal.config.ts
+./app/dashboard/admin/_components/announcements/annModal.sections.tsx
+./app/dashboard/admin/_components/announcements/AnnModal.tsx
+./app/dashboard/admin/_components/announcements/annModal.ui.tsx
+./app/dashboard/admin/_components/announcements/AnnouncementsTab.tsx
+./app/dashboard/admin/_components/announcements/AnnViewModal.tsx
+./app/dashboard/admin/_components/announcements/BidsDrawer.tsx
+./app/dashboard/admin/_components/announcements/constants.ts
+./app/dashboard/admin/_components/announcements/InvitationSection.tsx
+./app/dashboard/admin/_components/announcements/RecipientPicker.tsx
+./app/dashboard/admin/_components/announcements/RichEditor.tsx
+./app/dashboard/admin/_components/announcements/types.ts
+./app/dashboard/admin/_components/Announcementstab.tsx
+./app/dashboard/admin/_components/Badge.tsx
+./app/dashboard/admin/_components/categories/CategoriesTab.tsx
+./app/dashboard/admin/_components/categories/CategoryModal.tsx
+./app/dashboard/admin/_components/categories/CategoryRow.tsx
+./app/dashboard/admin/_components/categories/constants.ts
+./app/dashboard/admin/_components/categories/types.ts
+./app/dashboard/admin/_components/Categoriestab.tsx
+./app/dashboard/admin/_components/companies/CompaniesTab.tsx
+./app/dashboard/admin/_components/companies/constants.ts
+./app/dashboard/admin/_components/companies/DetailModal.tsx
+./app/dashboard/admin/_components/companies/DocViewer.tsx
+./app/dashboard/admin/_components/companies/LogoComponents.tsx
+./app/dashboard/admin/_components/companies/types.ts
+./app/dashboard/admin/_components/companies/utils.ts
+./app/dashboard/admin/_components/CompaniesTab.tsx
+./app/dashboard/admin/_components/DashboardTab.tsx
+./app/dashboard/admin/_components/DeleteModal.tsx
+./app/dashboard/admin/_components/detail/ClickableAvatar.tsx
+./app/dashboard/admin/_components/detail/DetailModal.tsx
+./app/dashboard/admin/_components/detail/DocViewer.tsx
+./app/dashboard/admin/_components/detail/Helpers.tsx
+./app/dashboard/admin/_components/detail/types.ts
+./app/dashboard/admin/_components/DetailModal.tsx
+./app/dashboard/admin/_components/Directionstab.tsx
+./app/dashboard/admin/_components/ExcelImportModal.tsx
+./app/dashboard/admin/_components/individuals/AvatarComponents.tsx
+./app/dashboard/admin/_components/individuals/constants.ts
+./app/dashboard/admin/_components/individuals/DetailModal.tsx
+./app/dashboard/admin/_components/individuals/DocViewer.tsx
+./app/dashboard/admin/_components/individuals/EditModal.tsx
+./app/dashboard/admin/_components/individuals/IndividualsTab.tsx
+./app/dashboard/admin/_components/individuals/types.ts
+./app/dashboard/admin/_components/individuals/utils.ts
+./app/dashboard/admin/_components/notifications/constants.ts
+./app/dashboard/admin/_components/notifications/NotifDetailModal.tsx
+./app/dashboard/admin/_components/notifications/NotificationsTab.tsx
+./app/dashboard/admin/_components/notifications/SendModal.tsx
+./app/dashboard/admin/_components/notifications/types.ts
+./app/dashboard/admin/_components/NotificationsTab.tsx
+./app/dashboard/admin/_components/pending-edits/PendingEditsTab.tsx
+./app/dashboard/admin/_components/SpecialPermissionsTab.tsx
+./app/dashboard/admin/_components/utils.ts
+./app/dashboard/admin/page.tsx
+./app/dashboard/company/announcements/page.tsx
+./app/dashboard/company/applications/page.tsx
+./app/dashboard/company/layout.tsx
+./app/dashboard/company/notifications/page.tsx
+./app/dashboard/company/page.tsx
+./app/dashboard/company/profile/_components/constants.ts
+./app/dashboard/company/profile/_components/DirectionPicker.tsx
+./app/dashboard/company/profile/_components/DocumentsSection.tsx
+./app/dashboard/company/profile/_components/FinanceSection.tsx
+./app/dashboard/company/profile/_components/FormFields.tsx
+./app/dashboard/company/profile/_components/HeroCard.tsx
+./app/dashboard/company/profile/_components/NotificationSection.tsx
+./app/dashboard/company/profile/_components/OwnersSection.tsx
+./app/dashboard/company/profile/_components/SaveBar.tsx
+./app/dashboard/company/profile/_components/Section.tsx
+./app/dashboard/company/profile/_components/SpecialPermissionsSection.tsx
+./app/dashboard/company/profile/_components/SubmitModal.tsx
+./app/dashboard/company/profile/_components/SuccessModal.tsx
+./app/dashboard/company/profile/_components/useW.ts
+./app/dashboard/company/profile/page.tsx
+./app/dashboard/layout.tsx
+./app/dashboard/mini-admin/_components/DashboardOverview.tsx
+./app/dashboard/mini-admin/_components/GlobalStyles.tsx
+./app/dashboard/mini-admin/_components/Sidebar.tsx
+./app/dashboard/mini-admin/_components/SubAdminModal.tsx
+./app/dashboard/mini-admin/_components/SubAdminsTab.tsx
+./app/dashboard/mini-admin/_components/Toast.tsx
+./app/dashboard/mini-admin/_components/Topbar.tsx
+./app/dashboard/mini-admin/_lib/constants.ts
+./app/dashboard/mini-admin/_lib/permissions.tsx
+./app/dashboard/mini-admin/page.tsx
+./app/dashboard/mini-admin/ui/Badge.tsx
+./app/dashboard/mini-admin/ui/Th.tsx
+./app/dashboard/page.tsx
+./app/dashboard/person/announcements/AnnouncementCard.tsx
+./app/dashboard/person/announcements/AnnouncementDetailModal.tsx
+./app/dashboard/person/announcements/BidModal.tsx
+./app/dashboard/person/announcements/page.tsx
+./app/dashboard/person/announcements/PersonAnnouncementsPage.tsx
+./app/dashboard/person/announcements/types.ts
+./app/dashboard/person/applications/page.tsx
+./app/dashboard/person/layout.tsx
+./app/dashboard/person/notifications/page.tsx
+./app/dashboard/person/page.tsx
+./app/dashboard/person/profile/page.tsx
+./app/globals.css
+./app/layout.tsx
+./app/login/page.tsx
+./app/page.tsx
+./app/policy/page.tsx
+./app/register/page.tsx
+./components.json
+./components/availability.tsx
+./components/chat/api.ts
+./components/chat/Avatar.tsx
+./components/chat/ChatApp.tsx
+./components/chat/ChatUnreadBadge.tsx
+./components/chat/Composer.tsx
+./components/chat/ConversationInfo.tsx
+./components/chat/ConversationList.tsx
+./components/chat/format.ts
+./components/chat/MessageItem.tsx
+./components/chat/NewChatModal.tsx
+./components/chat/Pickers.tsx
+./components/chat/realtime-client.ts
+./components/chat/store.ts
+./components/chat/styles.ts
+./components/chat/Thread.tsx
+./components/chat/ui.tsx
+./components/chat/upload.ts
+./components/cta-footer.tsx
+./components/DocViewerModal.tsx
+./components/features.tsx
+./components/hero.tsx
+./components/how-it-works.tsx
+./components/imagefolder.tsx
+./components/login-form.tsx
+./components/navbar.tsx
+./components/pricing.tsx
+./components/product-features.tsx
+./components/testimonials.tsx
+./components/theme-provider.tsx
+./components/ui/accordion.tsx
+./components/ui/alert.tsx
+./components/ui/alert-dialog.tsx
+./components/ui/aspect-ratio.tsx
+./components/ui/avatar.tsx
+./components/ui/badge.tsx
+./components/ui/breadcrumb.tsx
+./components/ui/button.tsx
+./components/ui/button-group.tsx
+./components/ui/calendar.tsx
+./components/ui/card.tsx
+./components/ui/carousel.tsx
+./components/ui/chart.tsx
+./components/ui/checkbox.tsx
+./components/ui/collapsible.tsx
+./components/ui/command.tsx
+./components/ui/context-menu.tsx
+./components/ui/dialog.tsx
+./components/ui/dotted-glow-background.tsx
+./components/ui/drawer.tsx
+./components/ui/dropdown-menu.tsx
+./components/ui/empty.tsx
+./components/ui/field.tsx
+./components/ui/form.tsx
+./components/ui/hover-card.tsx
+./components/ui/images-badge.tsx
+./components/ui/infinite-moving-cards.tsx
+./components/ui/input.tsx
+./components/ui/input-group.tsx
+./components/ui/input-otp.tsx
+./components/ui/item.tsx
+./components/ui/kbd.tsx
+./components/ui/label.tsx
+./components/ui/menubar.tsx
+./components/ui/navigation-menu.tsx
+./components/ui/pagination.tsx
+./components/ui/popover.tsx
+./components/ui/progress.tsx
+./components/ui/radio-group.tsx
+./components/ui/resizable.tsx
+./components/ui/scroll-area.tsx
+./components/ui/select.tsx
+./components/ui/separator.tsx
+./components/ui/sheet.tsx
+./components/ui/sidebar.tsx
+./components/ui/skeleton.tsx
+./components/ui/slider.tsx
+./components/ui/sonner.tsx
+./components/ui/spinner.tsx
+./components/ui/switch.tsx
+./components/ui/table.tsx
+./components/ui/tabs.tsx
+./components/ui/textarea.tsx
+./components/ui/toast.tsx
+./components/ui/toaster.tsx
+./components/ui/toggle.tsx
+./components/ui/toggle-group.tsx
+./components/ui/tooltip.tsx
+./components/ui/use-mobile.tsx
+./components/ui/use-toast.ts
+./constants/addressData.ts
+./frontend-structure.txt
+./hooks/useAdminData.ts
+./hooks/useAutoLogout.ts
+./hooks/use-mobile.ts
+./hooks/use-toast.ts
+./lib/chat/policy.ts
+./lib/chat/types.ts
+./lib/statusConfig.ts
+./lib/utils.ts
+./middleware/middleware.ts
+./next.config.mjs
+./next-env.d.ts
+./package.json
+./pnpm-lock.yaml
+./postcss.config.mjs
+./react-simple-maps.d.ts
+./README.md
+./styles/globals.css
+./tsconfig.json
+./utils/mongolianValidation.ts
+
+===== package.json =====
+{
+  "name": "my-project",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
+    "@radix-ui/react-accordion": "1.2.12",
+    "@radix-ui/react-alert-dialog": "1.1.15",
+    "@radix-ui/react-aspect-ratio": "1.1.8",
+    "@radix-ui/react-avatar": "1.1.11",
+    "@radix-ui/react-checkbox": "1.3.3",
+    "@radix-ui/react-collapsible": "1.1.12",
+    "@radix-ui/react-context-menu": "2.2.16",
+    "@radix-ui/react-dialog": "1.1.15",
+    "@radix-ui/react-dropdown-menu": "2.1.16",
+    "@radix-ui/react-hover-card": "1.1.15",
+    "@radix-ui/react-label": "2.1.8",
+    "@radix-ui/react-menubar": "1.1.16",
+    "@radix-ui/react-navigation-menu": "1.2.14",
+    "@radix-ui/react-popover": "1.1.15",
+    "@radix-ui/react-progress": "1.1.8",
+    "@radix-ui/react-radio-group": "1.3.8",
+    "@radix-ui/react-scroll-area": "1.2.10",
+    "@radix-ui/react-select": "2.2.6",
+    "@radix-ui/react-separator": "1.1.8",
+    "@radix-ui/react-slider": "1.3.6",
+    "@radix-ui/react-slot": "1.2.4",
+    "@radix-ui/react-switch": "1.2.6",
+    "@radix-ui/react-tabs": "1.1.13",
+    "@radix-ui/react-toast": "1.2.15",
+    "@radix-ui/react-toggle": "1.1.10",
+    "@radix-ui/react-toggle-group": "1.1.11",
+    "@radix-ui/react-tooltip": "1.2.8",
+    "@tiptap/extension-image": "^3.22.5",
+    "@tiptap/extension-link": "^3.22.5",
+    "@tiptap/extension-placeholder": "^3.22.5",
+    "@tiptap/extension-text-align": "^3.22.5",
+    "@tiptap/react": "^3.22.5",
+    "@tiptap/starter-kit": "^3.22.5",
+    "@vercel/analytics": "1.6.1",
+    "autoprefixer": "^10.4.20",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "1.1.1",
+    "date-fns": "4.1.0",
+    "embla-carousel-react": "8.6.0",
+    "input-otp": "1.4.2",
+    "lucide-react": "^0.564.0",
+    "motion": "^12.34.5",
+    "next": "16.1.6",
+    "next-themes": "^0.4.6",
+    "react": "19.2.4",
+    "react-day-picker": "9.13.2",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.54.1",
+    "react-icons": "^5.6.0",
+    "react-resizable-panels": "^2.1.7",
+    "react-simple-maps": "^3.0.0",
+    "recharts": "2.15.0",
+    "socket.io-client": "^4.8.4",
+    "sonner": "^1.7.1",
+    "tailwind-merge": "^3.3.1",
+    "vaul": "^1.1.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.0",
+    "@types/node": "^22",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "postcss": "^8.5",
+    "tailwindcss": "^4.2.0",
+    "tw-animate-css": "1.3.3",
+    "typescript": "5.7.3"
+  }
+}
+
+===== tsconfig.json =====
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "target": "ES6",
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+, "app/dashboard/admin/_components/announcements/annModal.sections.tsx"  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
+
+===== TOKEN ХАДГАЛАЛТ =====
+./app/dashboard/admin/page.tsx:135:  localStorage.getItem("super_admin_token") ||
+./app/dashboard/admin/page.tsx:136:  localStorage.getItem("token") ||
+./app/dashboard/admin/page.tsx:138:const authH = () => ({ Authorization: `Bearer ${tok()}` });
+./app/dashboard/admin/page.tsx:2281:      localStorage.getItem("super_admin_user") || localStorage.getItem("user");
+./app/dashboard/admin/page.tsx:2310:          localStorage.getItem("super_admin_user") ||
+./app/dashboard/admin/page.tsx:2311:            localStorage.getItem("user") ||
+./app/dashboard/admin/page.tsx:2324:        localStorage.getItem(`notif_read_${aId}`) || "[]",
+./app/dashboard/admin/page.tsx:2332:      headers: { Authorization: `Bearer ${t}` },
+./app/dashboard/admin/page.tsx:2530:      localStorage.removeItem(k),
+./app/dashboard/admin/_components/AdminModal.tsx:71:      const token = localStorage.getItem("token");
+./app/dashboard/admin/_components/AdminModal.tsx:74:        Authorization: `Bearer ${token}`,
+./app/dashboard/admin/_components/announcements/AnnModal.tsx:175:  // Auto-fill — localStorage-аас админы мэдээлэл
+./app/dashboard/admin/_components/announcements/AnnModal.tsx:176:  // Auto-fill — localStorage-аас админы мэдээлэл + baseline шинэчлэх
+./app/dashboard/admin/_components/announcements/AnnModal.tsx:181:        localStorage.getItem("super_admin_user") ||
+./app/dashboard/admin/_components/announcements/AnnModal.tsx:182:        localStorage.getItem("user");
+./app/dashboard/admin/_components/announcements/constants.ts:7:  localStorage.getItem("super_admin_token") ||
+./app/dashboard/admin/_components/announcements/constants.ts:8:  localStorage.getItem("token") ||
+./app/dashboard/admin/_components/announcements/constants.ts:10:export const authH = () => ({ Authorization: `Bearer ${tok()}` });
+./app/dashboard/admin/_components/categories/CategoriesTab.tsx:38:        headers: { Authorization: `Bearer ${getToken()}` },
+./app/dashboard/admin/_components/categories/CategoryModal.tsx:68:          Authorization: `Bearer ${getToken()}`,
+./app/dashboard/admin/_components/categories/CategoryRow.tsx:17:        headers: { "Content-Type":"application/json", Authorization:`Bearer ${getToken()}` },
+./app/dashboard/admin/_components/categories/constants.ts:4:  localStorage.getItem("super_admin_token") ||
+./app/dashboard/admin/_components/categories/constants.ts:5:  localStorage.getItem("token") || "";
+./app/dashboard/admin/_components/companies/CompaniesTab.tsx:85:        localStorage.getItem("super_admin_user") ||
+./app/dashboard/admin/_components/companies/CompaniesTab.tsx:86:          localStorage.getItem("user") ||
+./app/dashboard/admin/_components/companies/CompaniesTab.tsx:133:        localStorage.getItem("super_admin_token") ||
+./app/dashboard/admin/_components/companies/CompaniesTab.tsx:134:        localStorage.getItem("token");
+./app/dashboard/admin/_components/companies/CompaniesTab.tsx:137:        headers: { Authorization: `Bearer ${token}` },
+./app/dashboard/admin/_components/companies/DetailModal.tsx:131:      const token = localStorage.getItem("super_admin_token");
+./app/dashboard/admin/_components/companies/DetailModal.tsx:134:        headers: { "Content-Type":"application/json", Authorization:`Bearer ${token}` },
+./app/dashboard/admin/_components/companies/DetailModal.tsx:149:      const token = localStorage.getItem("super_admin_token");
+./app/dashboard/admin/_components/companies/DetailModal.tsx:151:        method: "DELETE", headers: { Authorization:`Bearer ${token}` },
+./app/dashboard/admin/_components/companies/DocViewer.tsx:220:      const token = localStorage.getItem("super_admin_token");
+./app/dashboard/admin/_components/companies/DocViewer.tsx:223:        headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}` },
+./app/dashboard/admin/_components/companies/DocViewer.tsx:238:      const token = localStorage.getItem("super_admin_token");
+./app/dashboard/admin/_components/companies/DocViewer.tsx:240:        method:"DELETE", headers:{ Authorization:`Bearer ${token}` },
+./app/dashboard/admin/_components/Directionstab.tsx:21:  localStorage.getItem("super_admin_token") ||
+./app/dashboard/admin/_components/Directionstab.tsx:22:  localStorage.getItem("token") ||
+./app/dashboard/admin/_components/Directionstab.tsx:73:          Authorization: `Bearer ${getToken()}`,
+./app/dashboard/admin/_components/Directionstab.tsx:459:        headers: { Authorization: `Bearer ${getToken()}` },
+
+===== API URL =====
+./app/dashboard/admin/page.tsx:133:const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+./app/dashboard/admin/_components/AdminModal.tsx:13:const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+./app/dashboard/admin/_components/announcements/constants.ts:4:export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/categories/constants.ts:1:export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/companies/constants.ts:1:export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/Directionstab.tsx:19:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/ExcelImportModal.tsx:5:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/individuals/constants.ts:3:export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/notifications/constants.ts:1:export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/pending-edits/PendingEditsTab.tsx:15:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/admin/_components/SpecialPermissionsTab.tsx:21:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/company/announcements/page.tsx:34:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/company/applications/page.tsx:19:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/company/layout.tsx:19:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/company/notifications/page.tsx:5:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/company/page.tsx:14:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/company/profile/_components/constants.ts:1:export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/mini-admin/_lib/constants.ts:1:export const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+./app/dashboard/page.tsx:97:const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+./app/dashboard/person/announcements/BidModal.tsx:12:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/person/announcements/page.tsx:30:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/person/announcements/types.ts:32:export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/person/applications/page.tsx:5:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/person/layout.tsx:22:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/person/notifications/page.tsx:16:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/person/page.tsx:11:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/dashboard/person/profile/page.tsx:41:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./app/login/page.tsx:103:const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+./app/register/page.tsx:15:const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+./components/chat/realtime-client.ts:30:    const key = process.env.NEXT_PUBLIC_PUSHER_KEY;

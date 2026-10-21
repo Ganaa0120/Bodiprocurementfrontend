@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 export default function DashboardLayout({
   children,
@@ -28,6 +29,9 @@ export default function DashboardLayout({
   return (
     <>
       {children}
+
+      {/* 💬 Чат — баруун доод буланд, бүх dashboard хуудсанд харагдана */}
+      <ChatWidget />
 
       {/* Сэрэмжлүүлэг toast */}
       {warning !== null && (

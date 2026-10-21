@@ -3,6 +3,93 @@ import { X, Download, FileText, ImageIcon } from "lucide-react";
 import { TYPE, STATUS } from "./constants";
 import type { Ann, AnnType, AttachedFile } from "./types";
 
+/* ───────────── Rich text helpers ───────────── */
+
+const looksLikeHtml = (s: string) => /<\/?[a-z][\s\S]*?>/i.test(s);
+
+// Энгийн sanitizer — script/style/iframe, on* handler, javascript: URL-уудыг хасна.
+// Production-д isomorphic-dompurify ашиглахыг зөвлөж байна.
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<\s*(script|style|iframe|object|embed)[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*\/?>/gi, "")
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"');
+}
+
+const RICH_CSS = `
+.ann-rich p { margin: 0 0 8px; }
+.ann-rich p:last-child { margin-bottom: 0; }
+.ann-rich p:empty { display: none; }
+.ann-rich ol { list-style: decimal; padding-left: 22px; margin: 0 0 10px; }
+.ann-rich ul { list-style: disc; padding-left: 22px; margin: 0 0 10px; }
+.ann-rich ol ol, .ann-rich ul ul { margin: 4px 0; }
+.ann-rich li { margin-bottom: 4px; }
+.ann-rich li::marker { color: rgba(148,163,184,0.6); }
+.ann-rich li > p { margin: 0; }
+.ann-rich strong, .ann-rich b { font-weight: 700; color: rgba(255,255,255,0.95); }
+.ann-rich em, .ann-rich i { font-style: italic; }
+.ann-rich u { text-decoration: underline; text-underline-offset: 2px; }
+.ann-rich a { color: #60a5fa; text-decoration: underline; }
+.ann-rich h1, .ann-rich h2, .ann-rich h3 { font-weight: 700; color: rgba(255,255,255,0.92); margin: 10px 0 6px; }
+.ann-rich h1 { font-size: 17px; } .ann-rich h2 { font-size: 15px; } .ann-rich h3 { font-size: 14px; }
+.ann-rich table { border-collapse: collapse; width: 100%; margin: 6px 0; }
+.ann-rich td, .ann-rich th { border: 1px solid rgba(255,255,255,0.1); padding: 6px 8px; }
+`;
+
+function RichText({
+  value,
+  color,
+}: {
+  value: string;
+  color: string;
+}) {
+  const box: React.CSSProperties = {
+    fontSize: 13,
+    color,
+    lineHeight: 1.7,
+    background: "rgba(255,255,255,0.02)",
+    borderRadius: 10,
+    padding: "12px 14px",
+    border: "1px solid rgba(255,255,255,0.05)",
+    overflowX: "auto",
+    wordBreak: "break-word",
+  };
+
+  if (looksLikeHtml(value)) {
+    return (
+      <div
+        className="ann-rich"
+        style={box}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
+      />
+    );
+  }
+  return <div style={{ ...box, whiteSpace: "pre-wrap" }}>{value}</div>;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase" as const,
+        color: "rgba(148,163,184,0.35)",
+        marginBottom: 8,
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ───────────── Badges ───────────── */
+
 function SBadge({ s }: { s: string }) {
   const c = STATUS[s] ?? STATUS.draft;
   return (
@@ -96,8 +183,23 @@ function InfoItem({
   );
 }
 
+/* ───────────── Format helpers ───────────── */
+
 const fmtSize = (b: number) =>
   b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${(b / 1024).toFixed(0)} KB`;
+
+// PostgreSQL NUMERIC нь string ("100000000.00") ирдэг тул Number руу хөрвүүлнэ.
+// 0 эсвэл хоосон утгыг харуулахгүй.
+const fmtMoney = (v: unknown): string | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(String(v).replace(/[,\s]/g, ""));
+  if (!Number.isFinite(n)) return String(v);
+  if (n === 0) return null;
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+};
 
 const fileIcon = (t: string) =>
   t.includes("pdf")
@@ -107,6 +209,8 @@ const fileIcon = (t: string) =>
       : t.includes("sheet") || t.includes("excel")
         ? "📊"
         : "📎";
+
+/* ───────────── Modal ───────────── */
 
 export function AnnViewModal({
   ann,
@@ -120,6 +224,10 @@ export function AnnViewModal({
   const attachments: AttachedFile[] = ann.attachments ?? [];
   const images = attachments.filter((a) => a.isImage);
   const docFiles = attachments.filter((a) => !a.isImage);
+
+  const budgetText = [fmtMoney(ann.budget_from), fmtMoney(ann.budget_to)]
+    .filter(Boolean)
+    .join(" — ");
 
   return (
     <div
@@ -137,6 +245,7 @@ export function AnnViewModal({
       }}
       onClick={onClose}
     >
+      <style>{RICH_CSS}</style>
       <div
         style={{
           width: "100%",
@@ -240,17 +349,10 @@ export function AnnViewModal({
                 warn={new Date(ann.deadline) < new Date()}
               />
             )}
-            {(ann.budget_from || ann.budget_to) && (
+            {budgetText && (
               <InfoItem
                 label="Төсөв"
-                value={
-                  [
-                    ann.budget_from && ann.budget_from.toLocaleString(),
-                    ann.budget_to && ann.budget_to.toLocaleString(),
-                  ]
-                    .filter(Boolean)
-                    .join(" — ") + ` ${ann.currency ?? "MNT"}`
-                }
+                value={`${budgetText} ${ann.currency ?? "MNT"}`}
               />
             )}
             {ann.view_count !== undefined && (
@@ -260,78 +362,27 @@ export function AnnViewModal({
 
           {ann.description && (
             <div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase" as const,
-                  color: "rgba(148,163,184,0.35)",
-                  marginBottom: 8,
-                }}
-              >
-                Тайлбар
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.8)",
-                  lineHeight: 1.7,
-                  background: "rgba(255,255,255,0.02)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                }}
-                dangerouslySetInnerHTML={{ __html: ann.description }}
+              <SectionLabel>Тайлбар</SectionLabel>
+              <RichText
+                value={ann.description}
+                color="rgba(255,255,255,0.8)"
               />
             </div>
           )}
 
           {ann.requirements && (
             <div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase" as const,
-                  color: "rgba(148,163,184,0.35)",
-                  marginBottom: 8,
-                }}
-              >
-                Шаардлага
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.75)",
-                  lineHeight: 1.7,
-                  background: "rgba(255,255,255,0.02)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  whiteSpace: "pre-wrap" as const,
-                }}
-              >
-                {ann.requirements}
-              </div>
+              <SectionLabel>Шаардлага</SectionLabel>
+              <RichText
+                value={ann.requirements}
+                color="rgba(255,255,255,0.75)"
+              />
             </div>
           )}
 
           {(ann.activity_directions ?? []).length > 0 && (
             <div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase" as const,
-                  color: "rgba(148,163,184,0.35)",
-                  marginBottom: 8,
-                }}
-              >
-                Үйл ажиллагааны чиглэл
-              </div>
+              <SectionLabel>Үйл ажиллагааны чиглэл</SectionLabel>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {(ann.activity_directions ?? []).map((d, i) => (
                   <span
@@ -357,21 +408,9 @@ export function AnnViewModal({
           {/* ⭐ Зургийн галерей */}
           {images.length > 0 && (
             <div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase" as const,
-                  color: "rgba(148,163,184,0.35)",
-                  marginBottom: 8,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
+              <SectionLabel>
                 <ImageIcon size={11} /> Зураг ({images.length})
-              </div>
+              </SectionLabel>
               <div
                 style={{
                   display: "grid",
@@ -424,21 +463,9 @@ export function AnnViewModal({
           {/* ⭐ Бусад файлууд */}
           {docFiles.length > 0 && (
             <div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase" as const,
-                  color: "rgba(148,163,184,0.35)",
-                  marginBottom: 8,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
+              <SectionLabel>
                 <FileText size={11} /> Хавсралт ({docFiles.length})
-              </div>
+              </SectionLabel>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {docFiles.map((f, i) => (
                   <a

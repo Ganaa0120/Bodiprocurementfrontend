@@ -1,0 +1,10 @@
+"use client";
+import ChatApp from "@/components/chat/ChatApp";
+
+export default function ChatPage() {
+  return (
+    <div style={{ padding: 16 }}>
+      <ChatApp height="calc(100vh - 96px)" announcementHref={(id) => `/dashboard/company/announcements?id=${id}`} />
+    </div>
+  );
+}
