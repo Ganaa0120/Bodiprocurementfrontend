@@ -4,11 +4,11 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Maximize2, MessageCircle, Minimize2, X } from "lucide-react";
 import ChatApp from "./ChatApp";
+import { readToken } from "./api";
 import { getChatStore, useChat } from "./store";
 import { C, FONT } from "./styles";
 
-const hasToken = () =>
-  typeof window !== "undefined" && !!(localStorage.getItem("super_admin_token") || localStorage.getItem("token"));
+const hasToken = () => !!readToken();
 
 function useIsMobile() {
   const [m, setM] = useState(false);
@@ -29,8 +29,6 @@ export function ChatWidget({ announcementHref }: { announcementHref?: (id: strin
   const [expanded, setExpanded] = useState(false);
   const mobile = useIsMobile();
 
-  const me = useChat((s) => s.me);
-  const bootError = useChat((s) => s.bootError);
   const convs = useChat((s) => s.convs);
   const openRequest = useChat((s) => s.openRequest);
 
@@ -75,8 +73,9 @@ export function ChatWidget({ announcementHref }: { announcementHref?: (id: strin
     [convs],
   );
 
-  // Нэвтрээгүй, эсвэл чат ашиглах эрхгүй (жишээ: buyer) бол юу ч харуулахгүй
-  if (!enabled || (!me && bootError)) return null;
+  // Нэвтрээгүй бол юу ч харуулахгүй. Алдаа гарсан ч товч харагдана —
+  // цонхыг нээхэд алдааны шалтгаан болон "Дахин оролдох" товч гарна.
+  if (!enabled) return null;
 
   const panelStyle: CSSProperties = mobile
     ? { position: "fixed", inset: 0, zIndex: 1000 }

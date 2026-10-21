@@ -241,6 +241,9 @@ export class ChatStore {
   stop() {
     this.started = false;
     this.gen++;
+    // Өөр хэрэглэгчээр нэвтрэхэд өмнөх хүний чат санах ойд үлдэхгүй
+    this.state = { ...initialState };
+    this.listeners.forEach((l) => l());
     this.rt?.stop();
     this.rt = null;
     this.timers.forEach(clearInterval);

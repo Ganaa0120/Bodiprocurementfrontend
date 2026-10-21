@@ -10,10 +10,22 @@ import type {
   MemberRef,
 } from "@/lib/chat/types";
 
-/** Танай бусад хуудастай ижил: super_admin_token → token */
+/**
+ * Login хуудас: хувь хүн/компани → "token", super/mini admin → "super_admin_token".
+ * Нэг browser-т хоёулаа үлдсэн байж болох тул аль dashboard дээр байгаагаар нь сонгоно —
+ * company хуудсан дээр admin-ий token-оор чат ажиллахаас сэргийлнэ.
+ */
+export function readToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const p = window.location.pathname;
+  if (p.startsWith("/dashboard/company") || p.startsWith("/dashboard/person")) {
+    return localStorage.getItem("token");
+  }
+  return localStorage.getItem("super_admin_token") || localStorage.getItem("token");
+}
+
 export function authHeaders(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const t = localStorage.getItem("super_admin_token") || localStorage.getItem("token");
+  const t = readToken();
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
