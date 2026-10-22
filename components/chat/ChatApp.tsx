@@ -62,9 +62,11 @@ export default function ChatApp({
   const activeId = useChat((s) => s.activeId);
   const convs = useChat((s) => s.convs);
   const toast = useChat((s) => s.toast);
+  // Hook-уудыг нөхцөлгүйгээр, үргэлж ижил дарааллаар дуудна (Rules of Hooks)
   const screenNarrow = useIsNarrow(860);
+  const screenMedium = useIsNarrow(1240);
   const narrow = compact || screenNarrow;
-  const wide = !compact && !useIsNarrow(1240);
+  const wide = !compact && !screenMedium;
   const [newOpen, setNewOpen] = useState(!!startWithAnnouncement);
   const [infoOpen, setInfoOpen] = useState(false);
 

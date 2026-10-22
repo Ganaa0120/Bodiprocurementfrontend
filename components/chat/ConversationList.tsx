@@ -1,6 +1,14 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Bell, BellOff, FileText, Search, ShieldCheck, MessageSquarePlus, WifiOff } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  FileText,
+  Search,
+  ShieldCheck,
+  MessageSquarePlus,
+  WifiOff,
+} from "lucide-react";
 import type { ConversationSummary, MemberRef } from "@/lib/chat/types";
 import { ConvAvatar } from "./Avatar";
 import { fmtListTime, previewText } from "./format";
@@ -16,9 +24,16 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "tender", label: "Тендер" },
 ];
 
-const isMuted = (c: ConversationSummary) => !!c.mutedUntil && new Date(c.mutedUntil).getTime() > Date.now();
+const isMuted = (c: ConversationSummary) =>
+  !!c.mutedUntil && new Date(c.mutedUntil).getTime() > Date.now();
 
-export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string) => void }) {
+export function ConversationList({
+  onNew,
+  onOpen,
+}: {
+  onNew: () => void;
+  onOpen: (id: string) => void;
+}) {
   const store = getChatStore();
   const me = useChat((s) => s.me);
   const convs = useChat((s) => s.convs);
@@ -34,10 +49,14 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [notifPerm, setNotifPerm] = useState<string>(() =>
-    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported",
+    typeof window !== "undefined" && "Notification" in window
+      ? Notification.permission
+      : "unsupported",
   );
 
-  const meRef: MemberRef | null = me ? { type: me.actor.type, id: me.actor.id } : null;
+  const meRef: MemberRef | null = me
+    ? { type: me.actor.type, id: me.actor.id }
+    : null;
 
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -66,9 +85,33 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      <div style={{ padding: "16px 16px 10px", display: "flex", alignItems: "center", gap: 6 }}>
-        <h2 style={{ flex: 1, margin: 0, fontSize: 21, fontWeight: 750, letterSpacing: "-0.01em" }}>Чат</h2>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+      }}
+    >
+      <div
+        style={{
+          padding: "16px 16px 10px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <h2
+          style={{
+            flex: 1,
+            margin: 0,
+            fontSize: 21,
+            fontWeight: 750,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Чат
+        </h2>
         {notifPerm === "default" && (
           <IconButton label="Мэдэгдэл асаах" onClick={requestNotif}>
             <Bell size={17} />
@@ -76,7 +119,9 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
         )}
         {me.isSuperAdmin && me.superAdminCanReadAll && (
           <IconButton
-            label={scope === "all" ? "Миний чатууд руу буцах" : "Бүх чатыг хянах"}
+            label={
+              scope === "all" ? "Миний чатууд руу буцах" : "Бүх чатыг хянах"
+            }
             active={scope === "all"}
             onClick={() => store.setScope(scope === "all" ? "mine" : "all")}
           >
@@ -100,23 +145,39 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
             lineHeight: 1.45,
           }}
         >
-          Хяналтын горим: байгууллагын бүх чат харагдаж байна. Та гишүүн биш чатад бичих боломжгүй.
+          Хяналтын горим: байгууллагын бүх чат харагдаж байна. Та гишүүн биш
+          чатад бичих боломжгүй.
         </div>
       )}
 
       <div style={{ padding: "0 16px 10px", position: "relative" }}>
-        <Search size={15} style={{ position: "absolute", left: 28, top: 11, color: C.faint }} />
+        <Search
+          size={15}
+          style={{ position: "absolute", left: 28, top: 11, color: C.faint }}
+        />
         <input
           className="bc-input"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Чат, хүн, тендер хайх"
           aria-label="Чат хайх"
-          style={{ ...inputStyle, paddingLeft: 36, borderRadius: 99, background: "rgba(255,255,255,0.05)" }}
+          style={{
+            ...inputStyle,
+            paddingLeft: 36,
+            borderRadius: 99,
+            background: "rgba(255,255,255,0.05)",
+          }}
         />
       </div>
 
-      <div style={{ padding: "0 16px 8px", display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div
+        style={{
+          padding: "0 16px 8px",
+          display: "flex",
+          gap: 6,
+          flexWrap: "wrap",
+        }}
+      >
         {FILTERS.map((f) => (
           <button
             key={f.id}
@@ -151,26 +212,48 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
           }}
         >
           <WifiOff size={12} />
-          {connection === "polling" ? "Шууд холболтгүй, тогтмол шинэчилж байна" : "Холболт тасарсан, дахин холбогдож байна…"}
+          {connection === "polling"
+            ? "Шууд холболтгүй, тогтмол шинэчилж байна"
+            : "Холболт тасарсан, дахин холбогдож байна…"}
         </div>
       )}
 
       <div
         className="bc-scroll"
-        style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "2px 8px 12px" }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          padding: "2px 8px 12px",
+        }}
         onScroll={(e) => {
           const el = e.currentTarget;
-          if (hasMore && !loading && el.scrollTop + el.clientHeight > el.scrollHeight - 200) store.loadConversations();
+          if (
+            hasMore &&
+            !loading &&
+            el.scrollTop + el.clientHeight > el.scrollHeight - 200
+          )
+            store.loadConversations();
         }}
       >
         {!loaded && (
-          <div style={{ display: "flex", justifyContent: "center", padding: 30 }}>
+          <div
+            style={{ display: "flex", justifyContent: "center", padding: 30 }}
+          >
             <Spinner />
           </div>
         )}
 
         {loaded && list.length === 0 && (
-          <div style={{ padding: "36px 18px", textAlign: "center", color: C.muted, fontSize: 13, lineHeight: 1.6 }}>
+          <div
+            style={{
+              padding: "36px 18px",
+              textAlign: "center",
+              color: C.muted,
+              fontSize: 13,
+              lineHeight: 1.6,
+            }}
+          >
             {q || filter !== "all" ? (
               "Тохирох чат олдсонгүй."
             ) : (
@@ -232,7 +315,9 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
             >
               <ConvAvatar conv={c} me={meRef} size={48} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div
+                  style={{ display: "flex", alignItems: "baseline", gap: 6 }}
+                >
                   <span
                     style={{
                       flex: 1,
@@ -247,11 +332,24 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
                   >
                     {c.title}
                   </span>
-                  <span style={{ fontSize: 11, color: unread ? C.blueText : C.faint, flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: unread ? C.blueText : C.faint,
+                      flexShrink: 0,
+                    }}
+                  >
                     {fmtListTime(c.lastMessage?.createdAt ?? c.lastMessageAt)}
                   </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 2,
+                  }}
+                >
                   <span
                     style={{
                       flex: 1,
@@ -260,13 +358,23 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                       fontSize: 12.5,
-                      color: typers.length ? C.blueText : unread ? C.text2 : C.muted,
+                      color: typers.length
+                        ? C.blueText
+                        : unread
+                          ? C.text2
+                          : C.muted,
                       fontWeight: unread ? 600 : 400,
                     }}
                   >
                     {line}
                   </span>
-                  {muted && <BellOff size={12} style={{ color: C.faint, flexShrink: 0 }} aria-label="Дуугүй" />}
+                  {muted && (
+                    <BellOff
+                      size={12}
+                      style={{ color: C.faint, flexShrink: 0 }}
+                      aria-label="Дуугүй"
+                    />
+                  )}
                   {unread && (
                     <span
                       style={{
@@ -304,7 +412,13 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
                     }}
                   >
                     <FileText size={10} style={{ flexShrink: 0 }} />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span
+                      style={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {c.announcement.title}
                     </span>
                   </div>
@@ -315,7 +429,9 @@ export function ConversationList({ onNew, onOpen }: { onNew: () => void; onOpen:
         })}
 
         {loaded && loading && (
-          <div style={{ display: "flex", justifyContent: "center", padding: 12 }}>
+          <div
+            style={{ display: "flex", justifyContent: "center", padding: 12 }}
+          >
             <Spinner size={16} />
           </div>
         )}
