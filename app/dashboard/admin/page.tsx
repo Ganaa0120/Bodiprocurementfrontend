@@ -2447,7 +2447,7 @@ export default function AdminDashboard() {
     try {
       const p = new URLSearchParams();
       if (personStatus) p.set("status", personStatus);
-      p.set("limit", "50");
+      p.set("limit", "2000");
       const res = await fetch(`${API}/api/persons?${p}`, { headers: authH() });
       const d = await res.json();
       if (!res.ok) throw new Error(d.message);
@@ -2462,7 +2462,7 @@ export default function AdminDashboard() {
   const fetchCompanies = useCallback(async () => {
     setCompaniesLoading(true);
     try {
-      const res = await fetch(`${API}/api/organizations?limit=50`, {
+      const res = await fetch(`${API}/api/organizations?limit=2000`, {
         headers: authH(),
       });
       const d = await res.json();

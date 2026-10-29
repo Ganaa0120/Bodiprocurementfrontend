@@ -137,7 +137,7 @@ export default function MiniAdminDashboard() {
     setLoading(true);
     try {
       const p = new URLSearchParams({
-        limit: "50",
+        limit: "2000",
         ...(pStatus ? { status: pStatus } : {}),
       });
       const res = await fetch(`${API}/api/persons?${p}`, { headers: authH() });
@@ -150,7 +150,7 @@ export default function MiniAdminDashboard() {
 
   const fetchCompanies = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/organizations?limit=50`, {
+      const res = await fetch(`${API}/api/organizations?limit=2000`, {
         headers: authH(),
       });
       const d = await res.json();

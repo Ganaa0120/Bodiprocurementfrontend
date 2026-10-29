@@ -157,10 +157,10 @@ export function AnnModal({
     if (annType !== "open") return;
     setInvLoading(true);
     Promise.all([
-      fetch(`${API}/api/organizations?limit=500`, { headers: authH() }).then(
+      fetch(`${API}/api/organizations?limit=2000`, { headers: authH() }).then(
         (r) => r.json(),
       ),
-      fetch(`${API}/api/persons?limit=500`, { headers: authH() }).then((r) =>
+      fetch(`${API}/api/persons?limit=2000`, { headers: authH() }).then((r) =>
         r.json(),
       ),
     ])

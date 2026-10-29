@@ -42,8 +42,8 @@ export function RecipientPicker({
     setLoading(true);
     const url =
       form.recipient_type === "individual"
-        ? `${API}/api/persons?limit=500`
-        : `${API}/api/organizations?limit=500`;
+        ? `${API}/api/persons?limit=2000`
+        : `${API}/api/organizations?limit=2000`;
     fetch(url, { headers: authH() })
       .then((r) => r.json())
       .then((d) => {

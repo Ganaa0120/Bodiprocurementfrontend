@@ -49,11 +49,11 @@ export function SendModal({ onClose, onSent, showToast }: {
     if (recipType === "all") return;
     setFetching(true); setSelected([]); setSearch("");
     if (recipType === "individual") {
-      fetch(`${API}/api/persons?limit=500`, { headers:{ Authorization:`Bearer ${getToken()}` } })
+      fetch(`${API}/api/persons?limit=2000`, { headers:{ Authorization:`Bearer ${getToken()}` } })
         .then(r => r.json()).then(d => setPersons(d.persons ?? d.data ?? []))
         .finally(() => setFetching(false));
     } else {
-      fetch(`${API}/api/organizations?limit=500`, { headers:{ Authorization:`Bearer ${getToken()}` } })
+      fetch(`${API}/api/organizations?limit=2000`, { headers:{ Authorization:`Bearer ${getToken()}` } })
         .then(r => r.json()).then(d => setCompanies(d.organizations ?? d.data ?? []))
         .finally(() => setFetching(false));
     }
