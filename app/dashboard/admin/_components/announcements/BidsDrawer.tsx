@@ -23,6 +23,13 @@ import {
 import { API, authH, BID_STATUS } from "./constants";
 import type { Ann } from "./types";
 import React, { useState, useEffect } from "react";
+import { AwardModal, ReasonModal } from "./bidDecisionModals";
+import {
+  PARTICIPATION_BADGE,
+  decideParticipant,
+  rejectBid,
+  type ParticipationStatus,
+} from "./announcementActions";
 
 /* ============================================================
    Туслах функцууд — хүргэлт хүртэлх хоног
@@ -124,14 +131,21 @@ function BidDetailModal({
   supplierInfo,
   lowestPrice,
   onClose,
-  onUpdateStatus,
+  onReject,
+  onAward,
+  awardLocked = false,
 }: {
   bid: any;
   ann: Ann;
   supplierInfo: any;
   lowestPrice?: number | null;
   onClose: () => void;
-  onUpdateStatus?: (bidId: string, status: string) => void;
+  /** Шалтгаан бичүүлэх цонхыг нээнэ */
+  onReject?: (bid: any) => void;
+  /** Ялагч сонгох цонхыг нээнэ */
+  onAward?: (bid: any) => void;
+  /** Ялагч аль хэдийн сонгогдсон бол true */
+  awardLocked?: boolean;
 }) {
   const isAccepted = bid.status === "accepted" || bid.status === "approved";
   const isRejected = bid.status === "rejected";
@@ -663,7 +677,7 @@ function BidDetailModal({
         </div>
 
         {/* ============ FOOTER ACTIONS ============ */}
-        {isPending && onUpdateStatus && (
+        {isPending && (onReject || onAward) && (
           <div
             style={{
               padding: "16px 28px",
@@ -675,8 +689,8 @@ function BidDetailModal({
           >
             <button
               onClick={() => {
-                onUpdateStatus(bid.id, "rejected");
                 onClose();
+                onReject?.(bid);
               }}
               style={{
                 flex: 1,
@@ -704,10 +718,11 @@ function BidDetailModal({
               <XCircle size={16} />
               Татгалзах
             </button>
+            {!awardLocked && onAward && (
             <button
               onClick={() => {
-                onUpdateStatus(bid.id, "accepted");
                 onClose();
+                onAward(bid);
               }}
               style={{
                 flex: 1,
@@ -732,9 +747,10 @@ function BidDetailModal({
                 e.currentTarget.style.background = "rgba(16,185,129,0.08)";
               }}
             >
-              <CheckCircle2 size={16} />
-              Зөвшөөрөх
+              <Crown size={16} />
+              Ялагчаар сонгох
             </button>
+            )}
           </div>
         )}
       </div>
@@ -816,10 +832,17 @@ function StatTile({
 function ParticipantCard({
   participant: p,
   onViewDetail,
+  onDecide,
+  busy = false,
 }: {
   participant: any;
   onViewDetail?: (id: string, type: "company" | "individual") => void;
+  /** Оролцох хүсэлтийг зөвшөөрөх / татгалзах */
+  onDecide?: (p: any, status: "approved" | "rejected") => void;
+  busy?: boolean;
 }) {
+  const status: ParticipationStatus = (p.status as ParticipationStatus) || "pending";
+  const badge = PARTICIPATION_BADGE[status];
   return (
     <div
       onClick={() => onViewDetail?.(p.participant_id, p.participant_type)}
@@ -990,6 +1013,82 @@ function ParticipantCard({
           </button>
         )}
       </div>
+
+      {/* ── Оролцох хүсэлтийн шийдвэр ── */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          marginTop: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexWrap: "wrap",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "4px 10px",
+            borderRadius: 999,
+            color: badge.color,
+            background: badge.bg,
+            border: `1px solid ${badge.border}`,
+          }}
+        >
+          {badge.label}
+        </span>
+        {status === "rejected" && p.decision_note && (
+          <span style={{ fontSize: 11, color: "rgba(248,113,113,0.85)" }}>
+            Шалтгаан: {p.decision_note}
+          </span>
+        )}
+        <div style={{ flex: 1 }} />
+        {onDecide && status !== "approved" && (
+          <button
+            disabled={busy}
+            onClick={() => onDecide(p, "approved")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              background: "rgba(16,185,129,0.12)",
+              border: "1px solid rgba(16,185,129,0.35)",
+              color: "#34d399",
+              fontSize: 11.5,
+              fontWeight: 700,
+              cursor: busy ? "wait" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            {busy ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+            Зөвшөөрөх
+          </button>
+        )}
+        {onDecide && status !== "rejected" && !p.has_submitted_bid && (
+          <button
+            disabled={busy}
+            onClick={() => onDecide(p, "rejected")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.3)",
+              color: "#f87171",
+              fontSize: 11.5,
+              fontWeight: 700,
+              cursor: busy ? "wait" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <XCircle size={12} />
+            Татгалзах
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -999,23 +1098,59 @@ function ParticipantCard({
    ============================================================ */
 export function BidsDrawer({
   ann,
-  bids,
-  participants = [], // ⭐ ШИНЭ
+  bids: bidsProp,
+  participants: participantsProp = [],
   loading,
-  loadingParticipants = false, // ⭐ ШИНЭ
+  loadingParticipants = false,
   onClose,
   onUpdateStatus,
   supplierInfo,
+  notify,
 }: {
   ann: Ann;
   bids: any[];
-  participants?: any[]; // ⭐ ШИНЭ
+  participants?: any[];
   loading: boolean;
-  loadingParticipants?: boolean; // ⭐ ШИНЭ
+  loadingParticipants?: boolean;
   onClose: () => void;
-  onUpdateStatus: (bidId: string, status: string) => void;
+  /** Хуучин API-тай нийцүүлэх. Шийдвэрүүд одоо drawer дотроо хийгдэнэ. */
+  onUpdateStatus?: (bidId: string, status: string) => void;
   supplierInfo?: any;
+  /** Toast харуулах (AnnouncementsTab-аас) */
+  notify?: (msg: string, ok?: boolean) => void;
 }) {
+  // Шийдвэр гаргасны дараа шууд харагдуулахын тулд локал хуулбар
+  const [bids, setBids] = useState<any[]>(bidsProp);
+  const [participants, setParticipants] = useState<any[]>(participantsProp);
+  useEffect(() => setBids(bidsProp), [bidsProp]);
+  useEffect(() => setParticipants(participantsProp), [participantsProp]);
+
+  const [rejectBidTarget, setRejectBidTarget] = useState<any>(null);
+  const [awardTarget, setAwardTarget] = useState<any>(null);
+  const [rejectPartTarget, setRejectPartTarget] = useState<any>(null);
+  const [partBusy, setPartBusy] = useState<string | null>(null);
+  const toast = (m: string, ok = true) => (notify ? notify(m, ok) : !ok && alert(m));
+  const awardLocked = bids.some((b) => b.status === "accepted" || b.status === "approved");
+
+  const applyParticipant = (updated: any) =>
+    setParticipants((list) => list.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
+
+  const handleDecide = async (p: any, status: "approved" | "rejected") => {
+    if (status === "rejected") {
+      setRejectPartTarget(p);
+      return;
+    }
+    setPartBusy(p.id);
+    try {
+      const res = await decideParticipant(ann.id, p.id, "approved");
+      applyParticipant(res.participant);
+      toast("Зөвшөөрөгдлөө. Нийлүүлэгч үнийн санал илгээх боломжтой боллоо ✓");
+    } catch (e: any) {
+      toast(e.message, false);
+    } finally {
+      setPartBusy(null);
+    }
+  };
   const [selectedBid, setSelectedBid] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
@@ -1035,10 +1170,6 @@ export function BidsDrawer({
     setIsDetailModalOpen(true);
   };
 
-  const handleStatusUpdate = (bidId: string, status: string) => {
-    onUpdateStatus(bidId, status);
-    setIsDetailModalOpen(false);
-  };
 
   /* ---- Дүгнэлт тооцоолол ---- */
   const prices = bids
@@ -1067,7 +1198,49 @@ export function BidsDrawer({
           supplierInfo={supplierInfo}
           lowestPrice={lowestPrice}
           onClose={() => setIsDetailModalOpen(false)}
-          onUpdateStatus={handleStatusUpdate}
+          onReject={(b) => setRejectBidTarget(b)}
+          onAward={(b) => setAwardTarget(b)}
+          awardLocked={awardLocked}
+        />
+      )}
+      {rejectBidTarget && (
+        <ReasonModal
+          title="Үнийн саналыг татгалзах"
+          subtitle={`${rejectBidTarget.supplier_name || "Нийлүүлэгч"}-д татгалзсан шалтгаан мэдэгдлээр очно.`}
+          onClose={() => setRejectBidTarget(null)}
+          onSubmit={async (reason) => {
+            const res = await rejectBid(ann.id, rejectBidTarget.id, reason);
+            setBids((list) => list.map((b) => (b.id === res.bid.id ? { ...b, ...res.bid } : b)));
+            toast("Үнийн санал татгалзагдлаа");
+          }}
+        />
+      )}
+      {awardTarget && (
+        <AwardModal
+          annId={ann.id}
+          winner={awardTarget}
+          bids={bids}
+          currency={ann.currency ?? "MNT"}
+          onClose={() => setAwardTarget(null)}
+          onDone={(updated) => {
+            const byId = new Map(updated.map((b: any) => [b.id, b]));
+            setBids((list) => list.map((b) => (byId.has(b.id) ? { ...b, ...byId.get(b.id) } : b)));
+            toast("Ялагч сонгогдлоо 🏆");
+          }}
+        />
+      )}
+      {rejectPartTarget && (
+        <ReasonModal
+          title="Оролцох хүсэлтийг татгалзах"
+          subtitle={'Нийлүүлэгчийн "Миний хүсэлтүүд" хэсэгт "Татгалзсан" төлөвтэй харагдана.'}
+          required={false}
+          placeholder="Жишээ: Шаардлагатай тусгай зөвшөөрөлгүй байна."
+          onClose={() => setRejectPartTarget(null)}
+          onSubmit={async (note) => {
+            const res = await decideParticipant(ann.id, rejectPartTarget.id, "rejected", note);
+            applyParticipant(res.participant);
+            toast("Оролцох хүсэлт татгалзагдлаа");
+          }}
         />
       )}
       {supplierDetail && (
@@ -1936,6 +2109,8 @@ export function BidsDrawer({
                         onViewDetail={(id, type) =>
                           setSupplierDetail({ id, type })
                         }
+                        onDecide={handleDecide}
+                        busy={partBusy === p.id}
                       />
                     ))}
                   </div>
@@ -1952,7 +2127,7 @@ export function BidsDrawer({
 /* ============================================================
    SupplierDetailModal — нийлүүлэгчийн бүрэн мэдээлэл
    ============================================================ */
-function SupplierDetailModal({
+export function SupplierDetailModal({
   supplierId,
   supplierType,
   onClose,

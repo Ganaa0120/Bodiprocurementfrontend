@@ -1,6 +1,6 @@
 // Server болон client хоёуланд хэрэглэгдэх төрлүүд. Энд server-only import оруулахгүй.
 
-export type MemberType = "admin" | "supplier";
+export type MemberType = "admin" | "person" | "company" | "supplier";
 export type ActorRole = "super_admin" | "mini_admin" | "sub_admin" | "supplier";
 export type ParticipantRole = "owner" | "admin" | "member";
 export type ConversationKind = "direct" | "group";
@@ -101,6 +101,8 @@ export interface ConversationSummary {
   customTitle: string | null;
   avatarUrl: string | null;
   announcement: AnnouncementRef | null;
+  /** Бичих боломжгүй шалтгаан (жишээ: зарлалгүй хуучин чат). null бол хэвийн */
+  lockedReason?: string | null;
   members: Participant[];
   lastMessage: LastMessagePreview | null;
   lastMessageAt: string;
@@ -119,6 +121,10 @@ export interface MeInfo {
   isSuperAdmin: boolean;
   canCreateGroup: boolean;
   canSearchSuppliers: boolean;
+  /** Нийлүүлэгч бол false: ажилтнуудын жагсаалт харагдахгүй */
+  canSearchAdmins?: boolean;
+  /** true бол нийлүүлэгчтэй чат заавал зарлалтай холбогдоно */
+  supplierChatRequiresAnnouncement?: boolean;
   superAdminCanReadAll: boolean;
   editWindowMs: number;
   maxAttachments: number;
@@ -160,4 +166,11 @@ export interface TypingPayload {
   type: MemberType;
   id: string;
   name: string;
+}
+
+/** Нийлүүлэгч: оролцох зөвшөөрөл авсан зарлал бүрийн чатлаж болох ажилтнууд */
+export interface AnnouncementContactGroup {
+  announcement: { id: string; title: string; status: string; deadline: string | null };
+  contacts: (MemberInfo & { conversationId: string | null })[];
+  groups: { id: string; title: string }[];
 }

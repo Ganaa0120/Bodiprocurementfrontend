@@ -11,7 +11,9 @@ import {
   Image as ImageIcon,
   ZoomIn,
   Sparkles,
+  Trash2,
 } from "lucide-react";
+import { notifyNotificationsChanged } from "@/lib/useUnreadNotifications";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -42,6 +44,7 @@ export default function PersonNotificationsPage() {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token || ""}` },
     }).catch(() => {});
+    notifyNotificationsChanged();
 
     setNotifs((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
@@ -54,6 +57,7 @@ export default function PersonNotificationsPage() {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token || ""}` },
     }).catch(() => {});
+    notifyNotificationsChanged();
 
     setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
@@ -64,6 +68,47 @@ export default function PersonNotificationsPage() {
   };
 
   const unread = notifs.filter((n) => !n.is_read).length;
+  const readCount = notifs.length - unread;
+
+  // ── Устгах (зөвхөн өөрөөсөө нуух; бусад хэрэглэгчид нөлөөлөхгүй) ──
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const deleteOne = async (id: string) => {
+    setDeleting(id);
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API}/api/notifications/mine/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token || ""}` },
+      });
+      if (res.ok) {
+        setNotifs((prev) => prev.filter((n) => n.id !== id));
+        if (selected?.id === id) setSelected(null);
+        notifyNotificationsChanged();
+      }
+    } catch {
+      /* сүлжээний алдаа: жагсаалт хэвээр */
+    } finally {
+      setDeleting(null);
+    }
+  };
+  const deleteRead = async () => {
+    const readCount = notifs.filter((n) => n.is_read).length;
+    if (!readCount || !window.confirm(`Уншсан ${readCount} мэдэгдлийг устгах уу?`)) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API}/api/notifications/mine`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token || ""}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "read" }),
+      });
+      if (res.ok) {
+        setNotifs((prev) => prev.filter((n) => !n.is_read));
+        notifyNotificationsChanged();
+      }
+    } catch {
+      /* ignore */
+    }
+  };
 
   const TYPE_ICON: Record<string, string> = {
     announcement: "📢",
@@ -617,6 +662,30 @@ export default function PersonNotificationsPage() {
             </p>
           </div>
 
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {readCount > 0 && (
+            <button
+              onClick={deleteRead}
+              style={{
+                border: "1px solid rgba(239,68,68,0.3)",
+                background: "rgba(239,68,68,0.08)",
+                color: "#fca5a5",
+                borderRadius: 14,
+                padding: "10px 18px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "inherit",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <Trash2 size={16} />
+              Уншсаныг устгах
+            </button>
+          )}
           {unread > 0 && (
             <button
               onClick={markAll}
@@ -649,6 +718,7 @@ export default function PersonNotificationsPage() {
               Бүгдийг уншсан болгох
             </button>
           )}
+          </div>
         </div>
 
         {/* Loading */}
@@ -790,6 +860,43 @@ export default function PersonNotificationsPage() {
                     }}
                   />
                 )}
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteOne(n.id);
+                  }}
+                  disabled={deleting === n.id}
+                  aria-label="Мэдэгдэл устгах"
+                  title="Устгах"
+                  style={{
+                    flexShrink: 0,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "rgba(255,255,255,0.03)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: deleting === n.id ? "wait" : "pointer",
+                    color: "rgba(148,163,184,0.6)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#f87171";
+                    e.currentTarget.style.borderColor = "rgba(239,68,68,0.35)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "rgba(148,163,184,0.6)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                  }}
+                >
+                  {deleting === n.id ? (
+                    <Loader2 size={14} style={{ animation: "spin 0.9s linear infinite" }} />
+                  ) : (
+                    <Trash2 size={14} />
+                  )}
+                </button>
               </div>
             ))}
           </div>

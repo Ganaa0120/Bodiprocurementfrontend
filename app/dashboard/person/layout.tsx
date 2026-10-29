@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useUnreadNotifications } from "@/lib/useUnreadNotifications";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -75,7 +76,7 @@ export default function PersonLayout({
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const unreadCount = useUnreadNotifications();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -124,22 +125,7 @@ export default function PersonLayout({
         .catch(() => {});
     };
 
-    const fetchNotifications = () => {
-      const t = localStorage.getItem("token");
-      if (!t) return;
-      fetch(`${API}/api/notifications/mine`, {
-        headers: { Authorization: `Bearer ${t}` },
-      })
-        .then((r) => r.json())
-        .then((d) => {
-          const list = d.notifications ?? d.data ?? [];
-          setUnreadCount(list.filter((n: any) => !n.is_read).length);
-        })
-        .catch(() => {});
-    };
-
     refreshUser();
-    fetchNotifications();
 
     const interval = setInterval(refreshUser, 30 * 60 * 1000);
     window.addEventListener("focus", refreshUser);

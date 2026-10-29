@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Menu,
   X,
+  Star,
 } from "lucide-react";
 
 import { API, tok, authH } from "./_lib/constants";
@@ -27,6 +28,7 @@ import { CompaniesTab } from "../admin/_components/CompaniesTab";
 import { AnnouncementsTab } from "../admin/_components/Announcementstab";
 import { IndividualsTab } from "../admin/_components/individuals/IndividualsTab";
 import { SubAdminsTab } from "./_components/SubAdminsTab";
+import { EvaluationsTab } from "../admin/_components/evaluations/EvaluationsTab";
 
 export default function MiniAdminDashboard() {
   const router = useRouter();
@@ -126,7 +128,7 @@ export default function MiniAdminDashboard() {
 
   const canNav = (id: NavId) => {
     if (!me) return false;
-    if (id === "dashboard" || id === "sub-admins") return true;
+    if (id === "dashboard" || id === "sub-admins" || id === "evaluations") return true;
     return myPerms.some((p) => p.startsWith(`${id}.`));
   };
   const can = (p: string) => myPerms.includes(p);
@@ -209,6 +211,13 @@ export default function MiniAdminDashboard() {
       badge: 0,
     },
     {
+      id: "evaluations" as NavId,
+      icon: <Star size={18} />,
+      label: "Үнэлгээ өгөх",
+      perm: "evaluations",
+      badge: 0,
+    },
+    {
       id: "sub-admins" as NavId,
       icon: <ShieldCheck size={18} />,
       label: "Брокерууд",
@@ -216,7 +225,7 @@ export default function MiniAdminDashboard() {
       badge: 0,
     },
   ].filter((n) => {
-    if (n.id === "dashboard") return true;
+    if (n.id === "dashboard" || n.id === "evaluations") return true;
     if (n.id === "sub-admins") return !isSubAdmin;
     return myPerms.some((p) => p.startsWith(`${n.perm}.`));
   });
@@ -332,6 +341,9 @@ export default function MiniAdminDashboard() {
                 canPublish={can("announcements.publish")}
                 canDelete={can("announcements.delete")}
               />
+            )}
+            {nav === "evaluations" && canNav("evaluations") && (
+              <EvaluationsTab showToast={showToast} />
             )}
             {nav === "individuals" && canNav("individuals") && (
               <IndividualsTab

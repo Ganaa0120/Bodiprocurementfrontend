@@ -6,6 +6,26 @@ import { getStatus, fmtDate } from "./utils";
 import { OrgAvatar } from "./LogoComponents";
 import { DetailModal } from "./DetailModal";
 import { ExcelExportModal } from "../ExcelImportModal";
+import { evaluationApi, type SupplierSummary } from "../evaluations/evaluationApi";
+import { RatingStars } from "../evaluations/RatingStars";
+
+/** Компани бүрийн нэгдсэн үнэлгээ (зөвхөн админд, Group-ийн бүх охин компанийн дүн) */
+function useCompanyRatings() {
+  const [ratings, setRatings] = useState<Record<string, SupplierSummary>>({});
+  useEffect(() => {
+    let alive = true;
+    evaluationApi
+      .ratings("company")
+      .then((r) => alive && setRatings(r.ratings))
+      .catch(() => {
+        /* үнэлгээ ачаалагдахгүй байсан ч хүснэгт хэвийн харагдана */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return ratings;
+}
 
 function Badge({ status }: { status: string }) {
   const c = getStatus(status);
@@ -158,6 +178,8 @@ export function CompaniesTab({ data }: { data: any }) {
     },
     [data, detailOrg],
   );
+
+  const ratings = useCompanyRatings();
 
   const filtered = (data.companies ?? [])
     .filter((c: any) =>
@@ -427,6 +449,7 @@ export function CompaniesTab({ data }: { data: any }) {
               <thead>
                 <tr style={{ background: "#0f172a" }}>
                   <Th h="Байгууллага" />
+                  <Th h="Үнэлгээ" />
                   <Th h="Регистр" />
                   <Th h="И-мэйл" />
                   <Th h="Утас" />
@@ -439,7 +462,7 @@ export function CompaniesTab({ data }: { data: any }) {
                 {filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       style={{
                         padding: "48px 16px",
                         textAlign: "center",
@@ -491,6 +514,29 @@ export function CompaniesTab({ data }: { data: any }) {
                             )}
                           </div>
                         </div>
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        {(() => {
+                          const r = ratings[c.id];
+                          const tip = r
+                            ? [
+                                r.goods && `Бараа: ${(r.goods.score / 20).toFixed(1)}★ (${r.goods.rated_count})`,
+                                r.service && `Үйлчилгээ: ${(r.service.score / 20).toFixed(1)}★ (${r.service.rated_count})`,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")
+                            : undefined;
+                          return (
+                            <span title={tip}>
+                              <RatingStars
+                                score={r?.overall?.score}
+                                count={r?.overall?.rated_count ?? null}
+                                size={12}
+                                emptyLabel="—"
+                              />
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td
                         style={{

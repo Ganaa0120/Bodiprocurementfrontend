@@ -1,13 +1,25 @@
 import {
-  BarChart3, Bell, Building2, Users, FileText,
-  ShieldCheck, FolderTree, Activity,
+  BarChart3,
+  Bell,
+  Building2,
+  Users,
+  FileText,
+  ShieldCheck,
+  FolderTree,
+  Activity,
 } from "lucide-react";
 import { ReactNode } from "react";
 
 export type NavId =
-  | "dashboard" | "individuals" | "companies"
-  | "notifications" | "announcements"
-  | "sub-admins" | "categories" | "directions";
+  | "dashboard"
+  | "individuals"
+  | "companies"
+  | "notifications"
+  | "announcements"
+  | "sub-admins"
+  | "categories"
+  | "directions"
+  | "evaluations";
 
 export type NavItem = {
   id: NavId | string;
@@ -23,23 +35,38 @@ export const NAV_PERMS: NavItem[] = [
   { id: "announcements", label: "Зарлалууд", icon: <FileText size={18} /> },
   { id: "sub-admins", label: "Брокерууд", icon: <ShieldCheck size={18} /> },
   { id: "categories", label: "Ангилалууд", icon: <FolderTree size={18} /> },
-  { id: "directions", label: "Үйл ажиллагааны чиглэл", icon: <Activity size={18} /> },
+  {
+    id: "directions",
+    label: "Үйл ажиллагааны чиглэл",
+    icon: <Activity size={18} />,
+  },
 ];
 
-export const SUB_PERMS: Record<string, { id: string; label: string; desc: string }[]> = {
+export const SUB_PERMS: Record<
+  string,
+  { id: string; label: string; desc: string }[]
+> = {
   notifications: [
     { id: "notifications.view", label: "Харах", desc: "Мэдэгдлийн жагсаалт" },
     { id: "notifications.send", label: "Илгээх", desc: "Мэдэгдэл илгээх" },
   ],
   companies: [
     { id: "companies.view", label: "Харах", desc: "Компанийн жагсаалт" },
-    { id: "companies.edit_status", label: "Статус солих", desc: "Компанийн статус" },
+    {
+      id: "companies.edit_status",
+      label: "Статус солих",
+      desc: "Компанийн статус",
+    },
     { id: "companies.edit", label: "Засах", desc: "Мэдээлэл засах" },
     { id: "companies.delete", label: "Устгах", desc: "Компани устгах" },
   ],
   individuals: [
     { id: "individuals.view", label: "Харах", desc: "Хувь хүний жагсаалт" },
-    { id: "individuals.edit_status", label: "Статус солих", desc: "Статус өөрчлөх" },
+    {
+      id: "individuals.edit_status",
+      label: "Статус солих",
+      desc: "Статус өөрчлөх",
+    },
     { id: "individuals.edit", label: "Засах", desc: "Мэдээлэл засах" },
     { id: "individuals.delete", label: "Устгах", desc: "Хувь хүн устгах" },
   ],
@@ -63,11 +90,27 @@ export const SUB_PERMS: Record<string, { id: string; label: string; desc: string
 const OLD_FORMAT_MAP: Record<string, string[]> = {
   dashboard: ["dashboard.view"],
   notifications: ["notifications.view", "notifications.send"],
-  companies: ["companies.view", "companies.edit_status", "companies.edit", "companies.delete"],
-  individuals: ["individuals.view", "individuals.edit_status", "individuals.edit", "individuals.delete"],
+  companies: [
+    "companies.view",
+    "companies.edit_status",
+    "companies.edit",
+    "companies.delete",
+  ],
+  individuals: [
+    "individuals.view",
+    "individuals.edit_status",
+    "individuals.edit",
+    "individuals.delete",
+  ],
   categories: ["categories.view", "categories.manage"],
   directions: ["directions.view", "directions.manage"],
-  announcements: ["announcements.view", "announcements.create", "announcements.edit", "announcements.publish", "announcements.delete"],
+  announcements: [
+    "announcements.view",
+    "announcements.create",
+    "announcements.edit",
+    "announcements.publish",
+    "announcements.delete",
+  ],
   admins: ["admins.view", "admins.manage"],
 };
 
@@ -76,13 +119,18 @@ export function parsePerms(raw: any): string[] {
   let arr: string[] = [];
   if (Array.isArray(raw)) arr = raw;
   else {
-    try { arr = JSON.parse(raw); } 
-    catch { arr = ["dashboard", "dashboard.view"]; }
+    try {
+      arr = JSON.parse(raw);
+    } catch {
+      arr = ["dashboard", "dashboard.view"];
+    }
   }
   if (arr.length === 0) return ["dashboard", "dashboard.view"];
   const isOldFormat = arr.every((p: string) => !p.includes("."));
   if (isOldFormat) {
-    return [...new Set(arr.flatMap((id: string) => OLD_FORMAT_MAP[id] ?? [id]))];
+    return [
+      ...new Set(arr.flatMap((id: string) => OLD_FORMAT_MAP[id] ?? [id])),
+    ];
   }
   return arr;
 }

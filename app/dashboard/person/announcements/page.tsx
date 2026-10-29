@@ -26,6 +26,7 @@ import {
   Mail,
   Paperclip,
 } from "lucide-react";
+import { ParticipationActions } from "@/components/announcements/ParticipationActions";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -297,7 +298,7 @@ function BidModal({
                 color: "rgba(255,255,255,0.92)",
               }}
             >
-              Оролцох хүсэлт гаргах
+              Үнийн санал илгээх
             </div>
             <div
               style={{
@@ -351,7 +352,7 @@ function BidModal({
                   marginBottom: 8,
                 }}
               >
-                Хүсэлт амжилттай илгээгдлээ!
+                Үнийн санал амжилттай илгээгдлээ!
               </div>
               <div style={{ fontSize: 13, color: "rgba(148,163,184,0.5)" }}>
                 Таны мэдээлэл болон файлуудыг admin нарт илгээлээ.
@@ -819,7 +820,7 @@ function BidModal({
                 </>
               ) : (
                 <>
-                  <Send size={15} /> Хүсэлт илгээх
+                  <Send size={15} /> Үнийн санал илгээх
                 </>
               )}
             </button>
@@ -913,7 +914,11 @@ export default function PersonAnnouncementsPage() {
         <BidModal
           selected={selected}
           user={user}
-          onClose={() => setBidModal(false)}
+          onClose={() => {
+            setBidModal(false);
+            // Үнийн санал илгээсэн эсэхийг серверээс шинэчилнэ
+            if (selected?.id) openDetail(selected.id);
+          }}
         />
       )}
 
@@ -2221,26 +2226,23 @@ export default function PersonAnnouncementsPage() {
                       >
                         <ArrowLeft size={14} /> Буцах
                       </button>
-                      <button
-                        onClick={() => setBidModal(true)}
-                        style={{
-                          padding: "12px 32px",
-                          borderRadius: 14,
-                          border: "none",
-                          background: `linear-gradient(135deg, ${tc.color}dd, ${tc.color})`,
-                          color: "white",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          boxShadow: `0 4px 20px ${tc.color}44`,
-                        }}
-                      >
-                        <Send size={14} /> Хүсэлт гаргах
-                      </button>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", flex: 1, justifyContent: "flex-end" }}>
+                        <ParticipationActions
+                          announcement={selected}
+                          isExpired={selected.deadline ? new Date(selected.deadline) < new Date() : false}
+                          theme="dark"
+                          accent={`linear-gradient(135deg, ${tc.color}dd, ${tc.color})`}
+                          chatBasePath="/dashboard/person/chat"
+                          onParticipated={(status) =>
+                            setSelected((s: any) => ({
+                              ...s,
+                              is_participated: true,
+                              participation_status: status,
+                            }))
+                          }
+                          onOpenBid={() => setBidModal(true)}
+                        />
+                      </div>
                     </div>
                   </>
                 );

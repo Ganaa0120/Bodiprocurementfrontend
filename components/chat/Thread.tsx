@@ -193,7 +193,7 @@ export function Thread({
 
   const others = conv.members.filter((m) => !sameRef(m, meRef));
   const typers = Object.values(typingMap ?? {});
-  const canWrite = conv.isMember;
+  const canWrite = conv.isMember && !conv.lockedReason;
   const lastMine = [...items].reverse().find((m) => sameRef(m.sender, meRef) && m.kind === "text");
 
   let subtitle = "";
@@ -303,6 +303,22 @@ export function Thread({
           <Info size={19} />
         </IconButton>
       </div>
+
+      {conv.isMember && conv.lockedReason && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 14px",
+            background: C.amberSoft,
+            color: C.amber,
+            fontSize: 12,
+          }}
+        >
+          <Eye size={14} /> {conv.lockedReason}
+        </div>
+      )}
 
       {!conv.isMember && (
         <div

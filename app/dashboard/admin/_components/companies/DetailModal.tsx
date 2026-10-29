@@ -4,8 +4,9 @@ import { createPortal } from "react-dom";
 import {
   X, FileText, Loader2, Trash2, Building2, User, CreditCard,
   MapPin, Briefcase, CheckCircle2, AlertCircle, Download, Eye,
-  ShieldCheck, ChevronRight,
+  ShieldCheck, ChevronRight, Star,
 } from "lucide-react";
+import { SupplierEvaluationPanel } from "../evaluations/SupplierEvaluationPanel";
 import { API, STATUS_ACTIONS } from "./constants";
 import { fmtDate, supply, gender, getStatus } from "./utils";
 import { ClickableLogo } from "./LogoComponents";
@@ -164,6 +165,7 @@ export function DetailModal({
     { label:"Санхүү",      icon: CreditCard },
     { label:"Баримт",      icon: FileText, badge: allDocs.length },
     { label:"Үйлдэл",      icon: CheckCircle2 },
+    { label:"Үнэлгээ",     icon: Star },
   ];
 
   const content = (
@@ -425,6 +427,16 @@ export function DetailModal({
                       })}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* ── TAB 6: Үнэлгээ (зөвхөн админд, Group дотор нууц) ── */}
+              {tab === 6 && (
+                <div>
+                  <SectionTitle icon={Star} label="Үнэлгээ — бүх ажил"/>
+                  <div style={{ marginTop: 12 }}>
+                    <SupplierEvaluationPanel type="company" id={org.id} />
+                  </div>
                 </div>
               )}
 

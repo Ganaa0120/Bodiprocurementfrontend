@@ -18,7 +18,9 @@ import {
   Layers,
   Zap,
   ArrowRight,
+  MessageSquare,
 } from "lucide-react";
+import { isSuperAdmin, openAnnouncementRoom } from "./announcementActions";
 import { API, TYPE, STATUS, authH, jsonH } from "./constants";
 import { AnnModal } from "./AnnModal";
 import { AnnViewModal } from "./AnnViewModal";
@@ -243,6 +245,24 @@ export function AnnouncementsTab({
   const [bidsLoad, setBidsLoad] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [partLoad, setPartLoad] = useState(false);
+  const [roomBusy, setRoomBusy] = useState<string | null>(null);
+
+  // Зарлалыг засах, устгах эрх зөвхөн Super admin-д (backend ч мөн адил шалгана)
+  const [superAdmin, setSuperAdmin] = useState(false);
+  useEffect(() => setSuperAdmin(isSuperAdmin()), []);
+  const canEditAnn = canEdit && superAdmin;
+  const canDeleteAnn = canDelete && superAdmin;
+
+  const openChatRoom = async (ann: Ann) => {
+    setRoomBusy(ann.id);
+    try {
+      await openAnnouncementRoom(ann.id);
+    } catch (e: any) {
+      showToast(e.message || "Чат нээж чадсангүй", false);
+    } finally {
+      setRoomBusy(null);
+    }
+  };
 
   // ЭНД БАЙСАН ХЭСГИЙГ ОДООХУНД ИЙМ БОЛГОЖ ЗАСААРАЙ:
   const load = useCallback(async () => {
@@ -420,6 +440,7 @@ export function AnnouncementsTab({
           loadingParticipants={partLoad}
           onClose={() => setBidsAnn(null)}
           onUpdateStatus={updateBidStatus}
+          notify={showToast}
         />
       )}
 
@@ -1000,9 +1021,38 @@ export function AnnouncementsTab({
                             <Users size={12} /> Санал хуудас
                           </button>
 
-                          {(canEdit || canDelete) && (
+                          {ann.status !== "draft" && (
+                            <button
+                              onClick={() => openChatRoom(ann)}
+                              disabled={roomBusy === ann.id}
+                              title="Зөвшөөрөгдсөн бүх оролцогчтой групп чат"
+                              style={{
+                                padding: "7px 14px",
+                                borderRadius: 10,
+                                background: "rgba(99,102,241,0.10)",
+                                border: "1px solid rgba(99,102,241,0.28)",
+                                color: "#a5b4fc",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: roomBusy === ann.id ? "wait" : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 6,
+                              }}
+                            >
+                              {roomBusy === ann.id ? (
+                                <Loader2 size={12} style={{ animation: "spin 0.8s linear infinite" }} />
+                              ) : (
+                                <MessageSquare size={12} />
+                              )}
+                              Чат
+                            </button>
+                          )}
+
+                          {(canEditAnn || canDeleteAnn) && (
                             <div style={{ display: "flex", gap: 6 }}>
-                              {canEdit && (
+                              {canEditAnn && (
                                 <button
                                   onClick={() => {
                                     setTarget(ann);
@@ -1025,7 +1075,7 @@ export function AnnouncementsTab({
                                   <Pencil size={12} />
                                 </button>
                               )}
-                              {canDelete && (
+                              {canDeleteAnn && (
                                 <button
                                   onClick={() => setDelAnn(ann)}
                                   style={{

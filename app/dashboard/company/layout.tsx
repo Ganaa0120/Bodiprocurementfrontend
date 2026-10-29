@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useUnreadNotifications } from "@/lib/useUnreadNotifications";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -47,6 +48,7 @@ export default function CompanyLayout({
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState(false);
+  const unreadCount = useUnreadNotifications();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -501,6 +503,25 @@ export default function CompanyLayout({
                 >
                   {label}
                 </span>
+                {href.endsWith("/notifications") && unreadCount > 0 && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      flexShrink: 0,
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 99,
+                      background: "#ef4444",
+                      color: "white",
+                      minWidth: 20,
+                      textAlign: "center",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
 
                 {active && (
                   <ChevronRight
@@ -628,6 +649,7 @@ export default function CompanyLayout({
 
           <Link
             href="/dashboard/company/notifications"
+            aria-label={unreadCount > 0 ? `${unreadCount} уншаагүй мэдэгдэл` : "Мэдэгдэл"}
             style={{
               padding: "7px",
               borderRadius: 9,
@@ -635,9 +657,34 @@ export default function CompanyLayout({
               background: "#fafafa",
               display: "flex",
               textDecoration: "none",
+              position: "relative",
             }}
           >
-            <Bell size={16} style={{ color: "#64748b" }} />
+            <Bell size={16} style={{ color: unreadCount > 0 ? "#0072BC" : "#64748b" }} />
+            {unreadCount > 0 && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: -5,
+                  right: -5,
+                  minWidth: 18,
+                  height: 18,
+                  padding: "0 4px",
+                  borderRadius: 99,
+                  background: "#ef4444",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid white",
+                  boxSizing: "border-box",
+                }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </Link>
           <Link
             href="/dashboard/company/profile"

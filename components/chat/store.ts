@@ -347,6 +347,17 @@ export class ChatStore {
     return conversation;
   }
 
+  /**
+   * Баруун доод буланд байрлах чатын цонхыг (ChatWidget) нээж, тухайн чатыг шууд харуулна.
+   * Хуудаснаас гаралгүйгээр чат нээхэд ашиглана (зарлал дээрх "Чат" товч г.м.).
+   */
+  openInWidget(conv: ConversationSummary | string) {
+    const id = typeof conv === "string" ? conv : conv.id;
+    if (typeof conv !== "string") this.upsertConvs([conv]);
+    this.set((s) => ({ openRequest: s.openRequest + 1 }));
+    this.open(id);
+  }
+
   async updateConversation(id: string, body: { title?: string | null; announcementId?: string | null }) {
     const { conversation } = await chatApi.update(id, body);
     this.upsertConvs([conversation]);

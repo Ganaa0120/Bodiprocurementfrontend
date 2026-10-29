@@ -42,10 +42,12 @@ import {
   FolderTree,
   Megaphone,
   UserCog,
+  Star,
 } from "lucide-react";
 import { IndividualsTab } from "./_components/individuals/IndividualsTab";
 import { SpecialPermissionsTab } from "./_components/SpecialPermissionsTab";
 import { PendingEditsTab } from "./_components/pending-edits/PendingEditsTab";
+import { EvaluationsTab } from "./_components/evaluations/EvaluationsTab";
 
 type NavId =
   | "dashboard"
@@ -57,6 +59,7 @@ type NavId =
   | "directions"
   | "special_permissions"
   | "announcements"
+  | "evaluations"
   | "pending_edits";
 type ModalMode = "create" | "edit" | null;
 
@@ -2347,6 +2350,8 @@ export default function AdminDashboard() {
     if (!me) return false;
     if (me.role === "super_admin") return true;
     if (id === "special_permissions") return false;
+    // Үнэлгээ өгөх цэс бүх админд харагдана (хамрах хүрээг backend шалгана)
+    if (id === "evaluations") return true;
     return (
       myPerms.includes(`${id}.view`) ||
       (id === "dashboard" && myPerms.includes("dashboard.view"))
@@ -2397,6 +2402,12 @@ export default function AdminDashboard() {
       id: "announcements" as NavId,
       icon: Megaphone,
       label: "Зарлалууд",
+      badge: 0,
+    },
+    {
+      id: "evaluations" as NavId,
+      icon: Star,
+      label: "Үнэлгээ өгөх",
       badge: 0,
     },
     {
@@ -4893,6 +4904,9 @@ export default function AdminDashboard() {
             )}
             {nav === "announcements" && canNav("announcements") && (
               <AnnouncementsTab showToast={showToast} />
+            )}
+            {nav === "evaluations" && canNav("evaluations") && (
+              <EvaluationsTab showToast={showToast} />
             )}
             {nav === "special_permissions" && canNav("special_permissions") && (
               <SpecialPermissionsTab

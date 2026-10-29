@@ -1,5 +1,6 @@
 "use client";
 import type {
+  AnnouncementContactGroup,
   AnnouncementRef,
   Attachment,
   ChatMessage,
@@ -134,6 +135,11 @@ export const chatApi = {
   directory: (q: string, kind: "all" | "admin" | "person" | "company" = "all") =>
     req<{ items: MemberInfo[] }>("GET", `/api/chat/directory${qs({ q, kind })}`),
   announcements: (q: string) => req<{ items: AnnouncementRef[] }>("GET", `/api/chat/announcements${qs({ q })}`),
+  /** Нийлүүлэгч: оролцох зөвшөөрөл авсан зарлалууд ба чатлаж болох ажилтнууд */
+  announcementContacts: () => req<{ items: AnnouncementContactGroup[] }>("GET", "/api/chat/announcement-contacts"),
+  /** Админ: зарлалын нэгдсэн групп чатыг нээх (байхгүй бол үүсгэнэ) */
+  announcementRoom: (annId: string) =>
+    req<{ conversation: ConversationSummary }>("POST", `/api/chat/announcements/${enc(annId)}/room`),
 
   /** Файлыг backend-ээр дамжуулж Azure Blob-д хадгална (multipart) */
   upload: async (file: File): Promise<{ url: string; name: string; size: number; type: string }> => {

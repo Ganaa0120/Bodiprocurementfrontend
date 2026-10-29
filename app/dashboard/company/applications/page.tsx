@@ -740,6 +740,41 @@ export default function CompanyApplicationsPage() {
                       {app.announcement_title || "Тендер / Зарлал"}
                     </h3>
 
+                    {app.stage && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "-2px 0 8px" }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "3px 9px",
+                            borderRadius: 999,
+                            background: app.stage === "bid" ? "#eff6ff" : "#f5f3ff",
+                            color: app.stage === "bid" ? "#1d4ed8" : "#6d28d9",
+                            border: `1px solid ${app.stage === "bid" ? "#bfdbfe" : "#ddd6fe"}`,
+                          }}
+                        >
+                          {app.stage === "bid" ? "💰 Үнийн санал" : "👋 Оролцох хүсэлт"}
+                        </span>
+                        {app.can_submit_bid && (
+                          <a
+                            href="/dashboard/company/announcements"
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: "3px 9px",
+                              borderRadius: 999,
+                              background: "#ecfdf5",
+                              color: "#047857",
+                              border: "1px solid #a7f3d0",
+                              textDecoration: "none",
+                            }}
+                          >
+                            Үнийн санал илгээх боломжтой →
+                          </a>
+                        )}
+                      </div>
+                    )}
+
                     <div
                       style={{
                         display: "flex",
@@ -875,7 +910,7 @@ export default function CompanyApplicationsPage() {
                     )}
 
                     {/* Rejected reason */}
-                    {isRejected && app.return_reason && (
+                    {isRejected && (
                       <div
                         style={{
                           marginTop: 12,
@@ -904,7 +939,7 @@ export default function CompanyApplicationsPage() {
                           }}
                         >
                           <strong>Татгалзсан шалтгаан:</strong>{" "}
-                          {app.return_reason}
+                          {app.return_reason || "Шалтгаан бичигдээгүй."}
                         </div>
                       </div>
                     )}

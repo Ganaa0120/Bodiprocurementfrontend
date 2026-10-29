@@ -268,6 +268,21 @@ export default function PersonApplicationsPage() {
                       >
                         {app.announcement_title || "Тендер"}
                       </span>
+                      {app.stage && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            flexShrink: 0,
+                            background: app.stage === "bid" ? "rgba(59,130,246,0.14)" : "rgba(139,92,246,0.14)",
+                            color: app.stage === "bid" ? "#93c5fd" : "#c4b5fd",
+                          }}
+                        >
+                          {app.stage === "bid" ? "Үнийн санал" : "Оролцох хүсэлт"}
+                        </span>
+                      )}
                       <span
                         style={{
                           fontSize: 10,
@@ -346,7 +361,7 @@ export default function PersonApplicationsPage() {
                     )}
 
                     {/* Return reason */}
-                    {app.return_reason && (
+                    {(app.return_reason || app.status === "rejected") && (
                       <div
                         style={{
                           marginTop: 8,
@@ -364,8 +379,8 @@ export default function PersonApplicationsPage() {
                       >
                         <AlertCircle size={13} style={{ color: "#f87171", flexShrink: 0, marginTop: 1 }} />
                         <div>
-                          <strong style={{ color: "#f87171" }}>Буцаасан шалтгаан: </strong>
-                          {app.return_reason}
+                          <strong style={{ color: "#f87171" }}>Татгалзсан шалтгаан: </strong>
+                          {app.return_reason || "Шалтгаан бичигдээгүй."}
                         </div>
                       </div>
                     )}

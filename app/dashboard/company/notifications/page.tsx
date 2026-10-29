@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Loader2, Bell, CheckCheck, X, Clock, ArrowRight } from "lucide-react";
+import { Loader2, Bell, CheckCheck, X, Clock, ArrowRight, Trash2 } from "lucide-react";
+import { notifyNotificationsChanged } from "@/lib/useUnreadNotifications";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -49,6 +50,7 @@ export default function CompanyNotificationsPage() {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token || ""}` },
     }).catch(() => {});
+    notifyNotificationsChanged();
 
     setNotifs(prev => prev.map(n => 
       n.id === id ? { ...n, is_read: true } : n
@@ -61,6 +63,7 @@ export default function CompanyNotificationsPage() {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token || ""}` },
     }).catch(() => {});
+    notifyNotificationsChanged();
 
     setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
   };
@@ -71,6 +74,47 @@ export default function CompanyNotificationsPage() {
   };
 
   const unread = notifs.filter(n => !n.is_read).length;
+  const readCount = notifs.length - unread;
+
+  // ── Устгах (зөвхөн өөрөөсөө нуух; бусад хэрэглэгчид нөлөөлөхгүй) ──
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const deleteOne = async (id: string) => {
+    setDeleting(id);
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API}/api/notifications/mine/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token || ""}` },
+      });
+      if (res.ok) {
+        setNotifs((prev) => prev.filter((n) => n.id !== id));
+        if (selected?.id === id) setSelected(null);
+        notifyNotificationsChanged();
+      }
+    } catch {
+      /* сүлжээний алдаа: жагсаалт хэвээр */
+    } finally {
+      setDeleting(null);
+    }
+  };
+  const deleteRead = async () => {
+    const readCount = notifs.filter((n) => n.is_read).length;
+    if (!readCount || !window.confirm(`Уншсан ${readCount} мэдэгдлийг устгах уу?`)) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API}/api/notifications/mine`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token || ""}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "read" }),
+      });
+      if (res.ok) {
+        setNotifs((prev) => prev.filter((n) => !n.is_read));
+        notifyNotificationsChanged();
+      }
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
     <div style={{ maxWidth: "1280px", margin: "0 auto", padding: isMobile ? "16px 8px" : "28px 20px" }}>
@@ -82,6 +126,7 @@ export default function CompanyNotificationsPage() {
         .notif-card {
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .notif-del:hover { color: #dc2626 !important; border-color: #fecaca !important; background: #fef2f2 !important; }
         .notif-card:hover {
           transform: translateY(-4px);
           box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08) !important;
@@ -107,6 +152,28 @@ export default function CompanyNotificationsPage() {
           </p>
         </div>
 
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {readCount > 0 && (
+          <button
+            onClick={deleteRead}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              borderRadius: 12,
+              border: "1px solid #fee2e2",
+              background: "white",
+              color: "#dc2626",
+              fontSize: 13.5,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <Trash2 size={16} />
+            Уншсаныг устгах
+          </button>
+        )}
         {unread > 0 && (
           <button 
             onClick={markAll}
@@ -128,6 +195,7 @@ export default function CompanyNotificationsPage() {
             Бүгдийг уншсан болгох
           </button>
         )}
+        </div>
       </div>
 
       {/* Notifications List */}
@@ -252,6 +320,35 @@ export default function CompanyNotificationsPage() {
                 }} />
               )}
 
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteOne(n.id);
+                }}
+                disabled={deleting === n.id}
+                aria-label="Мэдэгдэл устгах"
+                title="Устгах"
+                className="notif-del"
+                style={{
+                  flexShrink: 0,
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  border: "1px solid #f1f5f9",
+                  background: "#fafafa",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: deleting === n.id ? "wait" : "pointer",
+                  color: "#94a3b8",
+                }}
+              >
+                {deleting === n.id ? (
+                  <Loader2 size={15} style={{ animation: "spin 0.9s linear infinite" }} />
+                ) : (
+                  <Trash2 size={15} />
+                )}
+              </button>
               <ArrowRight size={18} style={{ color: "#94a3b8", flexShrink: 0 }} />
             </div>
           ))}

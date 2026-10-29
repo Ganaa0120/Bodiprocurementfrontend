@@ -30,6 +30,7 @@ import {
   Upload,
   DollarSign,
 } from "lucide-react";
+import { ParticipationActions } from "@/components/announcements/ParticipationActions";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -562,7 +563,7 @@ export default function CompanyAnnouncementsPage() {
         setSelected(null);
       }, 2500);
     } catch (e: any) {
-      setBidError(e.message || "Хүсэлт илгээхэд алдаа гарлаа");
+      setBidError(e.message || "Үнийн санал илгээхэд алдаа гарлаа");
     } finally {
       setBidSaving(false);
     }
@@ -2332,101 +2333,23 @@ export default function CompanyAnnouncementsPage() {
                 Хаах
               </button>
 
-              {/* ⭐ ШИНЭ: Оролцох товч */}
-              <button
-                onClick={participate}
-                disabled={
-                  isExpired || selected.is_participated || participating
+              <ParticipationActions
+                announcement={selected}
+                isExpired={isExpired}
+                theme="light"
+                chatBasePath="/dashboard/company/chat"
+                onParticipated={(status) =>
+                  setSelected((s: any) => ({
+                    ...s,
+                    is_participated: true,
+                    participation_status: status,
+                  }))
                 }
-                style={{
-                  flex: 1,
-                  minWidth: 140,
-                  padding: "13px 20px",
-                  borderRadius: 12,
-                  border: selected.is_participated
-                    ? "1px solid #10b981"
-                    : "1.5px solid #10b981",
-                  background: selected.is_participated ? "#ecfdf5" : "white",
-                  color: "#059669",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor:
-                    isExpired || selected.is_participated || participating
-                      ? "not-allowed"
-                      : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  opacity: isExpired ? 0.5 : 1,
-                }}
-              >
-                {participating ? (
-                  <>
-                    <Loader2
-                      size={15}
-                      style={{ animation: "spin .8s linear infinite" }}
-                    />{" "}
-                    Илгээж байна...
-                  </>
-                ) : selected.is_participated ? (
-                  <>
-                    <CheckCircle2 size={15} /> Оролцсон
-                  </>
-                ) : (
-                  <>👋 Оролцох</>
-                )}
-              </button>
-
-              <button
-                onClick={() => {
-                  if (isExpired || selected.is_bid_submitted) return;
+                onOpenBid={() => {
                   setBidModal(true);
                   setBidError("");
                 }}
-                disabled={isExpired || selected.is_bid_submitted}
-                style={{
-                  flex: 1,
-                  minWidth: 160,
-                  padding: "13px 26px",
-                  borderRadius: 12,
-                  border: "none",
-                  background:
-                    isExpired || selected.is_bid_submitted
-                      ? "#e2e8f0"
-                      : "linear-gradient(135deg,#0072BC,#3b9be0)",
-                  color:
-                    isExpired || selected.is_bid_submitted
-                      ? "#94a3b8"
-                      : "white",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor:
-                    isExpired || selected.is_bid_submitted
-                      ? "not-allowed"
-                      : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  boxShadow:
-                    isExpired || selected.is_bid_submitted
-                      ? "none"
-                      : "0 8px 20px rgba(0,114,188,0.35)",
-                }}
-              >
-                {isExpired ? (
-                  "Хугацаа дууссан"
-                ) : selected.is_bid_submitted ? (
-                  <>
-                    <CheckCircle2 size={15} /> Хүсэлт илгээсэн
-                  </>
-                ) : (
-                  <>
-                    <Send size={15} /> Хүсэлт илгээх
-                  </>
-                )}
-              </button>
+              />
             </div>
           </div>
         </div>
@@ -2551,7 +2474,7 @@ export default function CompanyAnnouncementsPage() {
                           color: "#0f172a",
                         }}
                       >
-                        Хүсэлт гаргах
+                        Үнийн санал илгээх
                       </div>
                       <div
                         style={{
@@ -3308,7 +3231,7 @@ export default function CompanyAnnouncementsPage() {
                       ) : (
                         <>
                           <Send size={15} />
-                          Хүсэлт илгээх
+                          Үнийн санал илгээх
                         </>
                       )}
                     </button>
